@@ -1,0 +1,9 @@
+rule-engine
+pydantic
+pyyaml
+jsonschema
+click
+fastapi
+uvicorn
+jinja2
+weasyprint

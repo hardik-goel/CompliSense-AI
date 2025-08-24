@@ -1,0 +1,54 @@
+pack_id: "euai_core"
+version: "1.0.0"
+jurisdiction: "EU_AI_ACT"
+updated: "2025-08-24"
+rules:
+  - id: EUAI-ART9-RISK-MGMT-001
+    clause: "Art.9"
+    title: "Risk management system documented and maintained"
+    evaluator: "schema_validate"
+    inputs:
+      file: "compliance/risk_register.yaml"
+      schema_file: "schemas/risk_register.schema.json"
+      coverage_min: 0.9
+    expression: "schema_valid and coverage >= coverage_min"
+    severity: "Major"
+    evidence:
+      collect: ["file_hash", "schema_validation_report"]
+
+  - id: EUAI-ART10-DATA-GOV-001
+    clause: "Art.10"
+    title: "Dataset documentation completeness"
+    evaluator: "file_presence"
+    inputs:
+      file: "data/dataset_card.json"
+      required_json_fields:
+        - "provenance"
+        - "collection_method"
+        - "licensing"
+        - "known_biases"
+        - "preprocessing"
+        - "split_stats"
+    expression: "exists and missing_fields == 0"
+    severity: "Critical"
+    evidence:
+      collect: ["dataset_card_snapshot", "missing_fields_list"]
+
+  - id: EUAI-ART11-TECHDOC-001
+    clause: "Art.11 / Annex IV"
+    title: "Model technical documentation (Annex IV essentials)"
+    evaluator: "file_presence"
+    inputs:
+      file: "model/model_card.json"
+      required_json_fields:
+        - "intended_purpose"
+        - "architecture"
+        - "training_data_refs"
+        - "eval_metrics"
+        - "known_limitations"
+        - "release_version"
+        - "integration_context"
+    expression: "exists and missing_fields <= 1"
+    severity: "Critical"
+    evidence:
+      collect: ["model_card_snapshot", "missing_fields_list"]
