@@ -7,3 +7,5 @@ fastapi
 uvicorn
 jinja2
 weasyprint
+clibuilder
+pytest-cov

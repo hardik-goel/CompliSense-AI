@@ -12,9 +12,9 @@
       "status": "FAIL",
       "context": {
         "schema_valid": true,
-        "coverage": 1.0,
+        "coverage": 0.0,
         "schema_validation_report": "ok",
-        "file_hash": "1847825d62b89fe4ce4ff25e2a92c497ab997da89232a9b73d43aadd82570701",
+        "file_hash": "3d6520811c7261f8c7a8355455d4835068a30ab5b0b8611c33e2c10f913234bf",
         "engine_error": "coverage_min"
       }
     },
