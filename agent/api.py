@@ -20,6 +20,6 @@ def health():
     return {"status": "ok"}
 
 @app.post("/scan")
-def scan(req: ScanReq):
-    rp = load_rulepack(Path(req.pack_path))
-    return run_scan(Path(req.root), iter_rules(rp))
+async def scan_endpoint(root: str, pack: str):
+    results = run_scan(Path(root), iter_rules(load_rulepack(Path(pack))))
+    return results

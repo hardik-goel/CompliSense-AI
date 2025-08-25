@@ -9,3 +9,5 @@ risks:
     mitigation: "Introduce retrieval-augmented grounding."
     owner: "Product Manager"
     status: "in-progress"
+coverage: 1.0
+
