@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Risk Register",
+  "type": "object",
+  "properties": {
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "mitigation", "owner", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "description": { "type": "string" },
+          "mitigation": { "type": "string" },
+          "owner": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  },
+  "required": ["risks"]
+}

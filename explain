@@ -1,0 +1,82 @@
+Code Flow (Step by Step)
+1. CLI Entrypoint (cli.py)
+
+You ran:
+python -m agent.cli scan --root artefacts --pack rulepacks/euai_core_v1.yaml --out out
+
+This calls the scan() command.
+It loads your rulepack (euai_core_v1.yaml), runs run_scan(), saves findings.json, and then calls render_pdf() to produce audit_report.pdf.
+
+2. Rulepack Loading (rulepacks/euai_core_v1.yaml)
+
+The YAML defines 3 rules:
+Art. 9 → Risk Management (schema validation + coverage check)
+Art. 10 → Dataset Card (field presence)
+Art. 11 → Model Card (field presence)
+
+Each has:
+
+inputs → which file to look at (compliance/risk_register.yaml, data/dataset_card.json, model/model_card.json).
+expression → boolean test (e.g. "schema_valid and coverage >= coverage_min").
+severity → Major / Critical.
+
+3. Evaluator Execution (scanner.py)
+
+For each rule:
+_run_evaluator() imports the evaluator (like agent.evaluators.file_presence or schema_validate).
+Evaluator inspects the file (exists?, schema_valid?, missing_fields?, etc.).
+A context dict (ctx) is produced with results.
+
+Example for Art. 10 dataset card:
+
+{
+  "exists": true,
+  "missing_fields": 0,
+  "dataset_card_snapshot": "{...}"
+}
+
+4. Rule Engine (rule_engine.Rule)
+
+The expression is parsed (exists and missing_fields == 0).
+The context dict is evaluated.
+If true → PASS, else → FAIL.
+
+5. Collecting Results
+
+run_scan():
+
+Builds a summary (passed=2, failed=1).
+Returns a JSON-like dict with all rule results.
+Written to out/findings.json.
+
+6. Report Rendering (render_pdf())
+
+Loads Jinja template (audit_report.html.j2).
+Injects results.
+Uses WeasyPrint to convert the rendered HTML → PDF.
+
+Output: audit_report.pdf.
+
+✅ Why Your Report Shows 2 PASS, 1 FAIL
+
+PASS (Art. 10 dataset card)
+File found.
+All 6 required fields present.
+
+expression = exists and missing_fields == 0 → ✅.
+
+PASS (Art. 11 model card)
+File found.
+All 7 required fields present.
+
+expression = exists and missing_fields <= 1 → ✅.
+
+FAIL (Art. 9 risk management)
+File validated against schema successfully (schema_valid: true).
+BUT the rule requires coverage >= coverage_min (0.9).
+
+Your context returned "coverage": 0.0 (likely because the schema validator didn’t compute coverage of required fields).
+Expression schema_valid and coverage >= 0.9 → ❌ fails.
+Hence FAIL with "engine_error": "coverage_min".
+
+👉 So basically: schema validation passed, but your coverage calculation is missing or defaulted to 0.0.

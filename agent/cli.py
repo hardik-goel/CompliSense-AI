@@ -18,7 +18,6 @@ def scan(root, pack, out, pdf):
     root = Path(root); out = Path(out); out.mkdir(parents=True, exist_ok=True)
     rp = load_rulepack(Path(pack))
     results = run_scan(root, iter_rules(rp))
-    # Save JSON
     json_path = out / "findings.json"
     json_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
     click.echo(f"Wrote {json_path}")

@@ -10,6 +10,15 @@ class ScanReq(BaseModel):
     root: str
     pack_path: str
 
+
+@app.get("/")
+def read_root():
+    return {"status": "EU AI Act agent is running!"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/scan")
 def scan(req: ScanReq):
     rp = load_rulepack(Path(req.pack_path))

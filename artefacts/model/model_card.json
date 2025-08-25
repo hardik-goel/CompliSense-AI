@@ -1,0 +1,12 @@
+{
+  "intended_purpose": "Automate customer service responses",
+  "architecture": "Fine-tuned BERT Transformer",
+  "training_data_refs": ["../data/dataset_card.json"],
+  "eval_metrics": {
+    "accuracy": 0.89,
+    "f1_score": 0.85
+  },
+  "known_limitations": "Does not handle sarcasm or code-mixed languages well",
+  "release_version": "1.0.0",
+  "integration_context": "Deployed in customer service chatbot pipeline"
+}

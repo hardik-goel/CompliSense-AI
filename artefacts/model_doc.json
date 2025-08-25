@@ -1,0 +1,10 @@
+{
+  "model_name": "support_bot_v1",
+  "version": "1.0.0",
+  "architecture": "transformer-based BERT fine-tuned on support logs",
+  "performance": {
+    "accuracy": 0.89,
+    "f1_score": 0.85
+  },
+  "limitations": "Fails on slang, sarcasm, and rare languages."
+}

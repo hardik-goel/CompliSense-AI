@@ -1,7 +1,7 @@
 {
   "summary": {
-    "passed": 0,
-    "failed": 3
+    "passed": 2,
+    "failed": 1
   },
   "results": [
     {
@@ -11,9 +11,11 @@
       "severity": "Major",
       "status": "FAIL",
       "context": {
-        "schema_valid": false,
+        "schema_valid": true,
         "coverage": 0.0,
-        "schema_validation_report": "missing data or schema file"
+        "schema_validation_report": "ok",
+        "file_hash": "3d6520811c7261f8c7a8355455d4835068a30ab5b0b8611c33e2c10f913234bf",
+        "engine_error": "coverage_min"
       }
     },
     {
@@ -21,11 +23,13 @@
       "clause": "Art.10",
       "title": "Dataset documentation completeness",
       "severity": "Critical",
-      "status": "FAIL",
+      "status": "PASS",
       "context": {
-        "exists": false,
+        "exists": true,
         "missing_fields": 0,
-        "missing_fields_list": []
+        "missing_fields_list": [],
+        "file_hash": "1a7241cae3173581576301d18d949dabaa6cb4b6507042fd8e93d6aab1b548ca",
+        "dataset_card_snapshot": "{\n  \"provenance\": \"Customer support tickets from 2019\\u20132024\",\n  \"collection_method\": \"Manual annotation by data labelers\",\n  \"licensing\": \"CC-BY-4.0\",\n  \"known_biases\": [\n    \"Mostly English tickets\",\n    \"Overrepresentation of Tier-1 cities\"\n  ],\n  \"preprocessing\": \"Removed PII, tokenized text, normalized casing\",\n  \"split_stats\": {\n    \"train\": 8000,\n    \"validation\": 1000,\n    \"test\": 1000\n  }\n}"
       }
     },
     {
@@ -33,11 +37,13 @@
       "clause": "Art.11 / Annex IV",
       "title": "Model technical documentation (Annex IV essentials)",
       "severity": "Critical",
-      "status": "FAIL",
+      "status": "PASS",
       "context": {
-        "exists": false,
+        "exists": true,
         "missing_fields": 0,
-        "missing_fields_list": []
+        "missing_fields_list": [],
+        "file_hash": "786afdbb5df5454752a5033aa7da005e37fcb4ba21d2f9841e2e4c09d2596711",
+        "model_card_snapshot": "{\n  \"intended_purpose\": \"Automate customer service responses\",\n  \"architecture\": \"Fine-tuned BERT Transformer\",\n  \"training_data_refs\": [\n    \"../data/dataset_card.json\"\n  ],\n  \"eval_metrics\": {\n    \"accuracy\": 0.89,\n    \"f1_score\": 0.85\n  },\n  \"known_limitations\": \"Does not handle sarcasm or code-mixed languages well\",\n  \"release_version\": \"1.0.0\",\n  \"integration_context\": \"Deployed in customer service chatbot pipeline\"\n}"
       }
     }
   ]

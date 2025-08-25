@@ -1,0 +1,11 @@
+risks:
+  - id: R001
+    description: "Model may generate biased responses for underrepresented dialects."
+    mitigation: "Conduct fairness fine-tuning with diverse dataset."
+    owner: "AI Risk Committee"
+    status: "open"
+  - id: R002
+    description: "Model hallucination could mislead customers."
+    mitigation: "Introduce retrieval-augmented grounding."
+    owner: "Product Manager"
+    status: "in-progress"

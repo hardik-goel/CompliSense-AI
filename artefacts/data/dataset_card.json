@@ -1,0 +1,15 @@
+{
+  "provenance": "Customer support tickets from 2019–2024",
+  "collection_method": "Manual annotation by data labelers",
+  "licensing": "CC-BY-4.0",
+  "known_biases": [
+    "Mostly English tickets",
+    "Overrepresentation of Tier-1 cities"
+  ],
+  "preprocessing": "Removed PII, tokenized text, normalized casing",
+  "split_stats": {
+    "train": 8000,
+    "validation": 1000,
+    "test": 1000
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "source": "internal dataset of customer support logs",
+  "bias_checks": ["gender distribution checked", "age balance verified"],
+  "quality_metrics": {
+    "missing_values": 0.02,
+    "duplicates": 0.01
+  }
+}
