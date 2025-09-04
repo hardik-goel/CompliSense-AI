@@ -9,3 +9,5 @@ jinja2
 weasyprint
 clibuilder
 pytest-cov
+pymongo
+python-dotenv

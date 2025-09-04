@@ -1,23 +1,23 @@
+# cli.py
 """
 CLI entrypoint for the EU AI Act local compliance agent.
 Provides commands to run audits against a given project using rulepacks.
 """
 
 import json
+import os
 import click
 from pathlib import Path
 from agent.rules.loader import load_rulepack, iter_rules
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
+from agent.db.mongo import insert_report
+
 
 @click.group()
 def cli():
     """
     Root command group for the EU AI Act local agent.
-
-    This CLI allows users to run scans against a project directory
-    using a rulepack YAML file. The scan produces structured JSON
-    results and optionally renders them into a PDF audit report.
     """
 
 
@@ -30,15 +30,17 @@ def cli():
               help="Directory where output JSON and PDF files will be written.")
 @click.option("--pdf/--no-pdf", default=True,
               help="Toggle PDF rendering of the audit report.")
-def scan(root, pack, out, pdf):
+@click.option("--mongo/--no-mongo", default=False,
+              help="If set, also persist the results into MongoDB.")
+@click.option("--mongo-uri", default=None,
+              help="Override Mongo URI (else MONGO_URI env or localhost).")
+@click.option("--mongo-db", default=None,
+              help="Override Mongo DB name (else MONGO_DB env or 'complisense').")
+@click.option("--mongo-coll", default=None,
+              help="Override Mongo collection (else MONGO_COLLECTION env or 'findings').")
+def scan(root, pack, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
     """
     Run a compliance scan against a project using the given rulepack.
-
-    Args:
-        root (str): Path to the project artefacts root.
-        pack (str): Path to the YAML rulepack file.
-        out (str): Path to the output directory (created if not exists).
-        pdf (bool): Whether to render a PDF report in addition to JSON.
     """
     root = Path(root)
     out = Path(out)
@@ -57,6 +59,25 @@ def scan(root, pack, out, pdf):
         pdf_path = out / "audit_report.pdf"
         render_pdf(results, pdf_path)
         click.echo(f"Wrote {pdf_path}")
+
+    # Optionally persist to Mongo
+    if mongo:
+        # lightweight metadata for queryability
+        metadata = {
+            "pack_id": rp.get("pack_id"),
+            "pack_version": rp.get("version"),
+            "project_root": str(root),
+        }
+        # allow one-off override without changing env
+        if mongo_uri:
+            os.environ["MONGO_URI"] = mongo_uri
+        if mongo_db:
+            os.environ["MONGO_DB"] = mongo_db
+        if mongo_coll:
+            os.environ["MONGO_COLLECTION"] = mongo_coll
+
+        run_id = insert_report(results, metadata)
+        click.echo(f"Inserted into Mongo with run_id={run_id}")
 
 
 if __name__ == "__main__":
