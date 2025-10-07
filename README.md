@@ -148,7 +148,7 @@ open htmlcov/index.html
 Example Run:
 
 ### Run scan
-```python cli.py scan --root artefacts --pack rulepacks/euai_core_v1.yaml --out out```
+```python3 -m agent.cli scan --root artefacts --pack rulepacks/euai_core_v1.yaml --out out```
 
 ## Outputs:
 ### - out/findings.json
@@ -193,14 +193,20 @@ Roadmap
 
 TO RUN:
 
-python3 cli.py scan \
+python3 -m agent.cli scan \
   --root artefacts \
   --pack rulepacks/euai_core_v1.yaml \
   --out out \
   --mongo \
   --mongo-uri mongodb://localhost:27017 \
   --mongo-db complisense \
-  --mongo-coll findings
+  --mongo-coll findings_
+
+fire up mongodb : [EITHER OR ALL]
+
+mongod --config /usr/local/etc/mongod.conf
+mongod
+mongosh
 
 📜 License
 
