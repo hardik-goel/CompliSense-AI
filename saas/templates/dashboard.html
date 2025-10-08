@@ -1,0 +1,411 @@
+<!-- [file name]: saas/templates/dashboard.html (Fixed Redirect Handling) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CompliSense-AI - Compliance Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-card {
+            border: none;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+        }
+        .alert {
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-robot me-2"></i>CompliSense-AI</h1>
+                    <p class="lead">EU AI Act Compliance Management Platform</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-outline-light me-2" onclick="showLogin()">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </button>
+                    <button class="btn btn-light" onclick="showRegister()">
+                        <i class="fas fa-user-plus me-1"></i>Register
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Stats Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                        <h3 id="totalUsers">0</h3>
+                        <p class="text-muted">Total Users</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-project-diagram fa-2x text-success mb-2"></i>
+                        <h3 id="totalProjects">0</h3>
+                        <p class="text-muted">Projects</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-search fa-2x text-warning mb-2"></i>
+                        <h3 id="totalScans">0</h3>
+                        <p class="text-muted">Scans Completed</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-shield-alt fa-2x text-info mb-2"></i>
+                        <h3 id="activeScans">0</h3>
+                        <p class="text-muted">Active Scans</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="feature-card">
+                    <h4><i class="fas fa-download me-2 text-primary"></i>Download Compliance Agent</h4>
+                    <p>Get your customized agent to scan AI systems locally for EU AI Act compliance.</p>
+                    <button class="btn btn-primary" onclick="redirectToDashboard()">
+                        <i class="fas fa-download me-1"></i>Download Agent
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="feature-card">
+                    <h4><i class="fas fa-chart-bar me-2 text-success"></i>View Compliance Reports</h4>
+                    <p>Access detailed compliance reports and analytics for your AI systems.</p>
+                    <button class="btn btn-success" onclick="redirectToDashboard()">
+                        <i class="fas fa-chart-bar me-1"></i>View Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="feature-card">
+                    <h4><i class="fas fa-cogs me-2 text-warning"></i>Configure Scans</h4>
+                    <p>Set up custom compliance scans with specific requirements and rules.</p>
+                    <button class="btn btn-warning" onclick="redirectToDashboard()">
+                        <i class="fas fa-cogs me-1"></i>Configure
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="feature-card">
+                    <h4><i class="fas fa-question-circle me-2 text-info"></i>Get Help</h4>
+                    <p>Need assistance? Contact our support team or check documentation.</p>
+                    <button class="btn btn-info" onclick="getHelp()">
+                        <i class="fas fa-question-circle me-1"></i>Help Center
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login to CompliSense-AI</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <span id="loginSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Register for CompliSense-AI</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="registerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="registerEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Company (Optional)</label>
+                            <input type="text" class="form-control" id="registerCompany">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="registerPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <span id="registerSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            Register
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Show alerts
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.appendChild(alert);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // Check if user is already logged in
+        function checkExistingAuth() {
+            // Check if we have an auth token in localStorage (from previous session)
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                // Verify token is still valid by making a simple API call
+                fetch('/api/health', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Token is valid, redirect to dashboard
+                        window.location.href = '/dashboard';
+                    } else {
+                        // Token invalid, clear it
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('user');
+                    }
+                })
+                .catch(() => {
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user');
+                });
+            }
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/health');
+                const stats = await response.json();
+
+                document.getElementById('totalUsers').textContent = stats.total_users || '0';
+                document.getElementById('totalProjects').textContent = stats.total_projects || '0';
+                document.getElementById('totalScans').textContent = stats.total_scans || '0';
+                document.getElementById('activeScans').textContent = stats.active_scans || '0';
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                // Set default values
+                document.getElementById('totalUsers').textContent = '0';
+                document.getElementById('totalProjects').textContent = '0';
+                document.getElementById('totalScans').textContent = '0';
+                document.getElementById('activeScans').textContent = '0';
+            }
+        }
+
+        // Show login modal
+        function showLogin() {
+            const modal = new bootstrap.Modal(document.getElementById('loginModal'));
+            modal.show();
+        }
+
+        // Show register modal
+        function showRegister() {
+            const modal = new bootstrap.Modal(document.getElementById('registerModal'));
+            modal.show();
+        }
+
+        // Handle login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const spinner = document.getElementById('loginSpinner');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            spinner.classList.remove('d-none');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'  // Important for cookies
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Store token and user info in localStorage as backup
+                    localStorage.setItem('auth_token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    showAlert('Login successful! Redirecting...', 'success');
+
+                    // Close modal and redirect
+                    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+
+                } else {
+                    const error = await response.json();
+                    showAlert(error.detail || 'Login failed', 'danger');
+                }
+            } catch (error) {
+                showAlert('Network error: ' + error.message, 'danger');
+            } finally {
+                spinner.classList.add('d-none');
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Handle register form submission
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const company = document.getElementById('registerCompany').value;
+            const password = document.getElementById('registerPassword').value;
+            const spinner = document.getElementById('registerSpinner');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            spinner.classList.remove('d-none');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        full_name: fullName,
+                        company
+                    }),
+                    credentials: 'include'  // Important for cookies
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Store token and user info in localStorage as backup
+                    localStorage.setItem('auth_token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    showAlert('Registration successful! Redirecting...', 'success');
+
+                    // Close modal and redirect
+                    bootstrap.Modal.getInstance(document.getElementById('registerModal')).hide();
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+
+                } else {
+                    const error = await response.json();
+                    showAlert(error.detail || 'Registration failed', 'danger');
+                }
+            } catch (error) {
+                showAlert('Network error: ' + error.message, 'danger');
+            } finally {
+                spinner.classList.add('d-none');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function redirectToDashboard() {
+            // Simply redirect to dashboard - the server will handle authentication
+            window.location.href = '/dashboard';
+        }
+
+        function getHelp() {
+            showAlert('Contact support at support@complisense-ai.com or check our documentation at docs.complisense-ai.com', 'info');
+        }
+
+        // Load stats and check auth when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            checkExistingAuth();
+        });
+    </script>
+</body>
+</html>

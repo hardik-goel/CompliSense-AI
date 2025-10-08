@@ -25,6 +25,11 @@ Features
 ✅ Extendable — add new rulepacks for other jurisdictions (US, ISO, etc.)
 ✅ Premium Roadmap — remediation guides + auto-fix in GitHub (agentic AI)
 
+This project is divided into two modules. 
+
+TruthModule = The core compliance engine (your existing code)
+ClientModule = The user-facing interface that runs locally on client machines
+
 Architecture
 
                     ┌───────────────────────────────┐
@@ -207,6 +212,81 @@ fire up mongodb : [EITHER OR ALL]
 mongod --config /usr/local/etc/mongod.conf
 mongod
 mongosh
+
+CLIENT JOURNEY:
+1. Client visits your SaaS dashboard (web)
+2. Client configures scan (model path, custom requirements via chat)
+3. Client downloads **customized agent** for their specific scan
+4. Agent runs locally (no data leaves their system)
+5. Results sync back to SaaS dashboard (anonymized metadata only)
+6. Client views beautiful reports in web dashboard
+
+To run the dashboard:
+
+cd saas/app
+python3 main.py
+http://0.0.0.0:8000/
+
+![img.png](img.png)
+
+Building steps for ClientModule (local agent):
+
+1. SaaS Web Dashboard 
+
+- FastAPI Backend (saas/app/main.py)
+  * Web server with CORS support 
+  * Static file serving 
+  * Template rendering 
+  * Basic API endpoints
+
+- Authentication System (saas/app/auth.py)
+  * User registration/login 
+  * JWT token generation 
+  * Protected routes 
+  * Session management
+
+- Web Interface (saas/templates/dashboard.html)
+  - Responsive Bootstrap UI 
+  - Stats dashboard 
+  - Feature cards 
+  - Modal forms
+
+2. Project Management System
+
+   - Create, read, update, delete projects 
+   - Project-specific configurations 
+   - Scan configuration management 
+   - User isolation (users only see their own projects)
+
+3. Agent Generation Service
+
+   - Dynamic agent creation per scan configuration 
+   - Customized main scripts with project-specific settings 
+   - Cross-platform support (Windows, macOS, Linux)
+   - Integration with existing TruthModule
+
+4. Secure Distribution System 
+
+   - Protected download endpoints 
+   - Agent customization based on user/project 
+   - Heartbeat and results reporting 
+   - Status tracking
+
+5. Enhanced User Dashboard
+
+   - Project management interface 
+   - Scan configuration workflow 
+   - Agent download with project selection 
+   - Real-time statistics
+
+Workflow:
+
+- Register/Login
+- Create a project 
+- Configure a scan 
+- Download the customized agent 
+- Run the agent locally
+
 
 📜 License
 
