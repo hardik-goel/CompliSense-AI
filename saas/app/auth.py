@@ -1,24 +1,25 @@
-# [file name]: saas/app/auth.py
+# [file name]: saas/app/auth.py (Fixed Authentication)
 """
-Authentication system for SaaS dashboard
-Handles user registration, login, and session management
+Fixed Authentication system with proper session handling
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import jwt
 import datetime
 from typing import Optional
+import secrets
+import json
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
 
 # In production, use environment variables
-SECRET_KEY = "complisense-secret-key-2024"  # Change this in production!
+SECRET_KEY = "complisense-secret-key-2024"
 ALGORITHM = "HS256"
 
-# Temporary in-memory storage (replace with database)
+# Temporary in-memory storage
 users_db = {}
 sessions_db = {}
 
@@ -41,82 +42,36 @@ class UserResponse(BaseModel):
     full_name: str
     company: Optional[str]
     created_at: str
+    tier: str
 
 
-@router.post("/register", response_model=UserResponse)
-async def register(user_data: UserRegister):
-    """Register a new user"""
-    if user_data.email in users_db:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already exists"
-        )
-
-    # In production, hash the password!
-    user_id = f"user_{len(users_db) + 1}"
-    user = {
-        "id": user_id,
-        "email": user_data.email,
-        "password": user_data.password,  # Hash this in production!
-        "full_name": user_data.full_name,
-        "company": user_data.company,
-        "created_at": datetime.datetime.utcnow().isoformat(),
-        "tier": "free"  # Default to free tier
-    }
-
-    users_db[user_data.email] = user
-
-    return UserResponse(
-        id=user["id"],
-        email=user["email"],
-        full_name=user["full_name"],
-        company=user["company"],
-        created_at=user["created_at"]
-    )
-
-
-@router.post("/login")
-async def login(login_data: UserLogin):
-    """User login and token generation"""
-    user = users_db.get(login_data.email)
-
-    if not user or user["password"] != login_data.password:  # Compare hashed passwords in production
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
-        )
-
-    # Generate JWT token
+def create_jwt_token(user_id: str, email: str) -> str:
+    """Create JWT token for user"""
     token_data = {
-        "sub": user["id"],
-        "email": user["email"],
+        "sub": user_id,
+        "email": email,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
     }
-    token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
 
-    # Store session
-    sessions_db[token] = {
-        "user_id": user["id"],
-        "email": user["email"],
-        "login_time": datetime.datetime.utcnow().isoformat()
-    }
 
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": UserResponse(
-            id=user["id"],
-            email=user["email"],
-            full_name=user["full_name"],
-            company=user["company"],
-            created_at=user["created_at"]
+async def get_current_user(
+        request: Request,
+        credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Get current user from token - fixed version"""
+    try:
+        # Try to get token from Authorization header first
+        token = credentials.credentials
+    except:
+        # Fall back to cookie if no header
+        token = request.cookies.get("access_token")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
         )
-    }
-
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Dependency to get current user from token"""
-    token = credentials.credentials
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -144,13 +99,86 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         )
 
 
+@router.post("/register", response_model=dict)
+async def register(user_data: UserRegister, response: Response):
+    """Register a new user - fixed with cookie setting"""
+    if user_data.email in users_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already exists"
+        )
+
+    # Create user
+    user_id = f"user_{secrets.token_hex(8)}"
+    user = {
+        "id": user_id,
+        "email": user_data.email,
+        "password": user_data.password,
+        "full_name": user_data.full_name,
+        "company": user_data.company,
+        "created_at": datetime.datetime.utcnow().isoformat(),
+        "tier": "free"
+    }
+
+    users_db[user_data.email] = user
+
+    # Generate JWT token
+    token = create_jwt_token(user_id, user_data.email)
+
+    # Set cookie for browser authentication
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=24 * 60 * 60,  # 24 hours
+        expires=24 * 60 * 60,
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": UserResponse(**user)
+    }
+
+
+@router.post("/login", response_model=dict)
+async def login(login_data: UserLogin, response: Response):
+    """User login with cookie setting"""
+    user = users_db.get(login_data.email)
+
+    if not user or user["password"] != login_data.password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    # Generate JWT token
+    token = create_jwt_token(user["id"], user["email"])
+
+    # Set cookie for browser authentication
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=24 * 60 * 60,
+        expires=24 * 60 * 60,
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": UserResponse(**user)
+    }
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    """Logout user by clearing cookie"""
+    response.delete_cookie("access_token")
+    return {"message": "Logged out successfully"}
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     """Get current user information"""
-    return UserResponse(
-        id=current_user["id"],
-        email=current_user["email"],
-        full_name=current_user["full_name"],
-        company=current_user["company"],
-        created_at=current_user["created_at"]
-    )
+    return UserResponse(**current_user)

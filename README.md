@@ -229,6 +229,65 @@ http://0.0.0.0:8000/
 
 ![img.png](img.png)
 
+Building steps for ClientModule (local agent):
+
+1. SaaS Web Dashboard 
+
+- FastAPI Backend (saas/app/main.py)
+  * Web server with CORS support 
+  * Static file serving 
+  * Template rendering 
+  * Basic API endpoints
+
+- Authentication System (saas/app/auth.py)
+  * User registration/login 
+  * JWT token generation 
+  * Protected routes 
+  * Session management
+
+- Web Interface (saas/templates/dashboard.html)
+  - Responsive Bootstrap UI 
+  - Stats dashboard 
+  - Feature cards 
+  - Modal forms
+
+2. Project Management System
+
+   - Create, read, update, delete projects 
+   - Project-specific configurations 
+   - Scan configuration management 
+   - User isolation (users only see their own projects)
+
+3. Agent Generation Service
+
+   - Dynamic agent creation per scan configuration 
+   - Customized main scripts with project-specific settings 
+   - Cross-platform support (Windows, macOS, Linux)
+   - Integration with existing TruthModule
+
+4. Secure Distribution System 
+
+   - Protected download endpoints 
+   - Agent customization based on user/project 
+   - Heartbeat and results reporting 
+   - Status tracking
+
+5. Enhanced User Dashboard
+
+   - Project management interface 
+   - Scan configuration workflow 
+   - Agent download with project selection 
+   - Real-time statistics
+
+Workflow:
+
+- Register/Login
+- Create a project 
+- Configure a scan 
+- Download the customized agent 
+- Run the agent locally
+
+
 📜 License
 
 MIT License TODO
