@@ -287,6 +287,36 @@ Workflow:
 - Download the customized agent 
 - Run the agent locally
 
+Step-by-Step Guide for Clients
+Step 1: Extract and Set Up
+bash
+# Extract the downloaded agent
+unzip complisense_agent_YOUR_SCAN_ID.zip -d complisense_agent
+cd complisense_agent
+
+# Set up the environment (Linux/macOS)
+chmod +x setup_agent.sh
+./setup_agent.sh
+
+# Or on Windows, just double-click: setup_agent.bat
+Step 2: Activate the Environment
+bash
+# Linux/macOS
+source complisense_env/bin/activate
+
+# Windows
+complisense_env\Scripts\activate.bat
+Step 3: Run the Scan (THIS IS THE KEY PART)
+bash
+# Basic scan - replace "/path/to/your/ml/model" with your actual model path
+python3 run_scan.py --project-path /Users/hardikgoel/Downloads/complisense_AI/model_2mb.pkl --output-dir ./scan_results
+Step 4: Find Your Results
+After scanning, check the output directory (default: ./complisense_output or your specified --output-dir) for:
+
+compliance_findings.json - Detailed results
+
+scan_summary.txt - Summary report
+
 
 📜 License
 
