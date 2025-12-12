@@ -317,6 +317,9 @@ compliance_findings.json - Detailed results
 
 scan_summary.txt - Summary report
 
+Starting uvicorn server for flask [After implementing JWT and other security considerations relating to pem keys]:
+
+uvicorn server.saas_api:app --reload --port 8000
 
 📜 License
 
