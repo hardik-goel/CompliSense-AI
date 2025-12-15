@@ -368,6 +368,12 @@ New concept
 
 Each rule returns signals, not just pass/fail.
 
+Rebuilding app:
+pyinstaller --onefile --windowed --name CompliSenseAgent agent/agent_ui.py
+zip -r CompliSenseAgent-macos.zip CompliSenseAgent.app
+
+if you want your dev to bypass apple app run, 
+xattr -dr com.apple.quarantine CompliSenseAgent.app
 
 📜 License
 

@@ -5,40 +5,76 @@
   <title>EU AI Act Audit Report</title>
   <style>
     body { font: 14px/1.5 system-ui, sans-serif; color: #222; }
-    h1, h2 { margin-bottom: 0.2rem; }
+    h1, h2 { margin-bottom: 0.4rem; }
     table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
     th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
     th { background: #f5f5f5; }
     .PASS { color: #157347; font-weight: 700; }
     .FAIL { color: #b02a37; font-weight: 700; }
+    .LOW { color: #157347; }
+    .MEDIUM { color: #fd7e14; }
+    .HIGH { color: #b02a37; font-weight: 700; }
     .small { color: #666; font-size: 12px; }
   </style>
 </head>
 <body>
-  <h1>EU AI Act Audit Report</h1>
-  <div class="small">Generated: {{ now }}</div>
-  <h2>Summary</h2>
-  <p>Passed: {{ summary.passed }} &nbsp; Failed: {{ summary.failed }}</p>
 
-  <h2>Findings</h2>
-  <table>
-    <thead>
-      <tr><th>Rule</th><th>Clause</th><th>Severity</th><th>Status</th><th>Details</th></tr>
-    </thead>
-    <tbody>
-      {% for item in results %}
-      <tr>
-        <td>{{ item.title }}<br/><span class="small">{{ item.rule_id }}</span></td>
-        <td>{{ item.clause }}</td>
-        <td>{{ item.severity }}</td>
-        <td class="{{ item.status }}">{{ item.status }}</td>
-        <td><pre>{{ (item.context | tojson(indent=2)) }}</pre></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<h1>EU AI Act Audit Report</h1>
+<div class="small">Generated: {{ now }}</div>
 
-  <h2>Disclaimer</h2>
-  <p class="small">This automated assessment is advisory, based on artifacts available at scan time. It does not constitute legal advice.</p>
+<h2>Summary</h2>
+<p>
+Passed: {{ summary.passed }} &nbsp;
+Failed: {{ summary.failed }}
+</p>
+
+<h2>Findings</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Rule</th>
+      <th>Clause</th>
+      <th>Severity</th>
+      <th>Status</th>
+      <th>Confidence</th>
+      <th>Risk</th>
+      <th>Remediation</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in results %}
+    <tr>
+      <td>
+        {{ item.title }}
+        <div class="small">{{ item.rule_id }}</div>
+      </td>
+      <td>{{ item.clause }}</td>
+      <td>{{ item.severity }}</td>
+      <td class="{{ item.status }}">{{ item.status }}</td>
+      <td>{{ item.confidence }}%</td>
+      <td class="{{ item.risk }}">{{ item.risk }}</td>
+      <td>
+        {% if item.remediation %}
+        <ul>
+          {% for r in item.remediation %}
+          <li>{{ r }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        —
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Disclaimer</h2>
+<p class="small">
+This automated assessment is advisory and based on artifacts available at scan time.
+It does not constitute legal advice.
+</p>
+
 </body>
 </html>
