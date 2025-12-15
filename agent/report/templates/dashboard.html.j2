@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <title>CompliSense AI – Compliance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui; margin: 2rem; }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+
+<h1>EU AI Act Compliance Dashboard</h1>
+
+<canvas id="summaryChart" width="400" height="200"></canvas>
+
+<script>
+const passed = {{ summary.passed }};
+const failed = {{ summary.failed }};
+
+new Chart(document.getElementById('summaryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Passed', 'Failed'],
+    datasets: [{
+      data: [passed, failed],
+      backgroundColor: ['#198754', '#dc3545']
+    }]
+  }
+});
+</script>
+
+<h2>Detailed Findings</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Rule</th>
+  <th>Clause</th>
+  <th>Severity</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+{% for r in results %}
+<tr>
+  <td>{{ r.rule_id }}</td>
+  <td>{{ r.clause }}</td>
+  <td>{{ r.severity }}</td>
+  <td class="{{ 'pass' if r.status == 'PASS' else 'fail' }}">{{ r.status }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<p style="margin-top:2rem;font-size:12px;color:#666;">
+This automated assessment is advisory and does not constitute legal advice.
+</p>
+
+</body>
+</html>

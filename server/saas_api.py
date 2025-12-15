@@ -1,12 +1,16 @@
 # server/saas_api.py
 from fastapi import FastAPI, Header, HTTPException, Request
 import uvicorn
+from fastapi.staticfiles import StaticFiles
+
 from agent.rules.loader import load_rulepack
 from agent.db.mongo import insert_report, get_mongo_client
 from typing import Dict, Any
 import os, json, pathlib, jwt, logging
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+from server.downloads import router as downloads_router
+
 
 app = FastAPI(title="CompliSense SaaS API (dev-friendly)")
 
@@ -15,6 +19,9 @@ logging.basicConfig(level=logging.INFO)
 
 # Simple install codes map (dev/demo only)
 INSTALL_CODES = {"one-time-install-123": "client-001"}
+
+app.include_router(downloads_router)
+app.mount("/", StaticFiles(directory="server/static", html=True), name="static")
 
 # Helper: read allowed static token(s) from env at runtime
 def get_allowed_static_tokens():
@@ -124,3 +131,4 @@ async def results_endpoint(request: Request, authorization: str = Header(...)):
 
     run_id = insert_report(body, metadata=metadata)
     return {"status": "ok", "run_id": run_id}
+

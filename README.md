@@ -349,6 +349,25 @@ What client will choose as input:
  │   ├── config.yaml
 
 
+run (Dev testing): 
+
+python3 -m agent.agent_ui
+
+Confidence Scoring Framework (0–100%)
+Core idea
+
+Every EU AI obligation gets:
+
+Evidence signals
+
+Weights
+
+Confidence score
+
+New concept
+
+Each rule returns signals, not just pass/fail.
+
 
 📜 License
 
