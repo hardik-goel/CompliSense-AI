@@ -52,3 +52,16 @@ rules:
     severity: "Critical"
     evidence:
       collect: ["model_card_snapshot", "missing_fields_list"]
+  - id: EUAI-ART11-TECHDOC-002
+    clause: "Art.11 / Annex IV"
+    title: "Model technical documentation coverage"
+    evaluator: "techdoc_coverage"
+    inputs:
+      explicit_files:
+        - "model/model_card.json"
+      implicit_evaluators:
+        - "model_introspect"
+    thresholds:
+      pass: 0.8
+      partial: 0.4
+    expression: "coverage_score >= 0.7"

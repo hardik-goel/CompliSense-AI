@@ -1,0 +1,44 @@
+{
+  "summary": {
+    "passed": 0,
+    "failed": 3
+  },
+  "results": [
+    {
+      "rule_id": "EUAI-ART9-RISK-MGMT-001",
+      "clause": "Art.9",
+      "title": "Risk management system documented and maintained",
+      "severity": "Major",
+      "status": "FAIL",
+      "context": {
+        "schema_valid": false,
+        "coverage": 0.0,
+        "schema_validation_report": "missing data or schema file"
+      }
+    },
+    {
+      "rule_id": "EUAI-ART10-DATA-GOV-001",
+      "clause": "Art.10",
+      "title": "Dataset documentation completeness",
+      "severity": "Critical",
+      "status": "FAIL",
+      "context": {
+        "exists": false,
+        "missing_fields": 0,
+        "missing_fields_list": []
+      }
+    },
+    {
+      "rule_id": "EUAI-ART11-TECHDOC-001",
+      "clause": "Art.11 / Annex IV",
+      "title": "Model technical documentation (Annex IV essentials)",
+      "severity": "Critical",
+      "status": "FAIL",
+      "context": {
+        "exists": false,
+        "missing_fields": 0,
+        "missing_fields_list": []
+      }
+    }
+  ]
+}
