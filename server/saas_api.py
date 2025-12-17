@@ -41,14 +41,6 @@ class IssueReq(BaseModel):
 
 DEV_AUTH_SECRET = os.getenv("DEV_AUTH_SECRET", None)  # optional; if set we'll issue HS256 tokens
 
-@app.get("/")
-def root():
-    return {"status": "CompliSense SaaS API running", "version": "0.1.0"}
-
-@app.get("/", response_class=HTMLResponse)
-def ui():
-    return pathlib.Path("server/static/app.html").read_text()
-
 @app.post("/auth/issue")
 def issue(req: IssueReq):
     """

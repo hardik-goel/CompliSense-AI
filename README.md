@@ -320,7 +320,7 @@ scan_summary.txt - Summary report
 Starting uvicorn server for flask [After implementing JWT and other security considerations relating to pem keys]:
 
 export ADMIN_API_TOKEN="dev-token-123" [MAYBE Optional]
-uvicorn server.saas_api:app --reload --port 8000
+uvicorn server.saas_api:app --reload --port 8080
 
 building agent:
 
@@ -329,6 +329,7 @@ pyinstaller \
   --windowed \
   --name CompliSenseAgent \
   agent/agent_ui.py
+
 
 running agent:
 

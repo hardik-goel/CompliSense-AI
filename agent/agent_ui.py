@@ -37,12 +37,28 @@ class CompliSenseApp:
         frame.pack(fill="x", padx=30, pady=10)
 
         # Model selector
-        ttk.Label(frame, text="AI / ML Project Folder").pack(anchor="w")
+        ttk.Label(
+            frame,
+            text="AI / ML Project Folder\n"
+                 "Choose the folder containing your model (.pkl/.onnx), "
+                 "training code, or any available artifacts.",
+            wraplength=420,
+            justify="left"
+        ).pack(anchor="w")
         ttk.Entry(frame, textvariable=self.model_path).pack(fill="x")
         ttk.Button(frame, text="Browse", command=self.choose_model).pack(pady=5)
 
         # Output selector
-        ttk.Label(frame, text="Output Folder").pack(anchor="w", pady=(10, 0))
+        ttk.Label(
+            frame,
+            text="Output Folder\n"
+                 "Reports will be saved here:\n"
+                 "• audit_report.pdf\n"
+                 "• dashboard.html\n"
+                 "• findings.json",
+            wraplength=420,
+            justify="left"
+        ).pack(anchor="w", pady=(10, 0))
         ttk.Entry(frame, textvariable=self.out_path).pack(fill="x")
         ttk.Button(frame, text="Browse", command=self.choose_output).pack(pady=5)
 
@@ -65,27 +81,12 @@ class CompliSenseApp:
         ).pack(pady=10)
 
     def choose_model(self):
-        messagebox.showinfo(
-            "Select AI/ML Folder",
-            "Select the folder containing your AI/ML model.\n\n"
-            "This may include:\n"
-            "• .pkl / .onnx / model files\n"
-            "• training scripts\n"
-            "• logs or documentation"
-        )
-        path = filedialog.askdirectory()
+        path = filedialog.askdirectory(title="Select AI / ML Project Folder")
         if path:
             self.model_path.set(path)
 
     def choose_output(self):
-        messagebox.showinfo(
-            "Select Output Folder",
-            "Select a folder where reports will be generated:\n\n"
-            "• audit_report.pdf\n"
-            "• dashboard.html\n"
-            "• findings.json"
-        )
-        path = filedialog.askdirectory()
+        path = filedialog.askdirectory(title="Select Output Folder")
         if path:
             self.out_path.set(path)
 
