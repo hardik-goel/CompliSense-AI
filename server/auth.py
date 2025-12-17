@@ -1,10 +1,16 @@
 # server/auth.py
+from functools import wraps
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import jwt
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
+
+from requests import Request
+
+from saas.app.auth import get_current_user
 
 app = FastAPI()
 
@@ -34,3 +40,19 @@ def issue_token(req: IssueRequest):
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm="RS256")
     return {"access_token": token, "token_type": "bearer", "expires_in": 3600}
+
+def require_auth(f):
+    """Decorator to require authentication"""
+    @wraps(f)
+    async def decorated_function(request: Request, *args, **kwargs):
+        try:
+            user = await get_current_user(request)
+            return await f(request, user=user, *args, **kwargs)
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Authentication error: {str(e)}"
+            )
+    return decorated_function

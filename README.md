@@ -371,6 +371,7 @@ Each rule returns signals, not just pass/fail.
 
 Rebuilding app:
 pyinstaller --onefile --windowed --name CompliSenseAgent agent/agent_ui.py
+or nohup ./build_macos_app.sh & 
 zip -r CompliSenseAgent-macos.zip CompliSenseAgent.app
 
 if you want your dev to bypass apple app run, 

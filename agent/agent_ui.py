@@ -137,10 +137,47 @@ class CompliSenseApp:
         self.status.set("Error occurred")
         messagebox.showerror("Error", str(e))
 
+    def guided_start(self):
+        # Step 1: ask for input folder
+        messagebox.showinfo(
+            "Select AI / ML Model Folder",
+            "Please select the folder containing your AI/ML model.\n\n"
+            "This folder may contain:\n"
+            "• .pkl / .onnx / model files\n"
+            "• training scripts\n"
+            "• logs or documentation"
+        )
+
+        model = filedialog.askdirectory(title="Select AI / ML Model Folder")
+        if not model:
+            self.status.set("Cancelled.")
+            return
+        self.model_path.set(model)
+
+        # Step 2: ask for output folder
+        messagebox.showinfo(
+            "Select Output Folder",
+            "Please select a folder where compliance results will be saved.\n\n"
+            "Generated files:\n"
+            "• audit_report.pdf\n"
+            "• dashboard.html\n"
+            "• findings.json"
+        )
+
+        out = filedialog.askdirectory(title="Select Output Folder")
+        if not out:
+            self.status.set("Cancelled.")
+            return
+        self.out_path.set(out)
+
+        # Step 3: auto-run
+        self.start_scan()
+
 
 def run():
     root = tk.Tk()
     app = CompliSenseApp(root)
+    root.after(300, app.guided_start)
     root.mainloop()
 
 

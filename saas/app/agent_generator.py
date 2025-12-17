@@ -358,4 +358,18 @@ pause
 
 
 # Singleton instance
-agent_generator = AgentGenerator(Path("../../agent"))  # Path to your existing TruthModule
+# At the end of agent_generator.py
+
+# Determine agent path dynamically
+if os.getenv("AGENT_BASE_PATH"):
+    base_path = Path(os.getenv("AGENT_BASE_PATH"))
+else:
+    # Try to find agent directory relative to this file
+    current_dir = Path(__file__).parent
+    base_path = current_dir.parent.parent / "agent"
+
+    # If not found, use current directory
+    if not base_path.exists():
+        base_path = current_dir
+
+agent_generator = AgentGenerator(base_path)
