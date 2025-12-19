@@ -1,8 +1,65 @@
-<h3>Download your private compliance agent</h3>
-<p>
-Run EU AI Act compliance checks locally — no data upload required.
-</p>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>CompliSense AI</title>
+  <style>
+    body { margin:0; font-family:system-ui; background:#0f172a; color:#e5e7eb }
+    nav { display:flex; gap:20px; padding:16px; background:#020617 }
+    nav a { color:#38bdf8; text-decoration:none; font-weight:600 }
+    .view { padding:32px }
+    button {
+      background:#38bdf8; color:#020617;
+      padding:10px 18px; border:none;
+      border-radius:6px; font-weight:600; cursor:pointer;
+    }
+    pre { background:#020617; padding:16px; border-radius:6px }
+  </style>
+</head>
+<body>
 
-<a href="/download/agent">
-  <button>Download CompliSense Agent</button>
-</a>
+<nav>
+  <a href="#" onclick="go('home')">Home</a>
+  <a href="#" onclick="go('rulepacks')">Rulepacks</a>
+  <a href="#" onclick="go('download')">Download Agent</a>
+  <a href="#" onclick="go('runs')">Uploaded Runs</a>
+</nav>
+
+<div class="view" id="view"></div>
+
+<script>
+function go(page) {
+  if (page === 'home') {
+    view.innerHTML = `
+      <h1>CompliSense AI</h1>
+      <p>Privacy-first EU AI Act compliance scanning.</p>
+      <button onclick="go('download')">Download Agent</button>
+    `;
+  }
+
+  if (page === 'rulepacks') {
+    fetch('/rulepacks/latest')
+      .then(r => r.json())
+      .then(d => view.innerHTML = '<h2>Rulepack</h2><pre>' + JSON.stringify(d, null, 2) + '</pre>');
+  }
+
+  if (page === 'download') {
+    view.innerHTML = `
+      <h2>Download Private Agent</h2>
+      <p>Runs locally. No data upload.</p>
+      <a href="/download/agent"><button>Download</button></a>
+    `;
+  }
+
+  if (page === 'runs') {
+    view.innerHTML = `
+      <h2>Uploaded Summaries</h2>
+      <p>Check MongoDB / dashboard backend for results.</p>
+    `;
+  }
+}
+go('home');
+</script>
+
+</body>
+</html>

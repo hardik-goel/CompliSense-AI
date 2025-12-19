@@ -1,10 +1,6 @@
-def infer_from_model_signals(signals: dict):
-    """
-    Placeholder for local LLM inference.
-    """
-    if signals.get("framework") == "sklearn":
-        return {
-            "likely_use": "tabular classification/regression",
-            "possible_risks": ["bias", "data leakage"]
-        }
-    return {}
+def infer(signals):
+    return {
+        "likely_use": "classification",
+        "possible_risks": ["bias", "data leakage"],
+        "recommended_docs": ["model card", "data card"]
+    }

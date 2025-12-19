@@ -320,7 +320,7 @@ scan_summary.txt - Summary report
 Starting uvicorn server for flask [After implementing JWT and other security considerations relating to pem keys]:
 
 export ADMIN_API_TOKEN="dev-token-123" [MAYBE Optional]
-uvicorn server.saas_api:app --reload --port 8000
+uvicorn server.saas_api:app --reload --port 8080
 
 building agent:
 
@@ -329,6 +329,7 @@ pyinstaller \
   --windowed \
   --name CompliSenseAgent \
   agent/agent_ui.py
+
 
 running agent:
 
@@ -368,6 +369,21 @@ New concept
 
 Each rule returns signals, not just pass/fail.
 
+rm -rf build dist
+
+Rebuilding app:
+
+
+pyinstaller --onefile --windowed --name CompliSenseAgent agent/agent_ui.py
+or pyinstaller CompliSenseAgent.spec
+
+zip -r CompliSenseAgent-macos.zip CompliSenseAgent.app
+
+if you want your dev to bypass apple app run, 
+xattr -dr com.apple.quarantine CompliSenseAgent.app
+
+issue in signing the app for now, therefore open through this:
+./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
 
 📜 License
 

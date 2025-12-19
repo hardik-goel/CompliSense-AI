@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Header, HTTPException, Request
 import uvicorn
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 
 from agent.rules.loader import load_rulepack
 from agent.db.mongo import insert_report, get_mongo_client
@@ -20,8 +21,6 @@ logging.basicConfig(level=logging.INFO)
 # Simple install codes map (dev/demo only)
 INSTALL_CODES = {"one-time-install-123": "client-001"}
 
-app.include_router(downloads_router)
-app.mount("/", StaticFiles(directory="server/static", html=True), name="static")
 
 # Helper: read allowed static token(s) from env at runtime
 def get_allowed_static_tokens():
@@ -41,10 +40,6 @@ class IssueReq(BaseModel):
     install_code: str
 
 DEV_AUTH_SECRET = os.getenv("DEV_AUTH_SECRET", None)  # optional; if set we'll issue HS256 tokens
-
-@app.get("/")
-def root():
-    return {"status": "CompliSense SaaS API running", "version": "0.1.0"}
 
 @app.post("/auth/issue")
 def issue(req: IssueReq):
@@ -132,3 +127,5 @@ async def results_endpoint(request: Request, authorization: str = Header(...)):
     run_id = insert_report(body, metadata=metadata)
     return {"status": "ok", "run_id": run_id}
 
+app.include_router(downloads_router)
+app.mount("/", StaticFiles(directory="server/static", html=True), name="static")

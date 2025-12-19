@@ -32,6 +32,7 @@ new Chart(document.getElementById('summaryChart'), {
     }]
   }
 });
+const heatmapData = {{ heatmap | tojson }}
 </script>
 
 <h2>Detailed Findings</h2>
@@ -51,7 +52,16 @@ new Chart(document.getElementById('summaryChart'), {
   <td>{{ r.rule_id }}</td>
   <td>{{ r.clause }}</td>
   <td>{{ r.severity }}</td>
-  <td class="{{ 'pass' if r.status == 'PASS' else 'fail' }}">{{ r.status }}</td>
+  <td class="{{ 'pass' if r.status == 'PASS' else 'fail' }}">
+    {{ r.status }}
+    <br/>
+    <button onclick="toggleExplain('{{ r.rule_id }}')">Explain</button>
+  </td>
+</tr>
+<tr id="explain-{{ r.rule_id }}" style="display:none;">
+  <td colspan="4">
+    <pre>{{ r.context | tojson(indent=2) }}</pre>
+  </td>
 </tr>
 {% endfor %}
 </tbody>
@@ -60,6 +70,11 @@ new Chart(document.getElementById('summaryChart'), {
 <p style="margin-top:2rem;font-size:12px;color:#666;">
 This automated assessment is advisory and does not constitute legal advice.
 </p>
-
+<script>
+function toggleExplain(ruleId) {
+  const el = document.getElementById("explain-" + ruleId);
+  el.style.display = (el.style.display === "none") ? "table-row" : "none";
+}
+</script>
 </body>
 </html>
