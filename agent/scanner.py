@@ -83,7 +83,8 @@ def run_scan(
             "rule_id": r["id"],
             "clause": r["clause"],
             "title": r["title"],
-            "severity": r["severity"],
+            # agent/scanner.py
+            "severity": r.get("severity", "unknown"),  # Use a default if missing
             "status": status,
             "confidence": confidence,
             "risk": risk,

@@ -10,6 +10,7 @@ from agent.saas_upload import build_summary_payload, upload_summary
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
 from agent.scoring.heatmap import build_heatmap
+from agent.utils.resources import resource_path
 
 
 def run_agent(
@@ -26,7 +27,11 @@ def run_agent(
     if progress_callback:
         progress_callback("Loading rulepack…")
 
-    rp = load_rulepack(Path(rulepack_path))
+    rp = load_rulepack(resource_path(rulepack_path))
+
+    if progress_callback:
+        progress_callback("Scanning model directory…")
+
     rules = iter_rules(rp)
 
     if progress_callback:
@@ -35,9 +40,11 @@ def run_agent(
     # ---- RUN SCAN ----
     results = run_scan(
         root,
-        rules,
-        llm_enabled=config.llm_enabled
+        rules
     )
+
+    if progress_callback:
+        progress_callback("Writing findings.json…")
 
     # ---- AUDIT TRAIL ----
     audit = {
@@ -50,6 +57,9 @@ def run_agent(
         json.dumps(audit, indent=2),
         encoding="utf-8"
     )
+
+    if progress_callback:
+        progress_callback("Generating audit_report.pdf…")
 
     # ---- SAVE JSON ----
     findings_path = out / "findings.json"
