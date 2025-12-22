@@ -5,17 +5,22 @@ and aggregates audit-ready results.
 """
 
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable, Optional
 from importlib import import_module
-from rule_engine import Rule
+import json
 
+from rule_engine import Rule
 from agent.scoring.confidence import compute_confidence
 from agent.scoring.risk import classify_risk
 from agent.remediation.generator import generate_remediation
 from agent.inference.llm import infer
 
 
-def _run_evaluator(root: Path, evaluator: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
+def _run_evaluator(
+    root: Path,
+    evaluator: str,
+    inputs: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Dynamically load and run an evaluator.
     """
@@ -26,27 +31,46 @@ def _run_evaluator(root: Path, evaluator: str, inputs: Dict[str, Any]) -> Dict[s
 def run_scan(
     root: Path,
     rules: List[Dict[str, Any]],
-    llm_enabled: bool = False
+    llm_enabled: bool = False,
+    progress_cb: Optional[Callable[[int, int, str], None]] = None
 ) -> Dict[str, Any]:
     """
     Execute all rules against a given model/artifact directory.
+
+    progress_cb(done, total, rule_id) will be called after each rule
+    so UI can update progress bar.
     """
 
-    results = []
-    counts = {"passed": 0, "failed": 0}
+    results: List[Dict[str, Any]] = []
 
-    for r in rules:
+    counts = {
+        "passed": 0,
+        "failed": 0,
+        "error": 0
+    }
+
+    total_rules = len(rules)
+
+    for idx, r in enumerate(rules, start=1):
         ctx: Dict[str, Any] = {}
 
-        # ---------- Run evaluator ----------
+        # -----------------------------
+        # Run evaluator
+        # -----------------------------
         try:
-            ctx = _run_evaluator(root, r["evaluator"], r.get("inputs", {}))
+            ctx = _run_evaluator(
+                root=root,
+                evaluator=r["evaluator"],
+                inputs=r.get("inputs", {})
+            )
         except Exception as e:
             ctx = {
                 "engine_error": f"Evaluator failed: {str(e)}"
             }
 
-        # ---------- Evaluate rule expression ----------
+        # -----------------------------
+        # Evaluate rule expression
+        # -----------------------------
         expr = r.get("expression", "False")
         rule = Rule(expr)
 
@@ -56,35 +80,56 @@ def run_scan(
             ok = False
             ctx["expression_error"] = str(e)
 
-        status = "PASS" if ok else "FAIL"
-        counts["passed" if ok else "failed"] += 1
+        # -----------------------------
+        # Final status (IMPORTANT)
+        # -----------------------------
+        if "engine_error" in ctx:
+            status = "ERROR"
+            counts["error"] += 1
+        elif ok:
+            status = "PASS"
+            counts["passed"] += 1
+        else:
+            status = "FAIL"
+            counts["failed"] += 1
 
-        # ---------- Confidence & risk ----------
+        # -----------------------------
+        # Confidence & risk
+        # -----------------------------
         signals = ctx.get("signals", {})
         weights = r.get("weights", {})
 
         if weights:
             confidence = compute_confidence(signals, weights)
         else:
-            confidence = 100 if ok else 30  # fallback
+            confidence = 100 if status == "PASS" else 30
 
         risk = classify_risk(confidence)
 
-        # ---------- Optional LLM inference ----------
+        # -----------------------------
+        # Optional LLM inference
+        # -----------------------------
         if confidence < 50 and llm_enabled:
             ctx["llm_inference"] = infer(signals)
 
-        # ---------- Remediation ----------
+        # -----------------------------
+        # Remediation
+        # -----------------------------
         remediation = []
-        if status != "PASS":
-            remediation = generate_remediation(r["id"], confidence)
+        if status in ("FAIL", "ERROR"):
+            remediation = generate_remediation(
+                r["id"],
+                confidence
+            )
 
+        # -----------------------------
+        # Collect result
+        # -----------------------------
         results.append({
             "rule_id": r["id"],
-            "clause": r["clause"],
-            "title": r["title"],
-            # agent/scanner.py
-            "severity": r.get("severity", "unknown"),  # Use a default if missing
+            "clause": r.get("clause", "N/A"),
+            "title": r.get("title", r["id"]),
+            "severity": r.get("severity", "unknown"),
             "status": status,
             "confidence": confidence,
             "risk": risk,
@@ -92,7 +137,25 @@ def run_scan(
             "context": ctx
         })
 
-    return {
+        # -----------------------------
+        # Progress callback (UI hook)
+        # -----------------------------
+        if progress_cb:
+            progress_cb(idx, total_rules, r["id"])
+
+    # -----------------------------
+    # Write output to disk (FIX)
+    # -----------------------------
+    output_dir = root / "complisense_output"
+    output_dir.mkdir(exist_ok=True)
+
+    output = {
         "summary": counts,
         "results": results
     }
+
+    (output_dir / "results.json").write_text(
+        json.dumps(output, indent=2)
+    )
+
+    return output

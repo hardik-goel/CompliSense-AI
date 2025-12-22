@@ -19,7 +19,6 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.0.0</string>
 	<key>NSHighResolutionCapable</key>
-	<key>LSUIElement</key>
 	<true/>
 </dict>
 </plist>

@@ -2,11 +2,11 @@
 <html>
 <head>
   <title>CompliSense AI – Compliance Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: system-ui; margin: 2rem; }
     .pass { color: green; font-weight: bold; }
     .fail { color: red; font-weight: bold; }
+    .error { color: orange; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
     th, td { border: 1px solid #ddd; padding: 8px; }
     th { background: #f5f5f5; }
@@ -14,28 +14,12 @@
 </head>
 <body>
 
-<h1>EU AI Act Compliance Dashboard</h1>
+<h1>EU AI Act Compliance Results</h1>
 
-<canvas id="summaryChart" width="400" height="200"></canvas>
-
-<script>
-const passed = {{ summary.passed }};
-const failed = {{ summary.failed }};
-
-new Chart(document.getElementById('summaryChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Passed', 'Failed'],
-    datasets: [{
-      data: [passed, failed],
-      backgroundColor: ['#198754', '#dc3545']
-    }]
-  }
-});
-const heatmapData = {{ heatmap | tojson }}
-</script>
-
-<h2>Detailed Findings</h2>
+<p>
+This assessment is automated and advisory.
+Errors indicate rules that could not be evaluated, not non-compliance.
+</p>
 
 <table>
 <thead>
@@ -47,34 +31,50 @@ const heatmapData = {{ heatmap | tojson }}
 </tr>
 </thead>
 <tbody>
+
 {% for r in results %}
 <tr>
   <td>{{ r.rule_id }}</td>
   <td>{{ r.clause }}</td>
   <td>{{ r.severity }}</td>
-  <td class="{{ 'pass' if r.status == 'PASS' else 'fail' }}">
+  <td class="{{ r.status | lower }}">
     {{ r.status }}
     <br/>
-    <button onclick="toggleExplain('{{ r.rule_id }}')">Explain</button>
+    <button onclick="toggle('{{ r.rule_id }}')">Explain</button>
   </td>
 </tr>
-<tr id="explain-{{ r.rule_id }}" style="display:none;">
+
+<tr id="exp-{{ r.rule_id }}" style="display:none;">
   <td colspan="4">
-    <pre>{{ r.context | tojson(indent=2) }}</pre>
+    {% if r.status == "ERROR" %}
+      <b>Why this rule was not evaluated</b>
+      <ul>
+        <li>Technical error occurred during evaluation</li>
+        <li>This does NOT confirm non-compliance</li>
+        <li>Manual review recommended</li>
+      </ul>
+      <pre>{{ r.context | tojson(indent=2) }}</pre>
+    {% else %}
+      <b>Evaluation context</b>
+      <pre>{{ r.context | tojson(indent=2) }}</pre>
+    {% endif %}
   </td>
 </tr>
 {% endfor %}
+
 </tbody>
 </table>
 
 <p style="margin-top:2rem;font-size:12px;color:#666;">
 This automated assessment is advisory and does not constitute legal advice.
 </p>
+
 <script>
-function toggleExplain(ruleId) {
-  const el = document.getElementById("explain-" + ruleId);
-  el.style.display = (el.style.display === "none") ? "table-row" : "none";
+function toggle(id) {
+  const el = document.getElementById("exp-" + id);
+  el.style.display = el.style.display === "none" ? "table-row" : "none";
 }
 </script>
+
 </body>
 </html>

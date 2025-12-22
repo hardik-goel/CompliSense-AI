@@ -65,3 +65,10 @@ rules:
       pass: 0.8
       partial: 0.4
     expression: "coverage_score >= 0.7"
+  - id: EUAI-ART9-RISK-MGMT-001
+    expression: exists
+    target: risk_management_plan
+  - id: EUAI-ART10-DATA-GOV-001
+    expression: exists
+    target: non_existing_field
+
