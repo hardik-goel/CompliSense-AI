@@ -21,3 +21,5 @@ pyJWT
 requests
 pyinstaller
 cryptography
+pillow
+imgkit

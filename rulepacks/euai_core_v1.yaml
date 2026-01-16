@@ -15,6 +15,10 @@ rules:
     severity: "Major"
     evidence:
       collect: ["file_hash", "schema_validation_report"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
 
   - id: EUAI-ART10-DATA-GOV-001
     clause: "Art.10"
@@ -33,6 +37,10 @@ rules:
     severity: "Critical"
     evidence:
       collect: ["dataset_card_snapshot", "missing_fields_list"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
 
   - id: EUAI-ART11-TECHDOC-001
     clause: "Art.11 / Annex IV"
@@ -52,6 +60,10 @@ rules:
     severity: "Critical"
     evidence:
       collect: ["model_card_snapshot", "missing_fields_list"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
   - id: EUAI-ART11-TECHDOC-002
     clause: "Art.11 / Annex IV"
     title: "Model technical documentation coverage"
@@ -65,3 +77,7 @@ rules:
       pass: 0.8
       partial: 0.4
     expression: "coverage_score >= 0.7"
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+

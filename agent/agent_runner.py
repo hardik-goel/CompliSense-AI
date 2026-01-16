@@ -5,6 +5,11 @@ import json
 from agent.audit.trail import hash_directory
 from agent.config import AgentConfig
 from agent.report.dashboard import render_dashboard
+from agent.report.exec_pdf import export_exec_pdf
+from agent.report.export import export_dashboard
+from agent.report.history import load_runs, compare_runs
+from agent.report.screenshot import export_dashboard_images
+from agent.report.trends import build_trends
 from agent.rules.loader import load_rulepack, iter_rules
 from agent.saas_upload import build_summary_payload, upload_summary
 from agent.scanner import run_scan
@@ -21,26 +26,30 @@ def run_agent(
     config: AgentConfig = AgentConfig()
 ):
     root = Path(model_root)
-    out = Path(out_dir)
+    run_id = datetime.utcnow().strftime("run_%Y%m%dT%H%M%S")
+    out = Path(out_dir) / run_id
     out.mkdir(parents=True, exist_ok=True)
 
     if progress_callback:
         progress_callback("Loading rulepack…")
 
-    rp = load_rulepack(resource_path(rulepack_path))
+    rp_path = Path(resource_path("rulepacks")) / rulepack_path
+    rp = load_rulepack(rp_path)
 
     if progress_callback:
-        progress_callback("Scanning model directory…")
+        progress_callback({"event": "INFO", "message": "Scanning model directory…"})
 
     rules = iter_rules(rp)
 
     if progress_callback:
-        progress_callback("Running compliance checks…")
+        progress_callback({"event": "SCAN_START"})
 
     # ---- RUN SCAN ----
     results = run_scan(
         root,
-        rules
+        rules,
+        progress_callback=progress_callback,
+        cancel_event=config.cancel_flag
     )
 
     if progress_callback:
@@ -71,6 +80,12 @@ def run_agent(
     if progress_callback:
         progress_callback("Generating PDF report…")
 
+    runs = load_runs(Path(out_dir))
+    trends = build_trends(runs) if len(runs) > 1 else None
+    comparison = None
+
+    if len(runs) >= 2:
+        comparison = compare_runs(runs[-2], runs[-1])
     # ---- PDF ----
     pdf_path = out / "audit_report.pdf"
     render_pdf(results, pdf_path)
@@ -80,7 +95,12 @@ def run_agent(
 
     # ---- DASHBOARD + HEATMAP ----
     heatmap = build_heatmap(results["results"])
-    dashboard_path = render_dashboard(results, out, heatmap)
+    dashboard_path = render_dashboard(results, out, heatmap, comparison=comparison, trends=trends)
+    export_exec_pdf(dashboard_path, out)
+    try:
+        export_dashboard_images(dashboard_path, out)
+    except Exception:
+        pass
 
     # ---- OPTIONAL SAAS UPLOAD ----
     if config.upload_enabled:

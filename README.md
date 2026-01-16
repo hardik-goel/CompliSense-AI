@@ -373,11 +373,12 @@ rm -rf build dist
 
 Rebuilding app:
 
+pyinstaller CompliSenseAgent.spec --clean  [IF MEA... Issue occurs or only use this to generate .pkg]
 
 pyinstaller --onefile --windowed --name CompliSenseAgent agent/agent_ui.py
 or pyinstaller CompliSenseAgent.spec
 
-zip -r CompliSenseAgent-macos.zip CompliSenseAgent.app
+zip -r dist/CompliSenseAgent-macos.zip dist/CompliSenseAgent.app
 
 if you want your dev to bypass apple app run, 
 xattr -dr com.apple.quarantine CompliSenseAgent.app

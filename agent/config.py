@@ -1,3 +1,4 @@
+import threading
 from dataclasses import dataclass
 from typing import Optional
 
@@ -7,3 +8,4 @@ class AgentConfig:
     saas_url: Optional[str] = None
     token: Optional[str] = None
     llm_enabled: bool = False
+    cancel_flag: threading.Event = threading.Event()
