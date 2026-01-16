@@ -1,28 +1,34 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_dynamic_libs
+
+# collect_all returns a TUPLE in PyInstaller 6.x
 
 a = Analysis(
     ['agent/agent_ui.py'],
     pathex=[],
-    binaries=[],
+    binaries=collect_dynamic_libs('_tkinter'),
     datas=[
+        ('/usr/local/Cellar/tcl-tk@8/8.6.17/lib/tcl8.6', 'tcl'),
+        ('/usr/local/Cellar/tcl-tk@8/8.6.17/lib/tk8.6', 'tk'),
         ('rulepacks/euai_core_v1.yaml', 'rulepacks'),
         ('agent/report/templates', 'agent/report/templates'),
     ],
     hiddenimports=[
+        '_tkinter',
+        'tkinter',
         'jinja2',
         'weasyprint',
         'pydyf',
         'tinycss2',
         'cssselect2'
     ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
+    runtime_hooks=['hooks/runtime_tk_fix.py'],
     noarchive=False,
     optimize=0,
 )
+
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -45,6 +51,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
 app = BUNDLE(
     exe,
     name='CompliSenseAgent.app',
