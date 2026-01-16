@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <title>CompliSense AI – Compliance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui; margin: 2rem; }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+
+<h1>EU AI Act Compliance Dashboard</h1>
+
+<canvas id="summaryChart" width="400" height="200"></canvas>
+
+<script>
+const passed = 0;
+const failed = 4;
+
+new Chart(document.getElementById('summaryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Passed', 'Failed'],
+    datasets: [{
+      data: [passed, failed],
+      backgroundColor: ['#198754', '#dc3545']
+    }]
+  }
+});
+const heatmapData = {"Critical|HIGH": 2, "Major|HIGH": 1, "unknown|HIGH": 1}
+</script>
+
+<h2>Detailed Findings</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Rule</th>
+  <th>Clause</th>
+  <th>Severity</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+  <td>EUAI-ART9-RISK-MGMT-001</td>
+  <td>Art.9</td>
+  <td>Major</td>
+  <td class="fail">
+    FAIL
+    <br/>
+    <button onclick="toggleExplain('EUAI-ART9-RISK-MGMT-001')">Explain</button>
+  </td>
+</tr>
+<tr id="explain-EUAI-ART9-RISK-MGMT-001" style="display:none;">
+  <td colspan="4">
+    <pre>{
+  "engine_error": "Evaluator failed: No module named \u0027agent.evaluators\u0027",
+  "expression_error": "schema_valid"
+}</pre>
+  </td>
+</tr>
+
+<tr>
+  <td>EUAI-ART10-DATA-GOV-001</td>
+  <td>Art.10</td>
+  <td>Critical</td>
+  <td class="fail">
+    FAIL
+    <br/>
+    <button onclick="toggleExplain('EUAI-ART10-DATA-GOV-001')">Explain</button>
+  </td>
+</tr>
+<tr id="explain-EUAI-ART10-DATA-GOV-001" style="display:none;">
+  <td colspan="4">
+    <pre>{
+  "engine_error": "Evaluator failed: No module named \u0027agent.evaluators\u0027",
+  "expression_error": "exists"
+}</pre>
+  </td>
+</tr>
+
+<tr>
+  <td>EUAI-ART11-TECHDOC-001</td>
+  <td>Art.11 / Annex IV</td>
+  <td>Critical</td>
+  <td class="fail">
+    FAIL
+    <br/>
+    <button onclick="toggleExplain('EUAI-ART11-TECHDOC-001')">Explain</button>
+  </td>
+</tr>
+<tr id="explain-EUAI-ART11-TECHDOC-001" style="display:none;">
+  <td colspan="4">
+    <pre>{
+  "engine_error": "Evaluator failed: No module named \u0027agent.evaluators\u0027",
+  "expression_error": "exists"
+}</pre>
+  </td>
+</tr>
+
+<tr>
+  <td>EUAI-ART11-TECHDOC-002</td>
+  <td>Art.11 / Annex IV</td>
+  <td>unknown</td>
+  <td class="fail">
+    FAIL
+    <br/>
+    <button onclick="toggleExplain('EUAI-ART11-TECHDOC-002')">Explain</button>
+  </td>
+</tr>
+<tr id="explain-EUAI-ART11-TECHDOC-002" style="display:none;">
+  <td colspan="4">
+    <pre>{
+  "engine_error": "Evaluator failed: No module named \u0027agent.evaluators\u0027",
+  "expression_error": "coverage_score"
+}</pre>
+  </td>
+</tr>
+
+</tbody>
+</table>
+
+<p style="margin-top:2rem;font-size:12px;color:#666;">
+This automated assessment is advisory and does not constitute legal advice.
+</p>
+<script>
+function toggleExplain(ruleId) {
+  const el = document.getElementById("explain-" + ruleId);
+  el.style.display = (el.style.display === "none") ? "table-row" : "none";
+}
+</script>
+</body>
+</html>

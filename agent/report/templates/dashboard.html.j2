@@ -1,0 +1,288 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>CompliSense AI – Compliance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111827;
+      --card: #f9fafb;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --fg: #e5e7eb;
+        --card: #020617;
+        --border: #1e293b;
+      }
+    }
+
+    body {
+      font-family: system-ui;
+      margin: 2rem;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    h2 { margin-top: 2.5rem; }
+
+    .exec {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 10px;
+    }
+
+    .big {
+      font-size: 32px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .badge {
+      padding: 8px 14px;
+      display: inline-block;
+      border-radius: 999px;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: var(--card);
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px;
+    }
+
+    th { background: var(--border); }
+
+    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+    .pass { background: #22c55e; }
+    .partial { background: #f59e0b; }
+    .fail { background: #ef4444; }
+
+    .sla-warn { color: #f59e0b; font-weight: bold; }
+    .sla-fail { color: #ef4444; font-weight: bold; }
+
+    code {
+      background: #00000022;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>EU AI Act Compliance Dashboard</h1>
+
+<!-- ================= EXEC SUMMARY ================= -->
+<div class="exec">
+  <div class="card">
+    <div>Overall Compliance Score</div>
+    <div class="big">{{ exec.compliance_score }}%</div>
+    <div>Severity-weighted</div>
+  </div>
+
+  <div class="card">
+    <div>What Changed Since Last Run</div>
+    {% if comparison %}
+      <div>⬆ Improvements: {{ comparison.improvements | length }}</div>
+      <div>⬇ Regressions: {{ comparison.regressions | length }}</div>
+    {% else %}
+      <div>No previous run</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div>High-Risk Findings</div>
+    <div class="big">{{ exec.critical_failures }}</div>
+    <div>Critical severity</div>
+  </div>
+</div>
+
+{% if exec.top_remediations %}
+<div class="card">
+  <b>Top 3 Recommended Actions</b>
+  <ol>
+    {% for r in exec.top_remediations %}
+      <li><b>{{ r.rule_id }}</b>: {{ r.action }}</li>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
+<div class="badge"
+     style="background:
+     {% if exec.badge == 'GREEN' %}#22c55e
+     {% elif exec.badge == 'YELLOW' %}#f59e0b
+     {% else %}#ef4444{% endif %};">
+  {{ exec.badge }} COMPLIANCE
+</div>
+
+<!-- ================= SUMMARY ================= -->
+<canvas id="summaryChart" width="360" height="180"></canvas>
+
+<!-- ================= TRENDS ================= -->
+{% if trends %}
+<h2>Compliance Trend Across Runs</h2>
+<canvas id="trendChart" width="420" height="200"></canvas>
+
+<h2>Risk Score Over Time</h2>
+<canvas id="riskChart" width="420" height="200"></canvas>
+
+<p><b>Risk Trajectory:</b> {{ trends.risk_direction }}</p>
+{% endif %}
+
+<!-- ================= HEATMAP ================= -->
+<h2>Risk Heatmap</h2>
+<canvas id="heatmapChart" width="360" height="220"></canvas>
+
+<script>
+const passed = {{ summary.passed }};
+const failed = {{ summary.failed }};
+const heatmapData = {{ heatmap | tojson }};
+const trends = {{ trends | default(None) | tojson }};
+
+// ---- Summary ----
+new Chart(document.getElementById('summaryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Passed', 'Failed'],
+    datasets: [{
+      data: [passed, failed],
+      backgroundColor: ['#22c55e', '#ef4444']
+    }]
+  }
+});
+
+// ---- Heatmap ----
+const scatter = [];
+for (const k in heatmapData) {
+  const [severity, risk] = k.split("|");
+  scatter.push({ x: severity, y: risk, r: heatmapData[k] * 5 });
+}
+
+new Chart(document.getElementById('heatmapChart'), {
+  type: 'bubble',
+  data: {
+    datasets: [{
+      label: 'Risk Heatmap',
+      data: scatter,
+      backgroundColor: '#38bdf8'
+    }]
+  }
+});
+
+// ---- Trends ----
+if (trends) {
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: trends.runs,
+      datasets: [{
+        label: 'Compliance %',
+        data: trends.compliance_pct,
+        borderColor: '#22c55e',
+        tension: 0.3
+      }]
+    }
+  });
+
+  new Chart(document.getElementById('riskChart'), {
+    type: 'line',
+    data: {
+      labels: trends.runs,
+      datasets: [{
+        label: 'Average Risk Score',
+        data: trends.avg_risk,
+        borderColor: '#ef4444',
+        tension: 0.3
+      }]
+    }
+  });
+}
+</script>
+
+<!-- ================= DETAILS ================= -->
+<h2>Detailed Findings</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Status</th>
+  <th>Rule</th>
+  <th>Severity</th>
+  <th>Time (s)</th>
+  <th>SLA</th>
+  <th>Files Used</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in results %}
+<tr data-files="{{ r.files_used | join(',') }}">
+  <td><span class="dot
+  {% if r.status == 'PASS' %}pass
+  {% elif r.status == 'PARTIAL' %}partial
+  {% else %}fail{% endif %}">
+</span></td>
+  <td>{{ r.rule_id }}</td>
+  <td>{{ r.severity }}</td>
+  <td>{{ r.execution_time_sec }}</td>
+  <td class="{% if r.sla_status == 'WARN' %}sla-warn{% elif r.sla_status == 'FAIL' %}sla-fail{% endif %}">
+    {{ r.sla_status }}
+  </td>
+  <td>
+    {% for f in r.files_used %}
+      <code onclick="highlightRules('{{ f }}')">{{ f }}</code><br/>
+    {% endfor %}
+  </td>
+</tr>
+<tr>
+  <td colspan="6">
+    <details>
+      <summary>Explain</summary>
+      <pre>{{ r.context | tojson(indent=2) }}</pre>
+    </details>
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<script>
+function highlightRules(file) {
+  document.querySelectorAll("tr[data-files]").forEach(row => {
+    row.style.background =
+      row.dataset.files.includes(file) ? "#fde68a" : "";
+  });
+}
+</script>
+
+<p style="margin-top:2rem;font-size:12px;color:#94a3b8;">
+This assessment is advisory and does not constitute legal advice.
+</p>
+
+</body>
+</html>

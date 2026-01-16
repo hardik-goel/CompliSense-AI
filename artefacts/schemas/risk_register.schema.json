@@ -16,7 +16,12 @@
           "status": { "type": "string" }
         }
       }
+    },
+    "coverage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
     }
   },
-  "required": ["risks"]
+  "required": ["risks", "coverage"]
 }

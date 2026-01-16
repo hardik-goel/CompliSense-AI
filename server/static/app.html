@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <title>CompliSense AI</title>
+  <style>
+    body { font-family: system-ui; margin: 0; background:#0f172a; color:#e5e7eb }
+    nav { padding: 1rem; background:#020617; display:flex; gap:1rem }
+    nav a { color:#38bdf8; text-decoration:none; font-weight:600 }
+    .container { padding: 2rem }
+    .card { background:#020617; padding:1.5rem; border-radius:10px }
+    button {
+      background:#38bdf8; color:#020617;
+      padding:10px 20px; border-radius:6px;
+      border:none; font-weight:600; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="#" onclick="route('home')">Home</a>
+  <a href="#" onclick="route('download')">Download Agent</a>
+  <a href="#" onclick="route('rules')">Rulepacks</a>
+  <a href="#" onclick="route('docs')">How it works</a>
+</nav>
+
+<div class="container" id="view"></div>
+
+<script>
+function route(page) {
+  if (page === 'home') {
+    view.innerHTML = `
+      <h1>CompliSense AI</h1>
+      <p>Privacy-first EU AI Act compliance scanning.</p>
+      <button onclick="route('download')">Download Agent</button>
+    `;
+  }
+  if (page === 'download') {
+    view.innerHTML = `
+      <h2>Download Private Agent</h2>
+      <p>Runs locally. No data upload.</p>
+      <a href="/download/agent"><button>Download</button></a>
+    `;
+  }
+  if (page === 'rules') {
+    fetch('/rulepacks/latest')
+      .then(r => r.json())
+      .then(d => {
+        view.innerHTML = '<pre>' + JSON.stringify(d, null, 2) + '</pre>';
+      });
+  }
+  if (page === 'docs') {
+    view.innerHTML = `
+      <h2>How it works</h2>
+      <ol>
+        <li>Download agent</li>
+        <li>Select AI/ML folder</li>
+        <li>Run compliance checks locally</li>
+        <li>Review PDF & dashboard</li>
+      </ol>
+    `;
+  }
+}
+route('home');
+</script>
+
+</body>
+</html>

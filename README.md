@@ -287,6 +287,104 @@ Workflow:
 - Download the customized agent 
 - Run the agent locally
 
+Step-by-Step Guide for Clients
+Step 1: Extract and Set Up
+bash
+# Extract the downloaded agent
+unzip complisense_agent_YOUR_SCAN_ID.zip -d complisense_agent
+cd complisense_agent
+
+# Set up the environment (Linux/macOS)
+chmod +x setup_agent.sh
+./setup_agent.sh
+
+# Or on Windows, just double-click: setup_agent.bat
+Step 2: Activate the Environment
+bash
+# Linux/macOS
+source complisense_env/bin/activate
+
+# Windows
+complisense_env\Scripts\activate.bat
+Step 3: Run the Scan (THIS IS THE KEY PART)
+bash
+# Basic scan - replace "/path/to/your/ml/model" with your actual model path
+python3 run_scan.py --project-path /Users/hardikgoel/Downloads/complisense_AI/model_2mb.pkl --output-dir ./scan_results
+Step 4: Find Your Results
+After scanning, check the output directory (default: ./complisense_output or your specified --output-dir) for:
+
+compliance_findings.json - Detailed results
+
+scan_summary.txt - Summary report
+
+Starting uvicorn server for flask [After implementing JWT and other security considerations relating to pem keys]:
+
+export ADMIN_API_TOKEN="dev-token-123" [MAYBE Optional]
+uvicorn server.saas_api:app --reload --port 8080
+
+building agent:
+
+pyinstaller \
+  --onefile \
+  --windowed \
+  --name CompliSenseAgent \
+  agent/agent_ui.py
+
+
+running agent:
+
+python3 -m agent.agent_ui
+
+What client will choose as input:
+
+/ml-project/
+ ├── model/
+ │   ├── model.pkl
+ │   ├── model_card.json
+ ├── data/
+ │   ├── dataset.csv
+ │   ├── dataset_card.json
+ ├── training/
+ │   ├── train.py
+ ├── configs/
+ │   ├── config.yaml
+
+
+run (Dev testing): 
+
+python3 -m agent.agent_ui
+
+Confidence Scoring Framework (0–100%)
+Core idea
+
+Every EU AI obligation gets:
+
+Evidence signals
+
+Weights
+
+Confidence score
+
+New concept
+
+Each rule returns signals, not just pass/fail.
+
+rm -rf build dist
+
+Rebuilding app:
+
+pyinstaller CompliSenseAgent.spec --clean  [IF MEA... Issue occurs or only use this to generate .pkg]
+
+pyinstaller --onefile --windowed --name CompliSenseAgent agent/agent_ui.py
+or pyinstaller CompliSenseAgent.spec
+
+zip -r dist/CompliSenseAgent-macos.zip dist/CompliSenseAgent.app
+
+if you want your dev to bypass apple app run, 
+xattr -dr com.apple.quarantine CompliSenseAgent.app
+
+issue in signing the app for now, therefore open through this:
+./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
 
 📜 License
 
