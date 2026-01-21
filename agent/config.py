@@ -9,3 +9,5 @@ class AgentConfig:
     token: Optional[str] = None
     llm_enabled: bool = False
     cancel_flag: threading.Event = threading.Event()
+    PASS_THRESHOLD = 0.55
+    WARN_THRESHOLD = 0.40

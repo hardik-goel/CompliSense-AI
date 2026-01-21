@@ -96,46 +96,48 @@ class CompliSenseApp:
         self.file_list = tk.Listbox(self.root, height=8)
         self.file_list.pack(fill="both", padx=40, pady=5)
 
-    def guided_start(self):
-        # Privacy notice
-        messagebox.showinfo(
-            "Privacy Notice",
-            "All analysis runs entirely on your system.\n\n"
-            "No model files, datasets, or source code are uploaded."
-        )
-
-        # Step 1: Input folder
-        messagebox.showinfo(
-            "Select AI / ML Model Folder",
-            "Please select the folder containing your AI/ML model.\n\n"
-            "This may include:\n"
-            "• .pkl / .onnx files\n"
-            "• training scripts\n"
-            "• logs or documentation"
-        )
-        model = filedialog.askdirectory(title="Select AI / ML Model Folder")
-        if not model:
-            self.status.set("Cancelled by user.")
-            return
-        self.model_path.set(model)
-
-        # Step 2: Output folder
-        messagebox.showinfo(
-            "Select Output Folder",
-            "Please select a folder where compliance results will be saved.\n\n"
-            "Generated files:\n"
-            "• audit_report.pdf\n"
-            "• dashboard.html\n"
-            "• findings.json"
-        )
-        out = filedialog.askdirectory(title="Select Output Folder")
-        if not out:
-            self.status.set("Cancelled by user.")
-            return
-        self.out_path.set(out)
-
-        # Auto-run scan
-        self.start_scan()
+#responisble for generating that additional dialogue ...Need to decide whether to remove this ?
+    # also put this in def run() if you need it, root.after(300, app.guided_start)
+    # def guided_start(self):
+    #     # Privacy notice
+    #     messagebox.showinfo(
+    #         "Privacy Notice",
+    #         "All analysis runs entirely on your system.\n\n"
+    #         "No model files, datasets, or source code are uploaded."
+    #     )
+    #
+    #     # Step 1: Input folder
+    #     messagebox.showinfo(
+    #         "Select AI / ML Model Folder",
+    #         "Please select the folder containing your AI/ML model.\n\n"
+    #         "This may include:\n"
+    #         "• .pkl / .onnx files\n"
+    #         "• training scripts\n"
+    #         "• logs or documentation"
+    #     )
+    #     model = filedialog.askdirectory(title="Select AI / ML Model Folder")
+    #     if not model:
+    #         self.status.set("Cancelled by user.")
+    #         return
+    #     self.model_path.set(model)
+    #
+    #     # Step 2: Output folder
+    #     messagebox.showinfo(
+    #         "Select Output Folder",
+    #         "Please select a folder where compliance results will be saved.\n\n"
+    #         "Generated files:\n"
+    #         "• audit_report.pdf\n"
+    #         "• dashboard.html\n"
+    #         "• findings.json"
+    #     )
+    #     out = filedialog.askdirectory(title="Select Output Folder")
+    #     if not out:
+    #         self.status.set("Cancelled by user.")
+    #         return
+    #     self.out_path.set(out)
+    #
+    #     # Auto-run scan
+    #     self.start_scan()
 
     def choose_model(self):
         path = filedialog.askdirectory(title="Select AI / ML Project Folder")
@@ -236,9 +238,16 @@ class CompliSenseApp:
 
 def run():
     root = tk.Tk()
-    app = CompliSenseApp(root)
-    root.after(300, app.guided_start)
+
+    # Cross-platform maximize (macOS-safe)
+    root.update_idletasks()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    root.geometry(f"{screen_width}x{screen_height}+0+0")
+
+    CompliSenseApp(root)
     root.mainloop()
+
 
 
 if __name__ == "__main__":
