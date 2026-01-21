@@ -160,21 +160,36 @@ class CompliSenseApp:
         threading.Thread(target=self._run_scan, daemon=True).start()
 
     def _handle_progress(self, payload):
+        # Normalize payload to dict
+        if isinstance(payload, str):
+            payload = {"event": payload}
+
+        if not isinstance(payload, dict):
+            return
+
         def update():
             event = payload.get("event")
 
             if event == "FILES_DISCOVERED":
+                files = payload.get("files", [])
                 self.file_list.delete(0, tk.END)
-                for f in payload["files"]:
+                for f in files:
                     self.file_list.insert(tk.END, f)
 
             elif event == "RULE_START":
-                pct = int((payload["index"] - 1) / payload["total"] * 100)
+                index = payload.get("index", 1)
+                total = payload.get("total", 1)
+                rule_id = payload.get("rule_id", "rule")
+
+                pct = int((index - 1) / total * 100)
                 self.progress["value"] = pct
-                self.status.set(f"Running {payload['rule_id']}")
+                self.status.set(f"Running {rule_id}")
 
             elif event == "RULE_END":
-                pct = int(payload["index"] / payload["total"] * 100)
+                index = payload.get("index", 1)
+                total = payload.get("total", 1)
+
+                pct = int(index / total * 100)
                 self.progress["value"] = pct
 
             elif event == "SCAN_CANCELLED":
@@ -186,6 +201,7 @@ class CompliSenseApp:
                 self.status.set("Scan complete")
 
         self.root.after(0, update)
+
     def cancel_scan(self):
         self.cancel_event.set()
         self.status.set("Cancelling scan…")
@@ -236,6 +252,16 @@ class CompliSenseApp:
 
 def run():
     root = tk.Tk()
+
+    root.update_idletasks()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    root.geometry(f"{screen_width}x{screen_height}+0+0")
+
+    #working one but only for the basic window
+    # CompliSenseApp(root)
+    # root.mainloop()
+
     app = CompliSenseApp(root)
     root.after(300, app.guided_start)
     root.mainloop()

@@ -9,11 +9,54 @@ from typing import Dict, Any, List
 from importlib import import_module
 from time import perf_counter
 
+import yaml
 from rule_engine import Rule
 from agent.scoring.confidence import compute_confidence
 from agent.scoring.risk import classify_risk
 from agent.remediation.generator import generate_remediation
 from agent.inference.llm import infer
+
+
+def _is_missing_evidence(ctx: Dict[str, Any]) -> bool:
+    """
+    Evidence is missing if evaluator returned no meaningful signals.
+    """
+    if not ctx:
+        return True
+    if ctx.get("engine_error"):
+        return False
+    signals = ctx.get("signals")
+    return signals in (None, {}, [])
+
+
+def scan_required_artifacts(root: Path) -> Dict[str, Any]:
+    manifest = Path(__file__).parent / "artefacts" / "required_artifacts.yaml"
+    spec = yaml.safe_load(manifest.read_text())
+
+    missing = []
+    present = []
+
+    for a in spec["artifacts"]:
+        found = False
+        for f in a["files"]:
+            if (root / f).exists():
+                found = True
+                break
+
+        if found:
+            present.append(a["id"])
+        else:
+            missing.append(a)
+
+    total = len(spec["artifacts"])
+    compliance_pct = round(len(present) / total * 100, 2)
+
+    return {
+        "required_total": total,
+        "present": present,
+        "missing": missing,
+        "compliance_pct": compliance_pct
+    }
 
 
 def _run_evaluator(root: Path, evaluator: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
@@ -31,7 +74,7 @@ def run_scan(
 
     results = []
     counts = {"passed": 0, "partial": 0, "failed": 0}
-
+    artifact_scan = scan_required_artifacts(root)
     # ---- Discover files once ----
     all_files = [
         str(p.relative_to(root))
@@ -80,6 +123,7 @@ def run_scan(
         rule = Rule(r.get("expression", "False"))
         status = "FAIL"
         ok = False
+        missing = _is_missing_evidence(ctx)
 
         thresholds = r.get("thresholds")
         score = ctx.get("coverage_score")
@@ -101,23 +145,32 @@ def run_scan(
                 ok = False
                 ctx["expression_error"] = str(e)
 
-            status = "PASS" if ok else "FAIL"
+            if ok:
+                status = "PASS"
+            elif missing:
+                status = "MISSING"
+            else:
+                status = "FAIL"
 
-        counts[
-            "passed" if status == "PASS"
-            else "partial" if status == "PARTIAL"
-            else "failed"
-        ] += 1
+        if status == "PASS":
+            counts["passed"] += 1
+        elif status in ("PARTIAL", "MISSING"):
+            counts["partial"] += 1
+        else:
+            counts["failed"] += 1
 
         # ---- Confidence & risk ----
         signals = ctx.get("signals", {})
         weights = r.get("weights", {})
 
-        confidence = (
-            compute_confidence(signals, weights)
-            if weights
-            else (100 if ok else 50 if status == "PARTIAL" else 30)
-        )
+        if status == "PASS":
+            confidence = 100
+        elif status == "PARTIAL":
+            confidence = 60
+        elif status == "MISSING":
+            confidence = 40
+        else:
+            confidence = 20
 
         risk = classify_risk(confidence)
 
@@ -163,5 +216,6 @@ def run_scan(
 
     return {
         "summary": counts,
-        "results": results
+        "results": results,
+        "artifacts": artifact_scan
     }

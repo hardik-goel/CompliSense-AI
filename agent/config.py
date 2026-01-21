@@ -8,4 +8,6 @@ class AgentConfig:
     saas_url: Optional[str] = None
     token: Optional[str] = None
     llm_enabled: bool = False
+    tier: str = "FREE"   # FREE | PRO | ULTRA
     cancel_flag: threading.Event = threading.Event()
+
