@@ -1,6 +1,7 @@
 {
   "summary": {
-    "passed": 2,
+    "passed": 8,
+    "partial": 1,
     "failed": 1
   },
   "results": [
@@ -9,13 +10,26 @@
       "clause": "Art.9",
       "title": "Risk management system documented and maintained",
       "severity": "Major",
-      "status": "FAIL",
+      "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.122,
+      "sla_status": "OK",
+      "files_used": [
+        "compliance/risk_register.yaml",
+        "schemas/risk_register.schema.json"
+      ],
+      "remediation": [],
       "context": {
         "schema_valid": true,
         "coverage": 1.0,
         "schema_validation_report": "ok",
         "file_hash": "1847825d62b89fe4ce4ff25e2a92c497ab997da89232a9b73d43aadd82570701",
-        "engine_error": "coverage_min"
+        "signals": {
+          "file_exists": true,
+          "schema_valid": true,
+          "coverage_met": true
+        }
       }
     },
     {
@@ -24,12 +38,24 @@
       "title": "Dataset documentation completeness",
       "severity": "Critical",
       "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.001,
+      "sla_status": "OK",
+      "files_used": [
+        "data/dataset_card.json"
+      ],
+      "remediation": [],
       "context": {
         "exists": true,
         "missing_fields": 0,
         "missing_fields_list": [],
         "file_hash": "1a7241cae3173581576301d18d949dabaa6cb4b6507042fd8e93d6aab1b548ca",
-        "dataset_card_snapshot": "{\n  \"provenance\": \"Customer support tickets from 2019\\u20132024\",\n  \"collection_method\": \"Manual annotation by data labelers\",\n  \"licensing\": \"CC-BY-4.0\",\n  \"known_biases\": [\n    \"Mostly English tickets\",\n    \"Overrepresentation of Tier-1 cities\"\n  ],\n  \"preprocessing\": \"Removed PII, tokenized text, normalized casing\",\n  \"split_stats\": {\n    \"train\": 8000,\n    \"validation\": 1000,\n    \"test\": 1000\n  }\n}"
+        "dataset_card_snapshot": "{\n  \"provenance\": \"Customer support tickets from 2019\\u20132024\",\n  \"collection_method\": \"Manual annotation by data labelers\",\n  \"licensing\": \"CC-BY-4.0\",\n  \"known_biases\": [\n    \"Mostly English tickets\",\n    \"Overrepresentation of Tier-1 cities\"\n  ],\n  \"preprocessing\": \"Removed PII, tokenized text, normalized casing\",\n  \"split_stats\": {\n    \"train\": 8000,\n    \"validation\": 1000,\n    \"test\": 1000\n  }\n}",
+        "signals": {
+          "file_exists": true,
+          "all_fields_present": true
+        }
       }
     },
     {
@@ -38,13 +64,189 @@
       "title": "Model technical documentation (Annex IV essentials)",
       "severity": "Critical",
       "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.001,
+      "sla_status": "OK",
+      "files_used": [
+        "model/model_card.json"
+      ],
+      "remediation": [],
       "context": {
         "exists": true,
         "missing_fields": 0,
         "missing_fields_list": [],
         "file_hash": "786afdbb5df5454752a5033aa7da005e37fcb4ba21d2f9841e2e4c09d2596711",
-        "model_card_snapshot": "{\n  \"intended_purpose\": \"Automate customer service responses\",\n  \"architecture\": \"Fine-tuned BERT Transformer\",\n  \"training_data_refs\": [\n    \"../data/dataset_card.json\"\n  ],\n  \"eval_metrics\": {\n    \"accuracy\": 0.89,\n    \"f1_score\": 0.85\n  },\n  \"known_limitations\": \"Does not handle sarcasm or code-mixed languages well\",\n  \"release_version\": \"1.0.0\",\n  \"integration_context\": \"Deployed in customer service chatbot pipeline\"\n}"
+        "model_card_snapshot": "{\n  \"intended_purpose\": \"Automate customer service responses\",\n  \"architecture\": \"Fine-tuned BERT Transformer\",\n  \"training_data_refs\": [\n    \"../data/dataset_card.json\"\n  ],\n  \"eval_metrics\": {\n    \"accuracy\": 0.89,\n    \"f1_score\": 0.85\n  },\n  \"known_limitations\": \"Does not handle sarcasm or code-mixed languages well\",\n  \"release_version\": \"1.0.0\",\n  \"integration_context\": \"Deployed in customer service chatbot pipeline\"\n}",
+        "signals": {
+          "file_exists": true,
+          "all_fields_present": true
+        }
+      }
+    },
+    {
+      "rule_id": "EUAI-ART11-TECHDOC-002",
+      "clause": "Art.11 / Annex IV",
+      "title": "Model technical documentation coverage",
+      "severity": "Major",
+      "status": "PARTIAL",
+      "confidence": 60,
+      "risk": "MEDIUM",
+      "execution_time_sec": 0.002,
+      "sla_status": "OK",
+      "files_used": [],
+      "remediation": [],
+      "context": {
+        "coverage_score": 0.7,
+        "evidence": {
+          "explicit": true
+        },
+        "signals": {
+          "explicit_docs": true,
+          "model_found": false
+        }
+      }
+    },
+    {
+      "rule_id": "EUAI-ART13-TRANSPARENCY-001",
+      "clause": "Art.13",
+      "title": "Transparency and information to users",
+      "severity": "Major",
+      "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.0,
+      "sla_status": "OK",
+      "files_used": [
+        "compliance/transparency_documentation.yaml"
+      ],
+      "remediation": [],
+      "context": {
+        "exists": false,
+        "missing_fields": 0,
+        "missing_fields_list": []
+      }
+    },
+    {
+      "rule_id": "EUAI-ART14-HUMAN-OVERSIGHT-001",
+      "clause": "Art.14",
+      "title": "Human oversight measures documented",
+      "severity": "Critical",
+      "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.0,
+      "sla_status": "OK",
+      "files_used": [
+        "compliance/human_oversight.yaml"
+      ],
+      "remediation": [],
+      "context": {
+        "exists": false,
+        "missing_fields": 0,
+        "missing_fields_list": []
+      }
+    },
+    {
+      "rule_id": "EUAI-ART15-ACCURACY-001",
+      "clause": "Art.15",
+      "title": "Accuracy, robustness and cybersecurity measures",
+      "severity": "Critical",
+      "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.0,
+      "sla_status": "OK",
+      "files_used": [
+        "compliance/accuracy_robustness.yaml"
+      ],
+      "remediation": [],
+      "context": {
+        "exists": false,
+        "missing_fields": 0,
+        "missing_fields_list": []
+      }
+    },
+    {
+      "rule_id": "EUAI-ART16-QUALITY-MGMT-001",
+      "clause": "Art.16",
+      "title": "Quality management system in place",
+      "severity": "Major",
+      "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.0,
+      "sla_status": "OK",
+      "files_used": [
+        "compliance/quality_management.yaml"
+      ],
+      "remediation": [],
+      "context": {
+        "exists": false,
+        "missing_fields": 0,
+        "missing_fields_list": []
+      }
+    },
+    {
+      "rule_id": "EUAI-ART18-DATA-GOV-002",
+      "clause": "Art.18",
+      "title": "Training, validation and testing data governance",
+      "severity": "Critical",
+      "status": "FAIL",
+      "confidence": 20,
+      "risk": "HIGH",
+      "execution_time_sec": 0.0,
+      "sla_status": "OK",
+      "files_used": [
+        "data/dataset_card.json"
+      ],
+      "remediation": [],
+      "context": {
+        "exists": true,
+        "missing_fields": 4,
+        "missing_fields_list": [
+          "data_quality_metrics",
+          "data_preprocessing",
+          "train_val_test_splits",
+          "data_lineage"
+        ],
+        "file_hash": "1a7241cae3173581576301d18d949dabaa6cb4b6507042fd8e93d6aab1b548ca",
+        "dataset_card_snapshot": "{\n  \"data_quality_metrics\": null,\n  \"data_preprocessing\": null,\n  \"train_val_test_splits\": null,\n  \"data_lineage\": null\n}",
+        "signals": {
+          "file_exists": true,
+          "all_fields_present": false
+        }
+      }
+    },
+    {
+      "rule_id": "EUAI-ART20-RECORD-KEEPING-001",
+      "clause": "Art.20",
+      "title": "Record keeping and logging",
+      "severity": "Major",
+      "status": "PASS",
+      "confidence": 100,
+      "risk": "LOW",
+      "execution_time_sec": 0.0,
+      "sla_status": "OK",
+      "files_used": [
+        "compliance/record_keeping.yaml"
+      ],
+      "remediation": [],
+      "context": {
+        "exists": false,
+        "missing_fields": 0,
+        "missing_fields_list": []
       }
     }
-  ]
+  ],
+  "artifacts": {
+    "required_total": 3,
+    "present": [
+      "risk_register",
+      "dataset_card",
+      "model_card"
+    ],
+    "missing": [],
+    "compliance_pct": 100.0
+  }
 }

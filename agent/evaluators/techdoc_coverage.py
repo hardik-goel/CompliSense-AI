@@ -26,5 +26,9 @@ def run(root: Path, inputs: dict):
 
     return {
         "coverage_score": round(score, 2),
-        "evidence": evidence
+        "evidence": evidence,
+        "signals": {
+            "explicit_docs": evidence.get("explicit", False),
+            "model_found": evidence.get("model_introspection", {}).get("model_found", False)
+        }
     }

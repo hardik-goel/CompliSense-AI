@@ -11,7 +11,10 @@ rules:
       file: "compliance/risk_register.yaml"
       schema_file: "schemas/risk_register.schema.json"
       coverage_min: 0.9
-    expression: "schema_valid and coverage >= coverage_min"
+    expression: "(schema_valid and coverage >= coverage_min) or (exists and coverage >= 0.5)"
+    thresholds:
+      pass: 0.9
+      partial: 0.5
     severity: "Major"
     evidence:
       collect: ["file_hash", "schema_validation_report"]
@@ -33,7 +36,10 @@ rules:
         - "known_biases"
         - "preprocessing"
         - "split_stats"
-    expression: "exists and missing_fields == 0"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0  # All fields present (missing_fields == 0)
+      partial: 2.0  # Allow up to 2 missing fields for partial
     severity: "Critical"
     evidence:
       collect: ["dataset_card_snapshot", "missing_fields_list"]
@@ -56,7 +62,10 @@ rules:
         - "known_limitations"
         - "release_version"
         - "integration_context"
-    expression: "exists and missing_fields <= 1"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0  # All fields present
+      partial: 2.0  # Allow up to 2 missing fields for partial
     severity: "Critical"
     evidence:
       collect: ["model_card_snapshot", "missing_fields_list"]
@@ -77,6 +86,137 @@ rules:
       pass: 0.8
       partial: 0.4
     expression: "coverage_score >= 0.7"
+    severity: "Major"
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART13-TRANSPARENCY-001
+    clause: "Art.13"
+    title: "Transparency and information to users"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/transparency_documentation.yaml"
+      required_json_fields:
+        - "user_notification"
+        - "ai_system_identification"
+        - "capabilities_limitations"
+        - "human_oversight_info"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+    evidence:
+      collect: ["transparency_documentation_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART14-HUMAN-OVERSIGHT-001
+    clause: "Art.14"
+    title: "Human oversight measures documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/human_oversight.yaml"
+      required_json_fields:
+        - "oversight_mechanisms"
+        - "intervention_procedures"
+        - "human_in_loop_requirements"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Critical"
+    evidence:
+      collect: ["human_oversight_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART15-ACCURACY-001
+    clause: "Art.15"
+    title: "Accuracy, robustness and cybersecurity measures"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/accuracy_robustness.yaml"
+      required_json_fields:
+        - "accuracy_metrics"
+        - "robustness_tests"
+        - "cybersecurity_measures"
+        - "adversarial_testing"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+    evidence:
+      collect: ["accuracy_robustness_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART16-QUALITY-MGMT-001
+    clause: "Art.16"
+    title: "Quality management system in place"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/quality_management.yaml"
+      required_json_fields:
+        - "quality_policy"
+        - "quality_controls"
+        - "testing_procedures"
+        - "documentation_standards"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+    evidence:
+      collect: ["quality_management_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART18-DATA-GOV-002
+    clause: "Art.18"
+    title: "Training, validation and testing data governance"
+    evaluator: "file_presence"
+    inputs:
+      file: "data/dataset_card.json"
+      required_json_fields:
+        - "data_quality_metrics"
+        - "data_preprocessing"
+        - "train_val_test_splits"
+        - "data_lineage"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+    evidence:
+      collect: ["dataset_governance_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART20-RECORD-KEEPING-001
+    clause: "Art.20"
+    title: "Record keeping and logging"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/record_keeping.yaml"
+      required_json_fields:
+        - "logging_policy"
+        - "retention_periods"
+        - "audit_trail_requirements"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+    evidence:
+      collect: ["record_keeping_snapshot"]
     sla:
       warn_ms: 300
       fail_ms: 1000

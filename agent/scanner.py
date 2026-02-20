@@ -15,6 +15,7 @@ from agent.scoring.confidence import compute_confidence
 from agent.scoring.risk import classify_risk
 from agent.remediation.generator import generate_remediation
 from agent.inference.llm import infer
+from agent.utils.resources import resource_path
 
 
 def _is_missing_evidence(ctx: Dict[str, Any]) -> bool:
@@ -30,7 +31,7 @@ def _is_missing_evidence(ctx: Dict[str, Any]) -> bool:
 
 
 def scan_required_artifacts(root: Path) -> Dict[str, Any]:
-    manifest = Path(__file__).parent / "artefacts" / "required_artifacts.yaml"
+    manifest = Path(resource_path("agent/artefacts/required_artifacts.yaml"))
     spec = yaml.safe_load(manifest.read_text())
 
     missing = []
@@ -126,21 +127,49 @@ def run_scan(
         missing = _is_missing_evidence(ctx)
 
         thresholds = r.get("thresholds")
-        score = ctx.get("coverage_score")
-
-        if thresholds and score is not None:
-            if score >= thresholds.get("pass", 1.0):
+        # Check for both coverage_score (from techdoc_coverage) and coverage (from schema_validate)
+        score = ctx.get("coverage_score") or ctx.get("coverage")
+        
+        # For file_presence evaluator with thresholds, use missing_fields count
+        missing_fields = ctx.get("missing_fields")
+        if thresholds and missing_fields is not None:
+            # Thresholds for file_presence are based on missing_fields count (lower is better)
+            pass_threshold = thresholds.get("pass", 0.0)  # Allow 0 missing for pass
+            partial_threshold = thresholds.get("partial", 2.0)  # Allow up to 2 missing for partial
+            
+            if missing_fields <= pass_threshold:
                 status = "PASS"
                 ok = True
-            elif score >= thresholds.get("partial", 0):
+            elif missing_fields <= partial_threshold:
+                status = "PARTIAL"
+                ok = False
+            else:
+                status = "FAIL"
+                ok = False
+        elif thresholds and score is not None:
+            # For score-based thresholds (coverage_score or coverage)
+            pass_threshold = thresholds.get("pass", 1.0)
+            partial_threshold = thresholds.get("partial", 0.5)
+            
+            if score >= pass_threshold:
+                status = "PASS"
+                ok = True
+            elif score >= partial_threshold:
                 status = "PARTIAL"
                 ok = False
             else:
                 status = "FAIL"
                 ok = False
         else:
+            # For expression-based rules, inject rule inputs into context for evaluation
+            eval_ctx = ctx.copy()
+            # Add rule inputs to context so expressions can reference them (e.g., coverage_min)
+            for key, value in r.get("inputs", {}).items():
+                if key not in eval_ctx:  # Don't override evaluator results
+                    eval_ctx[key] = value
+            
             try:
-                ok = bool(rule.matches(ctx))
+                ok = bool(rule.matches(eval_ctx))
             except Exception as e:
                 ok = False
                 ctx["expression_error"] = str(e)
@@ -162,8 +191,23 @@ def run_scan(
         # ---- Confidence & risk ----
         signals = ctx.get("signals", {})
         weights = r.get("weights", {})
+        
+        # Build signals from context if not explicitly provided
+        if not signals:
+            signals = {}
+            if ctx.get("exists"):
+                signals["file_exists"] = True
+            if ctx.get("schema_valid"):
+                signals["schema_valid"] = True
+            if ctx.get("missing_fields", 0) == 0:
+                signals["all_fields_present"] = True
+            if score is not None:
+                signals["coverage_score"] = score
 
-        if status == "PASS":
+        # Use weighted confidence if weights are provided, otherwise use status-based
+        if weights and signals:
+            confidence = compute_confidence(signals, weights)
+        elif status == "PASS":
             confidence = 100
         elif status == "PARTIAL":
             confidence = 60
