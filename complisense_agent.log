@@ -1,0 +1,167 @@
+2025-12-19 11:58:32,244 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 158, in _run_scan
+  File "agent/agent_runner.py", line 41, in run_agent
+    results = run_scan(
+  File "agent/scanner.py", line 86, in run_scan
+    "severity": r["severity"],
+KeyError: 'severity'
+2025-12-19 13:24:37,377 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 174, in _run_scan
+  File "agent/agent_runner.py", line 41, in run_agent
+    results = run_scan(
+  File "agent/scanner.py", line 84, in run_scan
+    "clause": r["clause"],
+KeyError: 'clause'
+2026-01-05 14:32:18,543 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 30, in run_agent
+    rp = load_rulepack(resource_path(rulepack_path))
+  File "agent/rules/loader.py", line 20, in load_rulepack
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+  File "pathlib.py", line 1256, in read_text
+  File "pathlib.py", line 1242, in open
+  File "pathlib.py", line 1110, in _opener
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/8b/c36prxn12hj39hjbjmv8yc9r0000gn/T/_MEI7xORET/rulepacks/euai_core_v1.yaml'
+2026-01-05 14:42:40,222 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 30, in run_agent
+    rp = load_rulepack(resource_path(rulepack_path))
+  File "agent/rules/loader.py", line 20, in load_rulepack
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+  File "pathlib.py", line 1256, in read_text
+  File "pathlib.py", line 1242, in open
+  File "pathlib.py", line 1110, in _opener
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/8b/c36prxn12hj39hjbjmv8yc9r0000gn/T/_MEIDaL3H3/euai_core_v1.yaml'
+2026-01-05 14:56:10,803 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 30, in run_agent
+    rp = load_rulepack(resource_path(rulepack_path))
+  File "agent/rules/loader.py", line 20, in load_rulepack
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+  File "pathlib.py", line 1256, in read_text
+  File "pathlib.py", line 1242, in open
+  File "pathlib.py", line 1110, in _opener
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/8b/c36prxn12hj39hjbjmv8yc9r0000gn/T/_MEIYht0yM/euai_core_v1.yaml'
+2026-01-05 15:07:49,210 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 46, in run_agent
+    cancel_flag=config.cancel_flag
+AttributeError: 'AgentConfig' object has no attribute 'cancel_flag'
+2026-01-05 15:31:38,459 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 43, in run_agent
+    results = run_scan(
+TypeError: run_scan() got an unexpected keyword argument 'cancel_flag'
+2026-01-05 15:54:35,124 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 97, in run_agent
+    dashboard_path = render_dashboard(results, out, heatmap, comparison=comparison, trends=trends)
+TypeError: render_dashboard() got an unexpected keyword argument 'comparison'
+2026-01-05 16:11:36,188 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 83, in run_agent
+    trends = build_trends(runs) if len(runs) > 1 else None
+  File "agent/report/trends.py", line 18, in build_trends
+    avg_risk = sum(r["risk"] for r in results) / total if total else 0
+TypeError: unsupported operand type(s) for +: 'int' and 'str'
+2026-01-05 17:12:18,954 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 88, in run_agent
+    comparison = compare_runs(runs[-2], runs[-1])
+  File "agent/report/history.py", line 18, in compare_runs
+    old_status = {r["rule_id"]: r["status"] for r in old["results"]}
+  File "agent/report/history.py", line 18, in <dictcomp>
+    old_status = {r["rule_id"]: r["status"] for r in old["results"]}
+TypeError: string indices must be integers
+2026-01-05 17:16:50,039 WARNING Expected a media type, got '(prefers-color-scheme: dark)'
+2026-01-05 17:16:50,041 WARNING Invalid media type ' (prefers-color-scheme: dark) ' the whole @media rule was ignored at 10:5.
+2026-01-05 17:16:50,368 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 100, in run_agent
+    export_dashboard_images(dashboard_path, out)
+  File "agent/report/screenshot.py", line 10, in export_dashboard_images
+    imgkit.from_file(str(html_path), str(png))
+  File "imgkit/api.py", line 62, in from_file
+  File "imgkit/imgkit.py", line 36, in __init__
+  File "imgkit/config.py", line 57, in get_wkhtmltoimage
+OSError: 
+No wkhtmltoimage executable found: "command not found"
+If this file exists please check that this process can read it.
+Otherwise please install wkhtmltopdf - http://wkhtmltopdf.org
+
+        
+2026-01-05 17:25:06,919 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 88, in run_agent
+    comparison = compare_runs(runs[-2], runs[-1])
+  File "agent/report/history.py", line 18, in compare_runs
+    data = json.loads(findings_path.read_text())
+  File "agent/report/history.py", line 18, in <dictcomp>
+    data = json.loads(findings_path.read_text())
+TypeError: string indices must be integers
+2026-01-05 17:45:11,199 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 214, in _run_scan
+  File "agent/agent_runner.py", line 84, in run_agent
+    trends = build_trends(runs) if len(runs) > 1 else None
+  File "agent/report/trends.py", line 24, in build_trends
+    results = run["results"]["results"]
+TypeError: list indices must be integers or slices, not str
+2026-01-16 17:05:52,380 WARNING Expected a media type, got '(prefers-color-scheme: dark)'
+2026-01-16 17:05:52,381 WARNING Invalid media type ' (prefers-color-scheme: dark) ' the whole @media rule was ignored at 10:5.
+2026-01-16 17:05:52,606 WARNING wkhtmltoimage not found. Skipping dashboard image export.
+2026-01-18 12:15:27,100 WARNING Expected a media type, got '(prefers-color-scheme: dark)'
+2026-01-18 12:15:27,103 WARNING Invalid media type ' (prefers-color-scheme: dark) ' the whole @media rule was ignored at 10:5.
+2026-01-18 12:15:27,476 WARNING wkhtmltoimage not found. Skipping dashboard image export.
+2026-01-21 15:18:10,356 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 216, in _run_scan
+  File "agent/agent_runner.py", line 37, in run_agent
+    rp = load_rulepack(rp_path)
+  File "agent/rules/loader.py", line 20, in load_rulepack
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+  File "pathlib.py", line 1134, in read_text
+  File "pathlib.py", line 1119, in open
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/hardikgoel/PycharmProjects/CompliSense-AI/dist/CompliSenseAgent.app/Contents/Frameworks/rulepacks/euai_core_v1.yaml'
+2026-01-21 15:29:23,568 WARNING Expected a media type, got '(prefers-color-scheme: dark)'
+2026-01-21 15:29:23,569 WARNING Invalid media type ' (prefers-color-scheme: dark) ' the whole @media rule was ignored at 10:5.
+2026-01-21 15:29:24,017 WARNING wkhtmltoimage not found. Skipping dashboard image export.
+2026-01-21 15:36:26,507 WARNING Expected a media type, got '(prefers-color-scheme: dark)'
+2026-01-21 15:36:26,508 WARNING Invalid media type ' (prefers-color-scheme: dark) ' the whole @media rule was ignored at 10:5.
+2026-01-21 15:36:26,965 WARNING wkhtmltoimage not found. Skipping dashboard image export.
+2026-01-21 18:05:45,109 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 230, in _run_scan
+  File "agent/agent_runner.py", line 49, in run_agent
+    results = run_scan(
+  File "agent/scanner.py", line 77, in run_scan
+    artifact_scan = scan_required_artifacts(root)
+  File "agent/scanner.py", line 34, in scan_required_artifacts
+    spec = yaml.safe_load(manifest.read_text())
+  File "pathlib.py", line 1134, in read_text
+  File "pathlib.py", line 1119, in open
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/8b/c36prxn12hj39hjbjmv8yc9r0000gn/T/_MEI9Hf1qv/agent/artefacts/required_artifacts.yaml'
+2026-01-21 18:05:56,330 ERROR Agent failed
+Traceback (most recent call last):
+  File "agent_ui.py", line 230, in _run_scan
+  File "agent/agent_runner.py", line 49, in run_agent
+    results = run_scan(
+  File "agent/scanner.py", line 77, in run_scan
+    artifact_scan = scan_required_artifacts(root)
+  File "agent/scanner.py", line 34, in scan_required_artifacts
+    spec = yaml.safe_load(manifest.read_text())
+  File "pathlib.py", line 1134, in read_text
+  File "pathlib.py", line 1119, in open
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/8b/c36prxn12hj39hjbjmv8yc9r0000gn/T/_MEI9Hf1qv/agent/artefacts/required_artifacts.yaml'
