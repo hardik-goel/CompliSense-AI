@@ -386,6 +386,19 @@ xattr -dr com.apple.quarantine CompliSenseAgent.app
 issue in signing the app for now, therefore open through this:
 ./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
 
+if you get this error: 
+
+(venv) hardikgoel@192 CompliSense-AI % ./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
+
+urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+macOS 15 (1507) or later required, have instead 15 (1506) !
+zsh: abort      ./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
+
+
+Just run source 3.10_venv/bin/activate
+export MACOSX_DEPLOYMENT_TARGET=15.6
+
+
 📜 License
 
 MIT License TODO

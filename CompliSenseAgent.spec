@@ -13,6 +13,7 @@ a = Analysis(
         ('/usr/local/Cellar/tcl-tk@8/8.6.17/lib/tk8.6', 'tk'),
         ('rulepacks/euai_core_v1.yaml', 'rulepacks'),
         ('agent/report/templates', 'agent/report/templates'),
+        ('agent/artefacts/required_artifacts.yaml', 'agent/artefacts'),
     ],
     hiddenimports=[
         '_tkinter',

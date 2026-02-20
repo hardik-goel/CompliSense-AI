@@ -15,6 +15,7 @@ from agent.saas_upload import build_summary_payload, upload_summary
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
 from agent.scoring.heatmap import build_heatmap
+from agent.scoring.overall import compute_overall_compliance, verdict_from_score
 from agent.utils.resources import resource_path
 
 
@@ -48,9 +49,41 @@ def run_agent(
     results = run_scan(
         root,
         rules,
+        llm_enabled=config.llm_enabled,
         progress_callback=progress_callback,
         cancel_event=config.cancel_flag
     )
+    # ---- DERIVED COMPLIANCE ASSESSMENT ----
+
+    artifacts = results["artifacts"]
+    rule_results = results["results"]
+
+    # Average rule confidence
+    avg_rule_confidence = (
+        sum(r["confidence"] for r in rule_results) / len(rule_results)
+        if rule_results else 0
+    )
+
+    overall_compliance = compute_overall_compliance(
+        artifacts_pct=artifacts["compliance_pct"],
+        avg_rule_confidence=avg_rule_confidence
+    )
+
+    verdict = verdict_from_score(overall_compliance)
+
+    why_not_compliant = {
+        "missing_artifacts": [a["name"] for a in artifacts["missing"]],
+        "failed_rules": [r["title"] for r in rule_results if r["status"] == "FAIL"]
+    }
+
+    assessment = {
+        "verdict": verdict,
+        "overall_compliance_pct": overall_compliance,
+        "artifact_compliance_pct": artifacts["compliance_pct"],
+        "avg_rule_confidence": round(avg_rule_confidence, 2),
+        "why_not_compliant": why_not_compliant,
+        "tier": getattr(config, "tier", "FREE")
+    }
 
     if progress_callback:
         progress_callback("Writing findings.json…")
@@ -88,7 +121,15 @@ def run_agent(
         comparison = compare_runs(runs[-2], runs[-1])
     # ---- PDF ----
     pdf_path = out / "audit_report.pdf"
-    render_pdf(results, pdf_path)
+    render_pdf(
+        {
+            "summary": results["summary"],
+            "results": results["results"],
+            "artifacts": artifacts
+        },
+        assessment,
+        pdf_path
+    )
 
     if progress_callback:
         progress_callback("Generating dashboard…")
@@ -115,8 +156,11 @@ def run_agent(
         progress_callback("Scan complete.")
 
     return {
+        "assessment": assessment,
+        "summary": results["summary"],
+        "results": results["results"],
+        "artifacts": artifacts,
         "json": str(findings_path),
         "pdf": str(pdf_path),
-        "dashboard": str(dashboard_path),
-        "summary": results["summary"]
+        "dashboard": str(dashboard_path)
     }

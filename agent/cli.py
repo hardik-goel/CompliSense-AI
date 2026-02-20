@@ -12,6 +12,7 @@ from agent.rules.loader import load_rulepack, iter_rules
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
 from agent.db.mongo import insert_report
+from agent.scoring.overall import compute_overall_compliance, verdict_from_score
 
 
 @click.group()
@@ -49,6 +50,34 @@ def scan(root, pack, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
     rp = load_rulepack(Path(pack))
     results = run_scan(root, iter_rules(rp))
 
+    # Compute assessment (like agent_runner does)
+    artifacts = results["artifacts"]
+    rule_results = results["results"]
+    
+    avg_rule_confidence = (
+        sum(r["confidence"] for r in rule_results) / len(rule_results)
+        if rule_results else 0
+    )
+    
+    overall_compliance = compute_overall_compliance(
+        artifacts_pct=artifacts["compliance_pct"],
+        avg_rule_confidence=avg_rule_confidence
+    )
+    
+    verdict = verdict_from_score(overall_compliance)
+    
+    assessment = {
+        "verdict": verdict,
+        "overall_compliance_pct": overall_compliance,
+        "artifact_compliance_pct": artifacts["compliance_pct"],
+        "avg_rule_confidence": round(avg_rule_confidence, 2),
+        "why_not_compliant": {
+            "missing_artifacts": [a.get("name", a.get("id", "unknown")) for a in artifacts.get("missing", [])],
+            "failed_rules": [r["title"] for r in rule_results if r["status"] == "FAIL"]
+        },
+        "tier": "FREE"
+    }
+
     # Save JSON report
     json_path = out / "findings.json"
     json_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
@@ -57,7 +86,7 @@ def scan(root, pack, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
     # Optionally save PDF report
     if pdf:
         pdf_path = out / "audit_report.pdf"
-        render_pdf(results, pdf_path)
+        render_pdf(results, assessment, pdf_path)  # Fixed: now passes assessment
         click.echo(f"Wrote {pdf_path}")
 
     # Optionally persist to Mongo
