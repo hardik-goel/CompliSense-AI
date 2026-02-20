@@ -134,8 +134,8 @@ import argparse
 from pathlib import Path
 import requests
 
-# Add agent directory to path
-agent_dir = Path(__file__).parent
+# Add agent directory to path (so `agent` package is importable)
+agent_dir = Path(__file__).resolve().parent
 sys.path.insert(0, str(agent_dir))
 
 def load_config():
@@ -202,16 +202,45 @@ def main():
             from agent.rules.loader import load_rulepack, iter_rules
             from agent.scanner import run_scan
             from agent.report.render import render_pdf
+            from agent.scoring.overall import compute_overall_compliance, verdict_from_score
 
             # Load rulepack
             rulepack_path = agent_dir / "rulepacks" / "euai_core_v1.yaml"
             if not rulepack_path.exists():
-                # Use default rulepack
+                # Use default rulepack if present
                 rulepack_path = agent_dir / "rulepacks" / "default_rules.yaml"
 
             print("🔍 Running compliance scan...")
             rp = load_rulepack(rulepack_path)
             results = run_scan(project_path, iter_rules(rp))
+
+            # Build assessment similar to core CLI
+            artifacts = results.get("artifacts", {{}})
+            rule_results = results.get("results", [])
+
+            avg_rule_confidence = (
+                sum(r.get("confidence", 0) for r in rule_results) / len(rule_results)
+                if rule_results else 0
+            )
+
+            overall_compliance = compute_overall_compliance(
+                artifacts_pct=artifacts.get("compliance_pct", 0),
+                avg_rule_confidence=avg_rule_confidence
+            )
+
+            verdict = verdict_from_score(overall_compliance)
+
+            assessment = {{
+                "verdict": verdict,
+                "overall_compliance_pct": overall_compliance,
+                "artifact_compliance_pct": artifacts.get("compliance_pct", 0),
+                "avg_rule_confidence": round(avg_rule_confidence, 2),
+                "why_not_compliant": {{
+                    "missing_artifacts": [a.get("name", a.get("id", "unknown")) for a in artifacts.get("missing", [])],
+                    "failed_rules": [r.get("title", "") for r in rule_results if r.get("status") == "FAIL"]
+                }},
+                "tier": "FREE"
+            }}
 
             # Generate reports
             print("📄 Generating reports...")
@@ -223,7 +252,7 @@ def main():
 
             if "pdf" in config["output_format"]:
                 pdf_path = output_dir / "compliance_report.pdf"
-                render_pdf(results, pdf_path)
+                render_pdf(results, assessment, pdf_path)
                 print(f"✅ PDF report: {{pdf_path}}")
 
             # Send completion results to SaaS
@@ -309,6 +338,18 @@ echo ""
 
         install_path = target_dir / "setup_agent.sh"
         install_path.write_text(install_script)
+        
+        # Make executable on Unix-like systems
+        try:
+            import stat
+            install_path.chmod(install_path.stat().st_mode | stat.S_IEXEC)
+        except Exception:
+            # Fallback: try os.chmod
+            try:
+                import os
+                os.chmod(str(install_path), 0o755)
+            except Exception:
+                pass  # If both fail, user can chmod manually
 
         # Create Windows batch file
         batch_script = '''@echo off
@@ -357,5 +398,5 @@ pause
         return zip_path
 
 
-# Singleton instance
-agent_generator = AgentGenerator(Path("../../agent"))  # Path to your existing TruthModule
+# Singleton instance - base path is project root / agent
+agent_generator = AgentGenerator(Path(__file__).resolve().parents[2] / "agent")

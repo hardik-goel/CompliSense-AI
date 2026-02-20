@@ -398,6 +398,15 @@ zsh: abort      ./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
 Just run source 3.10_venv/bin/activate
 export MACOSX_DEPLOYMENT_TARGET=15.6
 
+HLD:
+
+![img_1.png](img_1.png)
+
+
+LLD:
+
+![img_2.png](img_2.png)
+
 
 📜 License
 

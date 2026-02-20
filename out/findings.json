@@ -13,13 +13,18 @@
       "status": "PASS",
       "confidence": 100,
       "risk": "LOW",
-      "execution_time_sec": 0.122,
+      "execution_time_sec": 0.125,
       "sla_status": "OK",
       "files_used": [
         "compliance/risk_register.yaml",
         "schemas/risk_register.schema.json"
       ],
       "remediation": [],
+      "evidence": {
+        "schema_valid": true,
+        "coverage": 1.0,
+        "validation_report": "ok"
+      },
       "context": {
         "schema_valid": true,
         "coverage": 1.0,
@@ -46,6 +51,10 @@
         "data/dataset_card.json"
       ],
       "remediation": [],
+      "evidence": {
+        "file_found": true,
+        "file_hash": "1a7241cae3173581..."
+      },
       "context": {
         "exists": true,
         "missing_fields": 0,
@@ -72,6 +81,10 @@
         "model/model_card.json"
       ],
       "remediation": [],
+      "evidence": {
+        "file_found": true,
+        "file_hash": "786afdbb5df54547..."
+      },
       "context": {
         "exists": true,
         "missing_fields": 0,
@@ -95,7 +108,13 @@
       "execution_time_sec": 0.002,
       "sla_status": "OK",
       "files_used": [],
-      "remediation": [],
+      "remediation": [
+        "Create model technical documentation (model/model_card.json)",
+        "Document intended purpose and use cases"
+      ],
+      "evidence": {
+        "coverage_score": 0.7
+      },
       "context": {
         "coverage_score": 0.7,
         "evidence": {
@@ -121,6 +140,7 @@
         "compliance/transparency_documentation.yaml"
       ],
       "remediation": [],
+      "evidence": {},
       "context": {
         "exists": false,
         "missing_fields": 0,
@@ -141,6 +161,7 @@
         "compliance/human_oversight.yaml"
       ],
       "remediation": [],
+      "evidence": {},
       "context": {
         "exists": false,
         "missing_fields": 0,
@@ -161,6 +182,7 @@
         "compliance/accuracy_robustness.yaml"
       ],
       "remediation": [],
+      "evidence": {},
       "context": {
         "exists": false,
         "missing_fields": 0,
@@ -181,6 +203,7 @@
         "compliance/quality_management.yaml"
       ],
       "remediation": [],
+      "evidence": {},
       "context": {
         "exists": false,
         "missing_fields": 0,
@@ -200,7 +223,23 @@
       "files_used": [
         "data/dataset_card.json"
       ],
-      "remediation": [],
+      "remediation": [
+        "Enhance dataset card with governance details",
+        "Document data quality metrics",
+        "Specify data preprocessing steps",
+        "Document train/validation/test splits",
+        "Create data lineage documentation"
+      ],
+      "evidence": {
+        "file_found": true,
+        "file_hash": "1a7241cae3173581...",
+        "missing_fields": [
+          "data_quality_metrics",
+          "data_preprocessing",
+          "train_val_test_splits",
+          "data_lineage"
+        ]
+      },
       "context": {
         "exists": true,
         "missing_fields": 4,
@@ -232,6 +271,7 @@
         "compliance/record_keeping.yaml"
       ],
       "remediation": [],
+      "evidence": {},
       "context": {
         "exists": false,
         "missing_fields": 0,

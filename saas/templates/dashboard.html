@@ -197,6 +197,12 @@
                         <div class="mb-3">
                             <label class="form-label">Password</label>
                             <input type="password" class="form-control" id="registerPassword" required>
+                            <div class="form-text" id="passwordHelp">
+                                Password must be at least 8 characters and include upper, lower case letters and a digit.
+                            </div>
+                            <div class="form-text text-danger d-none" id="passwordError">
+                                Password is too weak. Please meet the requirements above.
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-success w-100">
                             <span id="registerSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
@@ -229,30 +235,38 @@
             }, 5000);
         }
 
-        // Check if user is already logged in
+        // Check if user is already logged in without causing redirect loops
         function checkExistingAuth() {
-            // Check if we have an auth token in localStorage (from previous session)
             const token = localStorage.getItem('auth_token');
-            if (token) {
-                // Verify token is still valid by making a simple API call
-                fetch('/api/health', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // Token is valid, redirect to dashboard
-                        window.location.href = '/dashboard';
-                    } else {
-                        // Token invalid, clear it
-                        localStorage.removeItem('auth_token');
-                        localStorage.removeItem('user');
-                    }
-                })
-                .catch(() => {
+            if (!token) {
+                return;
+            }
+
+            // Use /api/stats (auth-protected) instead of /api/health to verify token
+            fetch('/api/stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async (response) => {
+                if (!response.ok) {
+                    // Token invalid, clear it
                     localStorage.removeItem('auth_token');
                     localStorage.removeItem('user');
-                });
-            }
+                    return;
+                }
+                const data = await response.json();
+                if (data.error) {
+                    // Not authenticated at backend, clear and stay on home
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user');
+                    return;
+                }
+                // Token valid, redirect once to dashboard
+                window.location.href = '/dashboard';
+            })
+            .catch(() => {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+            });
         }
 
         // Load stats
@@ -325,8 +339,17 @@
                     }, 1000);
 
                 } else {
-                    const error = await response.json();
-                    showAlert(error.detail || 'Login failed', 'danger');
+                    let message = 'Login failed';
+                    try {
+                        const error = await response.json();
+                        message = error.detail || message;
+                    } catch (e) {
+                        const text = await response.text();
+                        if (text) {
+                            message = text;
+                        }
+                    }
+                    showAlert(message, 'danger');
                 }
             } catch (error) {
                 showAlert('Network error: ' + error.message, 'danger');
@@ -335,6 +358,31 @@
                 submitBtn.disabled = false;
             }
         });
+
+        function isStrongPassword(pwd) {
+            if (!pwd || pwd.length < 8) return false;
+            const hasUpper = /[A-Z]/.test(pwd);
+            const hasLower = /[a-z]/.test(pwd);
+            const hasDigit = /[0-9]/.test(pwd);
+            return hasUpper && hasLower && hasDigit;
+        }
+
+        // Live password strength feedback
+        const registerPasswordInput = document.getElementById('registerPassword');
+        const passwordError = document.getElementById('passwordError');
+        if (registerPasswordInput) {
+            registerPasswordInput.addEventListener('input', () => {
+                if (!registerPasswordInput.value) {
+                    passwordError.classList.add('d-none');
+                    return;
+                }
+                if (isStrongPassword(registerPasswordInput.value)) {
+                    passwordError.classList.add('d-none');
+                } else {
+                    passwordError.classList.remove('d-none');
+                }
+            });
+        }
 
         // Handle register form submission
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -346,6 +394,12 @@
             const password = document.getElementById('registerPassword').value;
             const spinner = document.getElementById('registerSpinner');
             const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            if (!isStrongPassword(password)) {
+                showAlert('Password is too weak. Please meet the password requirements.', 'danger');
+                passwordError.classList.remove('d-none');
+                return;
+            }
 
             spinner.classList.remove('d-none');
             submitBtn.disabled = true;
@@ -381,8 +435,17 @@
                     }, 1000);
 
                 } else {
-                    const error = await response.json();
-                    showAlert(error.detail || 'Registration failed', 'danger');
+                    let message = 'Registration failed';
+                    try {
+                        const error = await response.json();
+                        message = error.detail || message;
+                    } catch (e) {
+                        const text = await response.text();
+                        if (text) {
+                            message = text;
+                        }
+                    }
+                    showAlert(message, 'danger');
                 }
             } catch (error) {
                 showAlert('Network error: ' + error.message, 'danger');

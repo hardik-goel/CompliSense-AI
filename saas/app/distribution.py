@@ -11,6 +11,7 @@ import datetime
 from auth import get_current_user
 from projects import projects_db, scans_db
 from agent_generator import agent_generator
+from agent.db.mongo import insert_audit_log  # type: ignore
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -78,5 +79,26 @@ async def receive_scan_results(results_data: Dict[str, Any]):
         scan["last_completed"] = datetime.datetime.utcnow().isoformat()
         scan["results_summary"] = results_data.get("summary", {})
         scan["results_count"] = results_data.get("results_count", 0)
+
+        # Write minimal audit log entry (metadata only)
+        try:
+            insert_audit_log(
+                {
+                    "scan_id": scan_id,
+                    "user_id": scan.get("user_id"),
+                    "project_id": scan.get("project_id"),
+                    "rulepack_version": scan.get("rulepack_version"),
+                    "status": "completed",
+                    "source": "agent_results",
+                    "timestamp": datetime.datetime.utcnow(),
+                    "metadata": {
+                        "results_count": scan.get("results_count", 0),
+                        "summary": scan.get("results_summary", {}),
+                    },
+                }
+            )
+        except Exception:
+            # Audit logging is best-effort; never break main flow
+            pass
 
     return {"status": "results_received"}

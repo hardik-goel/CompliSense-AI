@@ -1,5 +1,5 @@
 """
-Core scanning engine.
+Core scanning engine with enhanced error handling.
 Executes evaluators, computes compliance confidence, risk,
 and aggregates audit-ready results.
 """
@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 from importlib import import_module
 from time import perf_counter
+import logging
 
 import yaml
 from rule_engine import Rule
@@ -16,6 +17,8 @@ from agent.scoring.risk import classify_risk
 from agent.remediation.generator import generate_remediation
 from agent.inference.llm import infer
 from agent.utils.resources import resource_path
+
+logger = logging.getLogger(__name__)
 
 
 def _is_missing_evidence(ctx: Dict[str, Any]) -> bool:
@@ -31,38 +34,94 @@ def _is_missing_evidence(ctx: Dict[str, Any]) -> bool:
 
 
 def scan_required_artifacts(root: Path) -> Dict[str, Any]:
-    manifest = Path(resource_path("agent/artefacts/required_artifacts.yaml"))
-    spec = yaml.safe_load(manifest.read_text())
+    """Scan for required artifacts with better error handling."""
+    try:
+        manifest = Path(resource_path("agent/artefacts/required_artifacts.yaml"))
+        if not manifest.exists():
+            logger.error(f"Required artifacts manifest not found at {manifest}")
+            return {
+                "required_total": 0,
+                "present": [],
+                "missing": [],
+                "compliance_pct": 0.0,
+                "error": f"Manifest file not found: {manifest}"
+            }
+        
+        spec = yaml.safe_load(manifest.read_text())
+        if not spec or "artifacts" not in spec:
+            logger.error("Invalid manifest structure")
+            return {
+                "required_total": 0,
+                "present": [],
+                "missing": [],
+                "compliance_pct": 0.0,
+                "error": "Invalid manifest structure"
+            }
 
-    missing = []
-    present = []
+        missing = []
+        present = []
 
-    for a in spec["artifacts"]:
-        found = False
-        for f in a["files"]:
-            if (root / f).exists():
-                found = True
-                break
+        for a in spec["artifacts"]:
+            found = False
+            for f in a.get("files", []):
+                try:
+                    if (root / f).exists():
+                        found = True
+                        break
+                except Exception as e:
+                    logger.warning(f"Error checking file {f}: {e}")
+                    continue
 
-        if found:
-            present.append(a["id"])
-        else:
-            missing.append(a)
+            if found:
+                present.append(a["id"])
+            else:
+                missing.append(a)
 
-    total = len(spec["artifacts"])
-    compliance_pct = round(len(present) / total * 100, 2)
+        total = len(spec["artifacts"])
+        compliance_pct = round(len(present) / total * 100, 2) if total > 0 else 0.0
 
-    return {
-        "required_total": total,
-        "present": present,
-        "missing": missing,
-        "compliance_pct": compliance_pct
-    }
+        return {
+            "required_total": total,
+            "present": present,
+            "missing": missing,
+            "compliance_pct": compliance_pct
+        }
+    except Exception as e:
+        logger.exception(f"Error scanning required artifacts: {e}")
+        return {
+            "required_total": 0,
+            "present": [],
+            "missing": [],
+            "compliance_pct": 0.0,
+            "error": str(e)
+        }
 
 
 def _run_evaluator(root: Path, evaluator: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
-    mod = import_module(f"agent.evaluators.{evaluator}")
-    return mod.run(root, inputs)
+    """Run evaluator with enhanced error handling."""
+    try:
+        mod = import_module(f"agent.evaluators.{evaluator}")
+        if not hasattr(mod, 'run'):
+            raise AttributeError(f"Evaluator {evaluator} has no 'run' function")
+        return mod.run(root, inputs)
+    except ImportError as e:
+        logger.error(f"Failed to import evaluator {evaluator}: {e}")
+        return {
+            "engine_error": f"Evaluator '{evaluator}' not found. Available evaluators: file_presence, schema_validate, techdoc_coverage",
+            "evaluator": evaluator
+        }
+    except AttributeError as e:
+        logger.error(f"Evaluator {evaluator} missing required function: {e}")
+        return {
+            "engine_error": f"Evaluator '{evaluator}' is invalid: {e}",
+            "evaluator": evaluator
+        }
+    except Exception as e:
+        logger.exception(f"Error running evaluator {evaluator}: {e}")
+        return {
+            "engine_error": f"Error in evaluator '{evaluator}': {str(e)}",
+            "evaluator": evaluator
+        }
 
 
 def run_scan(
@@ -72,16 +131,47 @@ def run_scan(
     progress_callback=None,
     cancel_event=None
 ) -> Dict[str, Any]:
+    """Run compliance scan with enhanced error handling."""
+    
+    # Validate inputs
+    if not root.exists():
+        raise FileNotFoundError(f"Root directory does not exist: {root}")
+    if not root.is_dir():
+        raise NotADirectoryError(f"Root path is not a directory: {root}")
+    if not rules:
+        logger.warning("No rules provided for scan")
+        return {
+            "summary": {"passed": 0, "partial": 0, "failed": 0},
+            "results": [],
+            "artifacts": {"required_total": 0, "present": [], "missing": [], "compliance_pct": 0.0},
+            "error": "No rules provided"
+        }
 
     results = []
     counts = {"passed": 0, "partial": 0, "failed": 0}
-    artifact_scan = scan_required_artifacts(root)
+    
+    try:
+        artifact_scan = scan_required_artifacts(root)
+    except Exception as e:
+        logger.exception(f"Error scanning artifacts: {e}")
+        artifact_scan = {
+            "required_total": 0,
+            "present": [],
+            "missing": [],
+            "compliance_pct": 0.0,
+            "error": str(e)
+        }
+    
     # ---- Discover files once ----
-    all_files = [
-        str(p.relative_to(root))
-        for p in root.rglob("*")
-        if p.is_file()
-    ]
+    try:
+        all_files = [
+            str(p.relative_to(root))
+            for p in root.rglob("*")
+            if p.is_file()
+        ]
+    except Exception as e:
+        logger.warning(f"Error discovering files: {e}")
+        all_files = []
 
     if progress_callback:
         progress_callback({"event": "FILES_DISCOVERED", "files": all_files})
@@ -98,7 +188,7 @@ def run_scan(
         if progress_callback:
             progress_callback({
                 "event": "RULE_START",
-                "rule_id": r["id"],
+                "rule_id": r.get("id", f"rule_{idx}"),
                 "index": idx,
                 "total": total_rules
             })
@@ -106,10 +196,16 @@ def run_scan(
         start = perf_counter()
         ctx: Dict[str, Any] = {}
 
-        try:
-            ctx = _run_evaluator(root, r["evaluator"], r.get("inputs", {}))
-        except Exception as e:
-            ctx = {"engine_error": str(e)}
+        # Validate rule structure
+        if "evaluator" not in r:
+            logger.error(f"Rule {r.get('id', idx)} missing 'evaluator' field")
+            ctx = {"engine_error": "Rule missing 'evaluator' field"}
+        else:
+            try:
+                ctx = _run_evaluator(root, r["evaluator"], r.get("inputs", {}))
+            except Exception as e:
+                logger.exception(f"Unexpected error in evaluator: {e}")
+                ctx = {"engine_error": f"Unexpected error: {str(e)}"}
 
         elapsed_sec = round(perf_counter() - start, 3)
         elapsed_ms = elapsed_sec * 1000
@@ -121,7 +217,7 @@ def run_scan(
         ]
 
         # ---- Rule evaluation ----
-        rule = Rule(r.get("expression", "False"))
+        rule_expr = r.get("expression", "False")
         status = "FAIL"
         ok = False
         missing = _is_missing_evidence(ctx)
@@ -169,8 +265,10 @@ def run_scan(
                     eval_ctx[key] = value
             
             try:
+                rule = Rule(rule_expr)
                 ok = bool(rule.matches(eval_ctx))
             except Exception as e:
+                logger.warning(f"Error evaluating rule expression '{rule_expr}': {e}")
                 ok = False
                 ctx["expression_error"] = str(e)
 
@@ -206,7 +304,11 @@ def run_scan(
 
         # Use weighted confidence if weights are provided, otherwise use status-based
         if weights and signals:
-            confidence = compute_confidence(signals, weights)
+            try:
+                confidence = compute_confidence(signals, weights)
+            except Exception as e:
+                logger.warning(f"Error computing confidence: {e}")
+                confidence = 100 if status == "PASS" else (60 if status == "PARTIAL" else 20)
         elif status == "PASS":
             confidence = 100
         elif status == "PARTIAL":
@@ -216,12 +318,41 @@ def run_scan(
         else:
             confidence = 20
 
-        risk = classify_risk(confidence)
+        risk = classify_risk(confidence, r.get("severity", "unknown"))
 
         if confidence < 50 and llm_enabled:
-            ctx["llm_inference"] = infer(signals)
+            try:
+                ctx["llm_inference"] = infer(signals)
+            except Exception as e:
+                logger.warning(f"LLM inference failed: {e}")
 
-        remediation = generate_remediation(r["id"], confidence) if status != "PASS" else []
+        remediation = []
+        if status != "PASS":
+            try:
+                remediation = generate_remediation(r.get("id", ""), confidence)
+            except Exception as e:
+                logger.warning(f"Error generating remediation: {e}")
+
+        # ---- Extract evidence ----
+        evidence = {}
+        if ctx.get("exists"):
+            evidence["file_found"] = True
+            if ctx.get("file_hash"):
+                evidence["file_hash"] = ctx["file_hash"][:16] + "..."  # Truncate for display
+        if ctx.get("schema_valid"):
+            evidence["schema_valid"] = True
+        if ctx.get("missing_fields", 0) > 0:
+            evidence["missing_fields"] = ctx.get("missing_fields_list", [])
+        if ctx.get("coverage") is not None:
+            evidence["coverage"] = ctx.get("coverage")
+        if ctx.get("coverage_score") is not None:
+            evidence["coverage_score"] = ctx.get("coverage_score")
+        if ctx.get("schema_validation_report"):
+            evidence["validation_report"] = ctx.get("schema_validation_report")
+        if ctx.get("parse_error"):
+            evidence["parse_error"] = ctx.get("parse_error")
+        if ctx.get("engine_error"):
+            evidence["error"] = ctx.get("engine_error")
 
         # ---- SLA evaluation ----
         sla = r.get("sla", {})
@@ -232,9 +363,9 @@ def run_scan(
             sla_status = "WARN"
 
         results.append({
-            "rule_id": r["id"],
-            "clause": r["clause"],
-            "title": r["title"],
+            "rule_id": r.get("id", f"rule_{idx}"),
+            "clause": r.get("clause", "Unknown"),
+            "title": r.get("title", "Untitled rule"),
             "severity": r.get("severity", "unknown"),
             "status": status,
             "confidence": confidence,
@@ -243,13 +374,14 @@ def run_scan(
             "sla_status": sla_status,
             "files_used": files_used,
             "remediation": remediation,
+            "evidence": evidence,
             "context": ctx
         })
 
         if progress_callback:
             progress_callback({
                 "event": "RULE_END",
-                "rule_id": r["id"],
+                "rule_id": r.get("id", f"rule_{idx}"),
                 "status": status,
                 "index": idx,
                 "total": total_rules

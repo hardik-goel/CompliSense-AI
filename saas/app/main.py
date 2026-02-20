@@ -3,6 +3,14 @@
 Fixed SaaS Web Dashboard with Cookie Authentication
 """
 
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path so `agent` and other top-level packages import correctly
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from fastapi import FastAPI, Depends, HTTPException, Request, status, Cookie
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -13,7 +21,7 @@ from pathlib import Path
 from typing import Optional
 import jwt
 
-from auth import router as auth_router, get_current_user, SECRET_KEY, ALGORITHM
+from auth import router as auth_router, get_current_user, SECRET_KEY, ALGORITHM, users_db
 from projects import router as projects_router, projects_db, scans_db
 from distribution import router as distribution_router
 
@@ -48,10 +56,6 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(distribution_router)
-
-# Import shared databases
-from auth import users_db
-
 
 def get_user_from_cookie(access_token: Optional[str] = Cookie(None)):
     """Get user from cookie token"""
@@ -115,13 +119,32 @@ async def get_dashboard_stats(request: Request):
     user_projects = [p for p in projects_db.values() if p.get("user_id") == user["id"]]
     user_scans = [s for s in scans_db.values() if s.get("user_id") == user["id"]]
 
+    # Compute free-tier usage if applicable
+    tier = user.get("tier", "free")
+    free_scans_used = 0
+    free_scans_limit = 0
+    if tier == "free":
+        import datetime as _dt
+        now = _dt.datetime.utcnow()
+        year_month = (now.year, now.month)
+        scans_this_month = [
+            s for s in user_scans
+            if s.get("created_at")
+            and (_dt.datetime.fromisoformat(s["created_at"]).year,
+                 _dt.datetime.fromisoformat(s["created_at"]).month) == year_month
+        ]
+        free_scans_used = len(scans_this_month)
+        free_scans_limit = 10
+
     return {
         "total_users": len(users_db),
         "total_projects": len(user_projects),
         "total_scans": len(user_scans),
         "active_scans": len([s for s in user_scans if s.get("status") in ["running", "downloaded"]]),
         "completed_scans": len([s for s in user_scans if s.get("status") == "completed"]),
-        "user_tier": user.get("tier", "free")
+        "user_tier": tier,
+        "free_scans_used": free_scans_used,
+        "free_scans_limit": free_scans_limit,
     }
 
 

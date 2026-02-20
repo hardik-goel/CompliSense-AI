@@ -49,7 +49,15 @@
                 <div class="col-md-8">
                     <h1><i class="fas fa-robot me-2"></i>CompliSense-AI</h1>
                     <p class="lead mb-0" id="welcomeMessage">Welcome back!</p>
-                    <small class="opacity-75">Tier: <span class="badge bg-light text-dark" id="userTier">free</span></small>
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 mt-1">
+                        <small class="opacity-75">
+                            Tier: <span class="badge bg-light text-dark" id="userTier">free</span>
+                        </small>
+                        <small class="opacity-75" id="freeTierInfo" style="display:none;">
+                            <i class="fas fa-gauge-high me-1"></i>
+                            Free scans this month: <span id="freeScansUsed">0</span>/<span id="freeScansLimit">10</span>
+                        </small>
+                    </div>
                 </div>
                 <div class="col-md-4 text-end">
                     <!-- Add Home Button -->
@@ -114,6 +122,16 @@
                         <i class="fas fa-check-circle fa-2x text-info mb-2"></i>
                         <h3 id="completedScans">0</h3>
                         <p class="text-muted">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3"><i class="fas fa-chart-pie me-2"></i>Scan Breakdown</h5>
+                        <canvas id="scansChart" height="80"></canvas>
                     </div>
                 </div>
             </div>
@@ -206,7 +224,9 @@
                                 <div class="mt-3">
                                     <small class="text-muted">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        The agent runs entirely on your local machine. No sensitive data is sent to our servers.
+                                        The local agent scans your codebase and documentation on-prem. By default, only high-level
+                                        scan metadata (scan ID, timestamps, aggregate scores and counts) is sent back to the SaaS
+                                        service to power dashboards and history views.
                                     </small>
                                 </div>
                             </div>
@@ -215,8 +235,12 @@
                     <div class="col-md-4">
                         <div class="card">
                             <div class="card-body">
-                                <h6><i class="fas fa-shield-alt me-2 text-success"></i>Privacy First</h6>
-                                <p class="small">All compliance scanning happens locally on your infrastructure. Only anonymized metadata is sent to the SaaS platform.</p>
+                                <h6><i class="fas fa-shield-alt me-2 text-success"></i>Privacy & Scope</h6>
+                                <p class="small">
+                                    All compliance scanning happens locally on your infrastructure.
+                                    The SaaS dashboard only receives aggregated metadata (scan IDs, timestamps, article-level scores)
+                                    and never ingests training data, model weights, or raw logs.
+                                </p>
 
                                 <h6><i class="fas fa-bolt me-2 text-warning"></i>Quick Setup</h6>
                                 <p class="small">The downloaded agent includes everything needed to run compliance scans with a single command.</p>
@@ -323,11 +347,22 @@
         </div>
     </div>
 
+    <!-- Legal & Scope Notice -->
+    <div class="container mt-4 mb-4">
+        <div class="alert alert-secondary small mb-0">
+            <strong>Important:</strong> CompliSense-AI is a technical compliance support tool and
+            <strong>does not provide legal advice</strong>. It helps assess alignment with selected provisions of the EU AI Act
+            based on the artifacts you supply (risk registers, model cards, dataset documentation, etc.).
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let projects = [];
         let scans = [];
         let currentProjectId = null;
+        let scansChart = null;
 
         // Show alerts
         function showAlert(message, type = 'info') {
@@ -354,12 +389,22 @@
         }
 
         // Check if user is authenticated
+        let authCheckInProgress = false;
         function checkAuth() {
+            if (authCheckInProgress) {
+                return false;  // Prevent multiple simultaneous checks
+            }
+            authCheckInProgress = true;
             const token = getAuthToken();
             if (!token) {
-                window.location.href = '/';
+                // Only redirect if we're not already on the home page
+                if (window.location.pathname !== '/') {
+                    window.location.href = '/';
+                }
+                authCheckInProgress = false;
                 return false;
             }
+            authCheckInProgress = false;
             return true;
         }
 
@@ -371,10 +416,16 @@
             document.getElementById('userTier').textContent = user.tier || 'free';
         }
 
-        // Load dashboard data
+        // Load dashboard data - prevent multiple simultaneous calls
+        let isLoadingDashboard = false;
         async function loadDashboardData() {
+            if (isLoadingDashboard) {
+                console.log('Dashboard data already loading, skipping...');
+                return;
+            }
             if (!checkAuth()) return;
 
+            isLoadingDashboard = true;
             try {
                 const token = getAuthToken();
 
@@ -384,15 +435,58 @@
                 });
 
                 if (!statsResponse.ok) {
+                    if (statsResponse.status === 401 || statsResponse.status === 403) {
+                        // Auth error - redirect only if not already on home
+                        if (window.location.pathname !== '/') {
+                            window.location.href = '/';
+                        }
+                        return;
+                    }
                     throw new Error('Failed to load stats');
                 }
 
                 const stats = await statsResponse.json();
 
-                document.getElementById('totalProjects').textContent = stats.total_projects;
-                document.getElementById('totalScans').textContent = stats.total_scans;
-                document.getElementById('activeScans').textContent = stats.active_scans;
-                document.getElementById('completedScans').textContent = stats.completed_scans;
+                document.getElementById('totalProjects').textContent = stats.total_projects || 0;
+                document.getElementById('totalScans').textContent = stats.total_scans || 0;
+                document.getElementById('activeScans').textContent = stats.active_scans || 0;
+                document.getElementById('completedScans').textContent = stats.completed_scans || 0;
+
+                // Update tier and free-scan info
+                const tier = stats.user_tier || 'free';
+                document.getElementById('userTier').textContent = tier;
+                if (tier === 'free' && typeof stats.free_scans_limit === 'number') {
+                    document.getElementById('freeScansUsed').textContent = stats.free_scans_used || 0;
+                    document.getElementById('freeScansLimit').textContent = stats.free_scans_limit;
+                    document.getElementById('freeTierInfo').style.display = 'inline';
+                } else {
+                    document.getElementById('freeTierInfo').style.display = 'none';
+                }
+
+                // Simple Chart.js chart for scan breakdown
+                const ctx = document.getElementById('scansChart').getContext('2d');
+                const chartData = {
+                    labels: ['Total', 'Active', 'Completed'],
+                    datasets: [{
+                        label: 'Scans',
+                        data: [stats.total_scans || 0, stats.active_scans || 0, stats.completed_scans || 0],
+                        backgroundColor: ['#4f46e5', '#f59e0b', '#10b981'],
+                    }]
+                };
+                if (scansChart) {
+                    scansChart.data = chartData;
+                    scansChart.update();
+                } else {
+                    scansChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: chartData,
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                }
 
                 // Load projects
                 await loadProjects();
@@ -402,7 +496,12 @@
 
             } catch (error) {
                 console.error('Failed to load dashboard data:', error);
-                showAlert('Failed to load dashboard data: ' + error.message, 'danger');
+                // Don't redirect on network errors, just show alert
+                if (error.message && !error.message.includes('Failed to fetch')) {
+                    showAlert('Failed to load dashboard data: ' + error.message, 'danger');
+                }
+            } finally {
+                isLoadingDashboard = false;
             }
         }
 
@@ -764,13 +863,28 @@
             document.getElementById('downloadBtn').disabled = !this.value;
         });
 
-        // Load data when page loads
+        // Load data when page loads - prevent multiple calls
+        let pageLoaded = false;
         document.addEventListener('DOMContentLoaded', () => {
+            if (pageLoaded) return;  // Prevent duplicate calls
+            pageLoaded = true;
+            
             if (checkAuth()) {
                 loadUserInfo();
                 loadDashboardData();
             }
         });
+        
+        // Also prevent duplicate calls from window.onload
+        if (window.addEventListener) {
+            window.addEventListener('load', () => {
+                if (!pageLoaded && checkAuth()) {
+                    pageLoaded = true;
+                    loadUserInfo();
+                    loadDashboardData();
+                }
+            }, { once: true });
+        }
     </script>
 </body>
 </html>

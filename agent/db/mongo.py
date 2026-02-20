@@ -33,13 +33,23 @@ def get_collection(
     coll = client[db_name][coll_name]
 
     # Idempotent index creation
-    coll.create_indexes(
-        [
-            IndexModel([("run_id", ASCENDING)], unique=True, name="uniq_run_id"),
-            IndexModel([("created_at", ASCENDING)], name="created_at_idx"),
-            IndexModel([("summary.failed", ASCENDING)], name="failed_count_idx"),
-        ]
-    )
+    if coll_name == "findings":
+        coll.create_indexes(
+            [
+                IndexModel([("run_id", ASCENDING)], unique=True, name="uniq_run_id"),
+                IndexModel([("created_at", ASCENDING)], name="created_at_idx"),
+                IndexModel([("summary.failed", ASCENDING)], name="failed_count_idx"),
+            ]
+        )
+    elif coll_name == "audit_logs":
+        coll.create_indexes(
+            [
+                IndexModel([("audit_id", ASCENDING)], unique=True, name="uniq_audit_id"),
+                IndexModel([("timestamp", ASCENDING)], name="ts_idx"),
+                IndexModel([("user_id", ASCENDING)], name="user_idx"),
+                IndexModel([("scan_id", ASCENDING)], name="scan_idx"),
+            ]
+        )
     return coll
 
 
@@ -79,3 +89,40 @@ def insert_report(
     coll = get_collection(client=client, db_name=db_name, coll_name=coll_name)
     coll.insert_one(doc)
     return run_id
+
+
+def insert_audit_log(
+    event: Dict[str, Any],
+    *,
+    client: Optional[MongoClient] = None,
+    db_name: Optional[str] = None,
+    coll_name: str = "audit_logs",
+) -> str:
+    """
+    Insert an audit log entry capturing who ran what, when, and with which rules.
+
+    Expected event keys (all optional but recommended):
+      - user_id
+      - project_id
+      - scan_id
+      - rulepack_version
+      - status
+      - source ("agent_results", "agent_heartbeat", etc.)
+      - metadata (dict with summary counts only)
+    """
+    audit_id = event.get("audit_id") or str(uuid4())
+    doc = {
+        "audit_id": audit_id,
+        "timestamp": event.get("timestamp") or datetime.utcnow(),
+        "user_id": event.get("user_id"),
+        "project_id": event.get("project_id"),
+        "scan_id": event.get("scan_id"),
+        "rulepack_version": event.get("rulepack_version"),
+        "status": event.get("status"),
+        "source": event.get("source"),
+        "metadata": event.get("metadata", {}),
+    }
+
+    coll = get_collection(client=client, db_name=db_name, coll_name=coll_name)
+    coll.insert_one(doc)
+    return audit_id
