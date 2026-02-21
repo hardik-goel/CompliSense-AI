@@ -4,9 +4,13 @@ Agent distribution endpoints for CompliSense-AI
 Handles agent download and management
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
-from typing import Dict, Any
+import asyncio
+import secrets
+import time
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse, JSONResponse
+from typing import Dict, Any, Optional
 import datetime
 from auth import get_current_user
 from projects import projects_db, scans_db
@@ -15,41 +19,93 @@ from agent.db.mongo import insert_audit_log  # type: ignore
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
+# Short-lived tokens for download (scan_id -> (user_id, expiry_ts))
+_download_tokens: Dict[str, tuple] = {}
+_TOKEN_TTL_SEC = 120
 
-@router.get("/download/{scan_id}")
-async def download_agent(scan_id: str, current_user: dict = Depends(get_current_user)):
-    """Download a customized agent for a specific scan"""
+
+def _get_scan_and_check(scan_id: str, current_user: dict):
     scan = scans_db.get(scan_id)
     if not scan:
         raise HTTPException(status_code=404, detail="Scan configuration not found")
-
     if scan["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to download this agent")
-
     project = projects_db.get(scan["project_id"])
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    return scan, project
 
+
+@router.post("/download/{scan_id}/prepare")
+async def prepare_agent_download(scan_id: str, request: Request, current_user: dict = Depends(get_current_user)):
+    """
+    Prepare agent zip and return a one-time download URL.
+    Client should set window.location.href = download_url so the browser
+    performs a normal GET and shows native download progress (avoids fetch/blob "stuck").
+    """
+    _get_scan_and_check(scan_id, current_user)
     try:
-        # Generate customized agent
-        zip_path = agent_generator.create_custom_agent(scan, current_user)
-
-        # Update scan status
-        scan["last_downloaded"] = datetime.datetime.utcnow().isoformat()
-        scan["status"] = "downloaded"
-
-        # Return the ZIP file
-        return FileResponse(
-            path=zip_path,
-            filename=f"complisense_agent_{scan_id}.zip",
-            media_type='application/zip',
-            headers={
-                "Content-Disposition": f"attachment; filename=complisense_agent_{scan_id}.zip"
-            }
+        zip_path = await asyncio.to_thread(
+            agent_generator.create_custom_agent,
+            scans_db[scan_id],
+            current_user,
         )
-
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate agent: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    scan = scans_db[scan_id]
+    scan["last_downloaded"] = datetime.datetime.utcnow().isoformat()
+    scan["status"] = "downloaded"
+    token = secrets.token_urlsafe(32)
+    _download_tokens[token] = (current_user["id"], time.time() + _TOKEN_TTL_SEC)
+    base = request.base_url
+    download_url = f"{base.rstrip('/')}/agent/download/{scan_id}?token={token}"
+    return JSONResponse({"download_url": download_url})
+
+
+@router.get("/download/{scan_id}")
+async def download_agent(
+    scan_id: str,
+    request: Request,
+    token: Optional[str] = None,
+):
+    """
+    Stream the agent zip. Accepts ?token= from prepare (no auth header needed).
+    Using token + direct navigation lets the browser show download progress.
+    """
+    if token:
+        if token not in _download_tokens:
+            raise HTTPException(status_code=403, detail="Invalid or expired download link")
+        user_id, expiry = _download_tokens[token]
+        if time.time() > expiry:
+            del _download_tokens[token]
+            raise HTTPException(status_code=403, detail="Download link expired")
+        scan = scans_db.get(scan_id)
+        if not scan or scan.get("user_id") != user_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        del _download_tokens[token]
+    else:
+        try:
+            current_user = await get_current_user(request)
+        except HTTPException:
+            raise HTTPException(status_code=401, detail="Use the Download button to get a download link")
+        _get_scan_and_check(scan_id, current_user)
+
+    zip_path = agent_generator.temp_dir / f"complisense_agent_{scan_id}.zip"
+    if not zip_path.exists():
+        raise HTTPException(status_code=404, detail="Agent not found; run Prepare first")
+
+    def iter_file():
+        with open(zip_path, "rb") as f:
+            while chunk := f.read(65536):
+                yield chunk
+
+    return StreamingResponse(
+        iter_file(),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename=complisense_agent_{scan_id}.zip"
+        },
+    )
 
 
 @router.post("/heartbeat")

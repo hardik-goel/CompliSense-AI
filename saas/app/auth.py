@@ -11,7 +11,7 @@ import datetime
 from typing import Optional
 import secrets
 import json
-from passlib.hash import bcrypt
+import bcrypt
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
@@ -75,9 +75,10 @@ def create_jwt_token(user_id: str, email: str) -> str:
 
 def hash_password(plain_password: str) -> str:
     """
-    Hash a password using bcrypt.
+    Hash a password using the bcrypt library.
     """
-    return bcrypt.hash(plain_password)
+    pw_bytes = plain_password.encode("utf-8")
+    return bcrypt.hashpw(pw_bytes, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -85,7 +86,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Verify a password against a bcrypt hash.
     """
     try:
-        return bcrypt.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+        )
     except Exception:
         return False
 

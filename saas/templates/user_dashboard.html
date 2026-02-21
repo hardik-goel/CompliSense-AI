@@ -8,37 +8,58 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-dark: #0f0f14;
+            --card-bg: #1a1a22;
+            --text-primary: #e8e8ed;
+            --text-muted: #8b8b9a;
+            --accent: #6d7eea;
+            --border-color: #2d2d3a;
+            --header-bg: linear-gradient(135deg, #2d2d3a 0%, #1a1a22 100%);
+        }
+        body { background: var(--bg-dark); color: var(--text-primary); }
         .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--header-bg);
             color: white;
             padding: 2rem 0;
             margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
         }
         .stat-card {
-            border: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             transition: transform 0.2s;
         }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card .text-muted { color: var(--text-muted) !important; }
         .project-card {
-            border: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             margin-bottom: 1rem;
             transition: transform 0.2s;
         }
-        .project-card:hover {
-            transform: translateY(-2px);
-        }
-        .nav-tabs .nav-link.active {
-            font-weight: bold;
-            border-bottom: 3px solid #667eea;
-        }
-        .alert {
-            border-radius: 10px;
-        }
+        .project-card:hover { transform: translateY(-2px); }
+        .project-card .text-muted { color: var(--text-muted) !important; }
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); }
+        .card .text-muted { color: var(--text-muted) !important; }
+        .nav-tabs { border-bottom-color: var(--border-color); }
+        .nav-tabs .nav-link { color: var(--text-muted); }
+        .nav-tabs .nav-link.active { font-weight: bold; color: var(--accent); border-color: var(--border-color) var(--border-color) var(--bg-dark); background: var(--bg-dark); }
+        .form-control, .form-select { background: var(--card-bg); border-color: var(--border-color); color: var(--text-primary); }
+        .form-control:focus, .form-select:focus { background: var(--card-bg); border-color: var(--accent); color: var(--text-primary); }
+        .alert-secondary { background: var(--card-bg); border-color: var(--border-color); color: var(--text-primary); }
+        .dropdown-menu { background: var(--card-bg); border-color: var(--border-color); }
+        .dropdown-item { color: var(--text-primary); }
+        .dropdown-item:hover { background: var(--border-color); }
+        .modal-content { background: var(--card-bg); border-color: var(--border-color); color: var(--text-primary); }
+        .modal-header { border-color: var(--border-color); }
+        .modal-body { color: var(--text-primary); }
+        .btn-close { filter: invert(1); }
+        .alert { border-radius: 10px; }
+        .table-dark { --bs-table-bg: var(--card-bg); --bs-table-border-color: var(--border-color); color: var(--text-primary); }
     </style>
 </head>
 <body>
@@ -51,7 +72,7 @@
                     <p class="lead mb-0" id="welcomeMessage">Welcome back!</p>
                     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 mt-1">
                         <small class="opacity-75">
-                            Tier: <span class="badge bg-light text-dark" id="userTier">free</span>
+                            Tier: <span class="badge bg-secondary" id="userTier">free</span>
                         </small>
                         <small class="opacity-75" id="freeTierInfo" style="display:none;">
                             <i class="fas fa-gauge-high me-1"></i>
@@ -63,6 +84,12 @@
                     <!-- Add Home Button -->
                     <a href="/" class="btn btn-outline-light me-2">
                         <i class="fas fa-home me-1"></i>Home
+                    </a>
+                    <a href="/reports" class="btn btn-outline-light me-2">
+                        <i class="fas fa-chart-bar me-1"></i>Reports
+                    </a>
+                    <a href="/about" class="btn btn-outline-light me-2">
+                        <i class="fas fa-info-circle me-1"></i>About
                     </a>
                     <button class="btn btn-outline-light me-2" onclick="showNewProject()">
                         <i class="fas fa-plus me-1"></i>New Project
@@ -131,7 +158,32 @@
                 <div class="card stat-card">
                     <div class="card-body">
                         <h5 class="card-title mb-3"><i class="fas fa-chart-pie me-2"></i>Scan Breakdown</h5>
-                        <canvas id="scansChart" height="80"></canvas>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label small">Project</label>
+                                <select class="form-select form-select-sm" id="chartProjectSelect" onchange="updateChartScanDropdown()">
+                                    <option value="">-- Select project --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Scan</label>
+                                <select class="form-select form-select-sm" id="chartScanSelect" onchange="updateScanChart()">
+                                    <option value="">-- Select scan --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Chart type</label>
+                                <select class="form-select form-select-sm" id="chartTypeSelect" onchange="updateScanChart()">
+                                    <option value="bar">Bar</option>
+                                    <option value="line">Line</option>
+                                    <option value="doughnut">Doughnut</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="chartContainer">
+                            <canvas id="scansChart" height="120"></canvas>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0" id="chartPlaceholder">Select a project and scan to view breakdown.</p>
                     </div>
                 </div>
             </div>
@@ -152,6 +204,11 @@
             <li class="nav-item">
                 <a class="nav-link" data-bs-toggle="tab" href="#agent">
                     <i class="fas fa-download me-1"></i>Agent Download
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#audit">
+                    <i class="fas fa-clipboard-list me-1"></i>Audit Log
                 </a>
             </li>
         </ul>
@@ -252,6 +309,19 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Audit Log Tab -->
+            <div class="tab-pane fade" id="audit">
+                <h4 class="mb-3">Audit Log</h4>
+                <div id="auditList">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Loading audit log...</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -342,6 +412,26 @@
                             Create Scan Configuration
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Billing Modal -->
+    <div class="modal fade" id="billingModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-credit-card me-2"></i>Plans & Billing</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="plansList">
+                        <div class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            <p class="text-muted mt-2 mb-0">Loading plans...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -463,36 +553,21 @@
                     document.getElementById('freeTierInfo').style.display = 'none';
                 }
 
-                // Simple Chart.js chart for scan breakdown
-                const ctx = document.getElementById('scansChart').getContext('2d');
-                const chartData = {
-                    labels: ['Total', 'Active', 'Completed'],
-                    datasets: [{
-                        label: 'Scans',
-                        data: [stats.total_scans || 0, stats.active_scans || 0, stats.completed_scans || 0],
-                        backgroundColor: ['#4f46e5', '#f59e0b', '#10b981'],
-                    }]
-                };
-                if (scansChart) {
-                    scansChart.data = chartData;
-                    scansChart.update();
-                } else {
-                    scansChart = new Chart(ctx, {
-                        type: 'bar',
-                        data: chartData,
-                        options: {
-                            responsive: true,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-                        }
-                    });
-                }
-
                 // Load projects
                 await loadProjects();
 
                 // Load scans
                 await loadScans();
+
+                // Chart dropdowns (need projects + scans)
+                updateChartProjectDropdown();
+                updateScanChart();
+
+                // Load audit log
+                await loadAuditLog();
+
+                // Prefetch plans for fast billing modal
+                prefetchPlans();
 
             } catch (error) {
                 console.error('Failed to load dashboard data:', error);
@@ -542,6 +617,55 @@
             }
         }
 
+        // Load audit log
+        async function loadAuditLog() {
+            const container = document.getElementById('auditList');
+            try {
+                const token = getAuthToken();
+                const response = await fetch('/api/audit', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const logs = await response.json();
+                    if (Array.isArray(logs) && logs.length === 0) {
+                        container.innerHTML = '<div class="text-center py-5"><i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i><p class="text-muted">No audit entries yet. Audit logs appear after scan completions.</p></div>';
+                    } else if (Array.isArray(logs)) {
+                        container.innerHTML = `
+                            <div class="table-responsive">
+                                <table class="table table-dark table-hover table-striped align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Scan ID</th>
+                                            <th>Source</th>
+                                            <th>Status</th>
+                                            <th>Timestamp</th>
+                                            <th>Results</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${logs.map(log => `
+                                            <tr>
+                                                <td><code class="small">${(log.scan_id || log.audit_id || '-').toString()}</code></td>
+                                                <td>${(log.source || '-').toString()}</td>
+                                                <td><span class="badge bg-${log.status === 'completed' ? 'success' : 'secondary'}">${(log.status || '-').toString()}</span></td>
+                                                <td>${log.timestamp ? new Date(log.timestamp).toLocaleString() : '-'}</td>
+                                                <td>${log.metadata && log.metadata.results_count != null ? log.metadata.results_count : '-'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>`;
+                    } else {
+                        container.innerHTML = '<p class="text-muted">No audit entries.</p>';
+                    }
+                } else {
+                    container.innerHTML = '<p class="text-danger">Failed to load audit log.</p>';
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="text-danger">Failed to load audit log.</p>';
+            }
+        }
+
         // Render projects
         function renderProjects() {
             const container = document.getElementById('projectsList');
@@ -570,6 +694,9 @@
                                 </div>
                             </div>
                             <div class="col-md-4 text-end">
+                                <button class="btn btn-outline-success btn-sm me-1" onclick="addScanForProject('${project.id}')" title="Add a new scan for this project">
+                                    <i class="fas fa-plus me-1"></i>Add scan
+                                </button>
                                 <button class="btn btn-outline-primary btn-sm" onclick="configureScan('${project.id}')">
                                     <i class="fas fa-cog me-1"></i>Configure Scan
                                 </button>
@@ -641,6 +768,78 @@
                 projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
 
+        function updateChartProjectDropdown() {
+            const sel = document.getElementById('chartProjectSelect');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- Select project --</option>' +
+                projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            updateChartScanDropdown();
+        }
+
+        function updateChartScanDropdown() {
+            const projectSel = document.getElementById('chartProjectSelect');
+            const scanSel = document.getElementById('chartScanSelect');
+            if (!scanSel || !projectSel) return;
+            const pid = projectSel.value;
+            const projectScans = pid ? scans.filter(s => s.project_id === pid) : [];
+            scanSel.innerHTML = '<option value="">-- Select scan --</option>' +
+                projectScans.map(s => `<option value="${s.id}">${s.scan_name || s.id}</option>`).join('');
+            updateScanChart();
+        }
+
+        function updateScanChart() {
+            const scanId = document.getElementById('chartScanSelect') && document.getElementById('chartScanSelect').value;
+            const chartType = document.getElementById('chartTypeSelect') ? document.getElementById('chartTypeSelect').value : 'bar';
+            const placeholder = document.getElementById('chartPlaceholder');
+            const canvas = document.getElementById('scansChart');
+            if (!canvas) return;
+            if (!scanId) {
+                if (scansChart) { scansChart.destroy(); scansChart = null; }
+                if (placeholder) placeholder.style.display = 'block';
+                return;
+            }
+            const scan = scans.find(s => s.id === scanId);
+            if (!scan) return;
+            if (placeholder) placeholder.style.display = 'none';
+            const labels = ['Total', 'Active', 'Completed', 'Downloaded'];
+            const statusCounts = {
+                total: 1,
+                running: scan.status === 'running' ? 1 : 0,
+                completed: scan.status === 'completed' ? 1 : 0,
+                downloaded: scan.status === 'downloaded' ? 1 : 0
+            };
+            const data = [
+                statusCounts.total,
+                statusCounts.running,
+                statusCounts.completed,
+                statusCounts.downloaded
+            ];
+            const summary = scan.results_summary || {};
+            const passed = summary.passed != null ? summary.passed : 0;
+            const failed = summary.failed != null ? summary.failed : 0;
+            const useResults = (passed > 0 || failed > 0);
+            const chartLabels = useResults ? ['Passed', 'Failed'] : labels;
+            const chartData = useResults ? [passed, failed] : data;
+            const colors = useResults ? ['#10b981', '#ef4444'] : ['#4f46e5', '#f59e0b', '#10b981', '#06b6d4'];
+            const ctx = canvas.getContext('2d');
+            if (scansChart) scansChart.destroy();
+            scansChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: useResults ? 'Results' : 'Status',
+                        data: chartData,
+                        backgroundColor: colors.slice(0, chartLabels.length),
+                        borderColor: colors.slice(0, chartLabels.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: chartType === 'doughnut' ? { responsive: true, plugins: { legend: { position: 'bottom' } } } :
+                    { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+            });
+        }
+
         // Load scans for selected project
         function loadProjectScans(projectId) {
             currentProjectId = projectId;
@@ -671,14 +870,21 @@
             modal.show();
         }
 
-        // Show new scan configuration modal
+        // Show new scan configuration modal (optionally for a specific project)
         function showNewScanConfig() {
             if (!currentProjectId) {
                 showAlert('Please select a project first', 'warning');
                 return;
             }
-
             document.getElementById('scanProjectId').value = currentProjectId;
+            const modal = new bootstrap.Modal(document.getElementById('newScanModal'));
+            modal.show();
+        }
+
+        // Add a new scan for an existing project (from Projects tab)
+        function addScanForProject(projectId) {
+            currentProjectId = projectId;
+            document.getElementById('scanProjectId').value = projectId;
             const modal = new bootstrap.Modal(document.getElementById('newScanModal'));
             modal.show();
         }
@@ -719,8 +925,10 @@
                     bootstrap.Modal.getInstance(document.getElementById('newProjectModal')).hide();
                     e.target.reset();
 
-                    // Reload data
-                    await loadDashboardData();
+                    // Light refresh: only reload projects (no stats/scans/audit)
+                    await loadProjects();
+                    updateProjectSelect();
+                    updateChartProjectDropdown();
 
                 } else {
                     const error = await response.json();
@@ -774,9 +982,10 @@
                     bootstrap.Modal.getInstance(document.getElementById('newScanModal')).hide();
                     e.target.reset();
 
-                    // Reload scans and update UI
+                    // Reload scans and update UI (no full dashboard reload)
                     await loadScans();
                     loadProjectScans(currentProjectId);
+                    updateChartScanDropdown();
 
                 } else {
                     const error = await response.json();
@@ -790,7 +999,7 @@
             }
         });
 
-        // Download agent
+        // Download agent: prepare then redirect so browser shows native download progress (not stuck)
         async function downloadAgent() {
             const scanSelect = document.getElementById('scanSelect');
             const scanId = scanSelect.value;
@@ -800,31 +1009,40 @@
                 return;
             }
 
+            const downloadBtn = document.getElementById('downloadBtn');
+            const origHtml = downloadBtn.innerHTML;
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Preparing...';
+
             try {
                 const token = getAuthToken();
-                const response = await fetch(`/agent/download/${scanId}`, {
+                const response = await fetch(`/agent/download/${scanId}/prepare`, {
+                    method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (response.ok) {
-                    // Create download link
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `complisense_agent_${scanId}.zip`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-
-                    showAlert('Agent downloaded successfully!', 'success');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    showAlert('Failed to prepare download: ' + (err.detail || response.statusText), 'danger');
+                    return;
+                }
+                const data = await response.json();
+                const downloadUrl = data.download_url;
+                if (downloadUrl) {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = downloadUrl;
+                    document.body.appendChild(iframe);
+                    showAlert('Download started.', 'success');
+                    setTimeout(() => { iframe.remove(); }, 5000);
                 } else {
-                    const error = await response.json();
-                    showAlert('Failed to download agent: ' + error.detail, 'danger');
+                    showAlert('Invalid response from server', 'danger');
                 }
             } catch (error) {
-                showAlert('Error downloading agent: ' + error.message, 'danger');
+                showAlert('Error: ' + error.message, 'danger');
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = origHtml;
             }
         }
 
@@ -854,8 +1072,45 @@
             showAlert('Profile management coming soon!', 'info');
         }
 
-        function showBilling() {
-            showAlert('Billing management coming soon!', 'info');
+        function renderPlans(plans) {
+            const container = document.getElementById('plansList');
+            container.innerHTML = plans.map(p => `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">${p.name}</h5>
+                            <p class="text-muted small mb-2">
+                                ${p.monthly_scan_limit != null ? p.monthly_scan_limit + ' scans/month' : 'Unlimited scans'}
+                            </p>
+                            <ul class="small mb-0">
+                                ${(p.features || []).map(f => '<li>' + f + '</li>').join('')}
+                            </ul>
+                            ${p.status === 'TODO' ? '<span class="badge bg-secondary mt-2">Coming soon</span>' : ''}
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        async function showBilling() {
+            const modal = new bootstrap.Modal(document.getElementById('billingModal'));
+            modal.show();
+            const container = document.getElementById('plansList');
+            if (window._plansCache) {
+                renderPlans(window._plansCache);
+                return;
+            }
+            container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm"></div></div>';
+            try {
+                const response = await fetch('/api/plans');
+                const plans = await response.json();
+                window._plansCache = plans;
+                renderPlans(plans);
+            } catch (e) {
+                container.innerHTML = '<p class="text-danger">Failed to load plans.</p>';
+            }
+        }
+
+        function prefetchPlans() {
+            fetch('/api/plans').then(r => r.json()).then(d => { window._plansCache = d; }).catch(() => {});
         }
 
         // Enable download button when scan is selected
@@ -863,23 +1118,36 @@
             document.getElementById('downloadBtn').disabled = !this.value;
         });
 
+        // Activate tab from hash (e.g. /dashboard#agent, #scans, #projects)
+        function activateTabFromHash() {
+            const hash = (window.location.hash || '').replace('#', '');
+            if (!hash) return;
+            const tabEl = document.querySelector('#dashboardTabs a[href="#' + hash + '"]');
+            if (tabEl) {
+                const tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            }
+        }
+
         // Load data when page loads - prevent multiple calls
         let pageLoaded = false;
         document.addEventListener('DOMContentLoaded', () => {
             if (pageLoaded) return;  // Prevent duplicate calls
             pageLoaded = true;
-            
+            activateTabFromHash();
             if (checkAuth()) {
                 loadUserInfo();
                 loadDashboardData();
             }
         });
-        
+        window.addEventListener('hashchange', activateTabFromHash);
+
         // Also prevent duplicate calls from window.onload
         if (window.addEventListener) {
             window.addEventListener('load', () => {
                 if (!pageLoaded && checkAuth()) {
                     pageLoaded = true;
+                    activateTabFromHash();
                     loadUserInfo();
                     loadDashboardData();
                 }

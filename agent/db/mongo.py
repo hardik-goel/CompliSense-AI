@@ -126,3 +126,32 @@ def insert_audit_log(
     coll = get_collection(client=client, db_name=db_name, coll_name=coll_name)
     coll.insert_one(doc)
     return audit_id
+
+
+def list_audit_logs(
+    *,
+    user_id: Optional[str] = None,
+    limit: int = 100,
+    client: Optional[MongoClient] = None,
+    db_name: Optional[str] = None,
+    coll_name: str = "audit_logs",
+) -> list:
+    """
+    List audit log entries, optionally filtered by user_id.
+    Returns most recent first.
+    """
+    coll = get_collection(client=client, db_name=db_name, coll_name=coll_name)
+    query = {}
+    if user_id is not None:
+        query["user_id"] = user_id
+    cursor = coll.find(query).sort("timestamp", -1).limit(limit)
+    docs = list(cursor)
+    # Convert ObjectId and datetime for JSON
+    out = []
+    for d in docs:
+        d.pop("_id", None)
+        ts = d.get("timestamp")
+        if hasattr(ts, "isoformat"):
+            d["timestamp"] = ts.isoformat()
+        out.append(d)
+    return out
