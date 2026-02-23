@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Optional
 import jwt
 
-from auth import router as auth_router, get_current_user, SECRET_KEY, ALGORITHM, users_db
+from auth import router as auth_router, get_current_user, SECRET_KEY, ALGORITHM, users_db, users_by_id
 from projects import router as projects_router, projects_db, scans_db
 from distribution import router as distribution_router
 from plans import PLANS  # Preload so /api/plans returns instantly
@@ -66,7 +66,7 @@ def get_user_from_cookie(access_token: Optional[str] = Cookie(None)):
     try:
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
-        return next((u for u in users_db.values() if u["id"] == user_id), None)
+        return users_by_id.get(user_id)  # O(1) lookup instead of O(n) scan
     except:
         return None
 
@@ -117,35 +117,54 @@ async def get_dashboard_stats(request: Request):
     except HTTPException:
         return {"error": "Not authenticated"}
 
-    user_projects = [p for p in projects_db.values() if p.get("user_id") == user["id"]]
-    user_scans = [s for s in scans_db.values() if s.get("user_id") == user["id"]]
-
-    # Compute free-tier usage if applicable
+    # Optimized: single pass through databases
+    user_projects = []
+    user_scans = []
+    active_scans = 0
+    completed_scans = 0
+    free_scans_this_month = 0
+    
+    # Single pass through projects
+    for p in projects_db.values():
+        if p.get("user_id") == user["id"]:
+            user_projects.append(p)
+    
+    # Single pass through scans - compute all stats at once
     tier = user.get("tier", "free")
-    free_scans_used = 0
-    free_scans_limit = 0
-    if tier == "free":
-        import datetime as _dt
-        now = _dt.datetime.utcnow()
-        year_month = (now.year, now.month)
-        scans_this_month = [
-            s for s in user_scans
-            if s.get("created_at")
-            and (_dt.datetime.fromisoformat(s["created_at"]).year,
-                 _dt.datetime.fromisoformat(s["created_at"]).month) == year_month
-        ]
-        free_scans_used = len(scans_this_month)
-        free_scans_limit = 10
+    import datetime as _dt
+    now = _dt.datetime.utcnow()
+    year_month = (now.year, now.month)
+    
+    for s in scans_db.values():
+        if s.get("user_id") != user["id"]:
+            continue
+        user_scans.append(s)
+        status = s.get("status")
+        if status in ["running", "downloaded"]:
+            active_scans += 1
+        elif status == "completed":
+            completed_scans += 1
+        
+        # Count monthly scans for free tier
+        if tier == "free":
+            created_at = s.get("created_at")
+            if created_at:
+                try:
+                    scan_date = _dt.datetime.fromisoformat(created_at)
+                    if (scan_date.year, scan_date.month) == year_month:
+                        free_scans_this_month += 1
+                except (ValueError, TypeError):
+                    pass
 
     return {
         "total_users": len(users_db),
         "total_projects": len(user_projects),
         "total_scans": len(user_scans),
-        "active_scans": len([s for s in user_scans if s.get("status") in ["running", "downloaded"]]),
-        "completed_scans": len([s for s in user_scans if s.get("status") == "completed"]),
+        "active_scans": active_scans,
+        "completed_scans": completed_scans,
         "user_tier": tier,
-        "free_scans_used": free_scans_used,
-        "free_scans_limit": free_scans_limit,
+        "free_scans_used": free_scans_this_month if tier == "free" else 0,
+        "free_scans_limit": 10 if tier == "free" else 0,
     }
 
 
@@ -174,9 +193,12 @@ async def get_audit_logs(request: Request):
         from agent.db.mongo import list_audit_logs  # type: ignore
         logs = list_audit_logs(user_id=user["id"], limit=200)
     except Exception:
-        # Fallback: derive audit-like entries from scans for the user
-        user_scans = [s for s in scans_db.values() if s.get("user_id") == user["id"]]
+        # Fallback: derive audit-like entries from scans for the user - optimized
         import datetime as _dt
+        user_scans = []
+        for s in scans_db.values():
+            if s.get("user_id") == user["id"]:
+                user_scans.append(s)
         logs = []
         for s in sorted(user_scans, key=lambda x: x.get("last_completed") or x.get("created_at") or "", reverse=True)[:100]:
             ts = s.get("last_completed") or s.get("created_at") or _dt.datetime.utcnow().isoformat()

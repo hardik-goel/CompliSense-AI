@@ -21,7 +21,8 @@ SECRET_KEY = "complisense-secret-key-2024"
 ALGORITHM = "HS256"
 
 # Temporary in-memory storage
-users_db = {}
+users_db = {}  # keyed by email
+users_by_id = {}  # keyed by user_id for fast O(1) lookup
 sessions_db = {}
 
 
@@ -115,8 +116,8 @@ async def get_current_user(
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
 
-        # Find user in database
-        user = next((u for u in users_db.values() if u["id"] == user_id), None)
+        # Find user in database using O(1) lookup
+        user = users_by_id.get(user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -160,6 +161,7 @@ async def register(user_data: UserRegister, response: Response):
     }
 
     users_db[user_data.email] = user
+    users_by_id[user_id] = user  # Add to user_id index for fast lookup
 
     # Generate JWT token
     token = create_jwt_token(user_id, user_data.email)

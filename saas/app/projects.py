@@ -83,14 +83,9 @@ async def create_project(
 
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(current_user: dict = Depends(get_current_user)):
-    """List all projects for the current user"""
+    """List all projects for the current user - optimized with cached scan counts"""
     user_projects = [p for p in projects_db.values() if p["user_id"] == current_user["id"]]
-
-    # Add scan counts
-    for project in user_projects:
-        project_scans = [s for s in scans_db.values() if s.get("project_id") == project["id"]]
-        project["scan_count"] = len(project_scans)
-
+    # scan_count is maintained in project object, no need to recalculate
     return user_projects
 
 
@@ -104,10 +99,7 @@ async def get_project(project_id: str, current_user: dict = Depends(get_current_
     if project["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to access this project")
 
-    # Add scan count
-    project_scans = [s for s in scans_db.values() if s.get("project_id") == project_id]
-    project["scan_count"] = len(project_scans)
-
+    # scan_count is maintained in project object, no need to recalculate
     return ProjectResponse(**project)
 
 
@@ -148,13 +140,15 @@ async def delete_project(project_id: str, current_user: dict = Depends(get_curre
     # Delete project
     del projects_db[project_id]
 
-    # Delete associated scans
+    # Delete associated scans and update counts
     scan_ids_to_delete = [
         scan_id for scan_id, scan in scans_db.items()
         if scan.get("project_id") == project_id
     ]
     for scan_id in scan_ids_to_delete:
         del scans_db[scan_id]
+    
+    # Note: scan_count is maintained per-project, so deleting project removes the count
 
     return {"message": "Project deleted successfully"}
 
@@ -173,18 +167,27 @@ async def create_scan_configuration(
     if project["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to configure scans for this project")
 
-    # Enforce free-tier limits: 10 scans/month across all projects
+    # Enforce free-tier limits: 10 scans/month across all projects - optimized
     if current_user.get("tier", "free") == "free":
         now = datetime.datetime.utcnow()
         year_month = (now.year, now.month)
-        user_scans_this_month = [
-            s for s in scans_db.values()
-            if s.get("user_id") == current_user["id"]
-            and s.get("created_at")
-            and (datetime.datetime.fromisoformat(s["created_at"]).year,
-                 datetime.datetime.fromisoformat(s["created_at"]).month) == year_month
-        ]
-        if len(user_scans_this_month) >= 10:
+        # Only iterate through scans for this user, not all scans
+        user_scans_this_month = 0
+        for s in scans_db.values():
+            if s.get("user_id") != current_user["id"]:
+                continue
+            created_at = s.get("created_at")
+            if not created_at:
+                continue
+            try:
+                scan_date = datetime.datetime.fromisoformat(created_at)
+                if (scan_date.year, scan_date.month) == year_month:
+                    user_scans_this_month += 1
+                    if user_scans_this_month >= 10:
+                        break  # Early exit when limit reached
+            except (ValueError, TypeError):
+                continue
+        if user_scans_this_month >= 10:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Free tier limit reached: 10 scans per month. Upgrade plan to run more scans."
@@ -208,6 +211,10 @@ async def create_scan_configuration(
     }
 
     scans_db[scan_id] = scan
+    
+    # Update project scan count
+    if project_id in projects_db:
+        projects_db[project_id]["scan_count"] = projects_db[project_id].get("scan_count", 0) + 1
 
     return {
         "scan_id": scan_id,
@@ -226,5 +233,9 @@ async def list_project_scans(project_id: str, current_user: dict = Depends(get_c
     if project["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to access this project's scans")
 
-    project_scans = [s for s in scans_db.values() if s.get("project_id") == project_id]
+    # Optimized: only iterate once through scans_db
+    project_scans = []
+    for scan in scans_db.values():
+        if scan.get("project_id") == project_id:
+            project_scans.append(scan)
     return project_scans

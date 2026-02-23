@@ -78,12 +78,34 @@ class AgentGenerator:
         Copy the minimal set of files needed to run the agent.
 
         Priority:
-        1. If a compiled CLI binary exists, copy ONLY that (no plain rulepacks).
+        1. If a compiled CLI binary exists, copy it along with rulepacks (CLI requires --pack).
         2. Otherwise, fall back to copying the full agent + rulepacks tree.
         """
         if self.cli_binary.exists():
-            # Compiled binary mode: hide rulepacks & sources from clients.
+            # Compiled binary mode: copy CLI and rulepacks (CLI requires --pack option)
             shutil.copy2(self.cli_binary, target_dir / "CompliSenseCLI")
+            # Copy rulepacks directory - CLI requires --pack option
+            rulepacks_src = self.base_agent_path / "rulepacks"
+            if not rulepacks_src.exists():
+                raise FileNotFoundError(
+                    f"Rulepacks directory not found at {rulepacks_src}. "
+                    f"Cannot create agent bundle without rulepacks. "
+                    f"Base agent path: {self.base_agent_path}"
+                )
+            if not rulepacks_src.is_dir():
+                raise NotADirectoryError(
+                    f"Rulepacks path exists but is not a directory: {rulepacks_src}"
+                )
+            rulepacks_dest = target_dir / "rulepacks"
+            # Remove destination if it exists (shouldn't happen, but be safe)
+            if rulepacks_dest.exists():
+                shutil.rmtree(rulepacks_dest)
+            try:
+                shutil.copytree(rulepacks_src, rulepacks_dest)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to copy rulepacks directory from {rulepacks_src} to {rulepacks_dest}: {e}"
+                ) from e
             # Still create a minimal requirements.txt so setup works, but much smaller.
             (target_dir / "requirements.txt").write_text("requests\n")
         else:
@@ -247,10 +269,17 @@ def main():
                     "--out",
                     str(output_dir),
                 ]
-                # CLI may accept --pack; if it fails, try without (binary may embed rulepacks)
-                pack_arg = "rulepacks/" + rulepack_id + ".yaml"
-                if (agent_dir / pack_arg).exists():
-                    cmd.extend(["--pack", pack_arg])
+                # CLI requires --pack option, so always include it
+                pack_arg = f"rulepacks/{rulepack_id}.yaml"
+                pack_path = agent_dir / pack_arg
+                if not pack_path.exists():
+                    raise RuntimeError(
+                        f"Rulepack file not found: {pack_arg}. "
+                        f"Expected at {pack_path}. "
+                        f"Make sure rulepacks directory was copied to agent bundle."
+                    )
+                # Use relative path since we're running with cwd=agent_dir
+                cmd.extend(["--pack", pack_arg])
                 result = subprocess.run(cmd, check=False, cwd=str(agent_dir))
                 if result.returncode != 0:
                     raise RuntimeError("CLI scan failed with exit code " + str(result.returncode))
