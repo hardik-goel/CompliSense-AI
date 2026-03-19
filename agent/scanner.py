@@ -99,17 +99,33 @@ def scan_required_artifacts(root: Path) -> Dict[str, Any]:
 
 def _run_evaluator(root: Path, evaluator: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
     """Run evaluator with enhanced error handling."""
+    # Explicitly import all evaluators so PyInstaller finds them
+    from agent.evaluators import file_presence
+    from agent.evaluators import schema_validate
+    from agent.evaluators import techdoc_coverage
+    from agent.evaluators import keyword_check
+    from agent.evaluators import model_introspect
+
+    EVALUATORS = {
+        "file_presence": file_presence,
+        "schema_validate": schema_validate,
+        "techdoc_coverage": techdoc_coverage,
+        "keyword_check": keyword_check,
+        "model_introspect": model_introspect,
+    }
+
+    if evaluator not in EVALUATORS:
+        logger.error(f"Failed to find evaluator {evaluator}")
+        return {
+            "engine_error": f"Evaluator '{evaluator}' not found. Available evaluators: {', '.join(EVALUATORS.keys())}",
+            "evaluator": evaluator
+        }
+
+    mod = EVALUATORS[evaluator]
     try:
-        mod = import_module(f"agent.evaluators.{evaluator}")
         if not hasattr(mod, 'run'):
             raise AttributeError(f"Evaluator {evaluator} has no 'run' function")
         return mod.run(root, inputs)
-    except ImportError as e:
-        logger.error(f"Failed to import evaluator {evaluator}: {e}")
-        return {
-            "engine_error": f"Evaluator '{evaluator}' not found. Available evaluators: file_presence, schema_validate, techdoc_coverage",
-            "evaluator": evaluator
-        }
     except AttributeError as e:
         logger.error(f"Evaluator {evaluator} missing required function: {e}")
         return {

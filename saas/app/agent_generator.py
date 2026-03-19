@@ -201,8 +201,16 @@ def main():
         args = parser.parse_args()
 
         # Validate paths
-        project_path = Path(args.project_path)
-        output_dir = Path(args.output_dir)
+        project_path_str = args.project_path
+        if project_path_str.startswith("./") and (project_path_str[2:8] == "Users/" or project_path_str[2:].startswith("/")):
+            project_path_str = "/" + project_path_str.lstrip("./")
+
+        out_dir_str = args.output_dir
+        if out_dir_str.startswith("./") and (out_dir_str[2:8] == "Users/" or out_dir_str[2:].startswith("/")):
+            out_dir_str = "/" + out_dir_str.lstrip("./")
+
+        project_path = Path(project_path_str).resolve()
+        output_dir = Path(out_dir_str).resolve()
 
         if not project_path.exists():
             print(f"❌ Error: Project path does not exist: {{project_path}}")

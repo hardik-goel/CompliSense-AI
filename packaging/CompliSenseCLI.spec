@@ -35,7 +35,7 @@ a = Analysis(
         "pydyf",
         "tinycss2",
         "cssselect2",
-        # Ensure cryptography submodules are pulled in
+        *collect_submodules("agent.evaluators"),
         *collect_submodules("cryptography"),
     ],
     runtime_hooks=[],

@@ -40,6 +40,49 @@ def load_embedded_rulepack(pack_id: str) -> dict:
     return yaml.safe_load(p.read_text(encoding="utf-8"))
 
 
+import threading
+import time
+
+_spinner_stop = False
+_spinner_thread = None
+
+def _spin(text):
+    global _spinner_stop
+    chars = "|/-\\"
+    idx = 0
+    while not _spinner_stop:
+        sys.stdout.write(f"\r{text} {chars[idx % len(chars)]}")
+        sys.stdout.flush()
+        idx += 1
+        time.sleep(0.1)
+
+def _cli_progress(event):
+    global _spinner_stop, _spinner_thread
+    etype = event.get("event")
+    if etype == "RULE_START":
+        idx = event.get("index")
+        total = event.get("total")
+        rule_id = event.get("rule_id")
+        text = f"[{idx}/{total}] Running {rule_id}..."
+        _spinner_stop = False
+        _spinner_thread = threading.Thread(target=_spin, args=(text,))
+        _spinner_thread.daemon = True
+        _spinner_thread.start()
+    elif etype == "RULE_END":
+        _spinner_stop = True
+        if _spinner_thread:
+            _spinner_thread.join()
+        status = event.get("status")
+        idx = event.get("index")
+        total = event.get("total")
+        rule_id = event.get("rule_id")
+        text = f"[{idx}/{total}] Running {rule_id}..."
+        # Clear the spinner line and print final status
+        sys.stdout.write(f"\r{text} {status}   \n")
+        sys.stdout.flush()
+    elif etype == "SCAN_COMPLETE":
+        click.echo("Scan complete.")
+
 @click.group()
 def cli():
     """
@@ -97,7 +140,7 @@ def scan(root, pack, pack_id, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
         # Normal agent: use embedded rulepack selected by id
         rp = load_embedded_rulepack(pack_id or DEFAULT_PACK_ID)
 
-    results = run_scan(root, iter_rules(rp))
+    results = run_scan(root, iter_rules(rp), progress_callback=_cli_progress)
 
     # Compute assessment (like agent_runner does)
     artifacts = results["artifacts"]
