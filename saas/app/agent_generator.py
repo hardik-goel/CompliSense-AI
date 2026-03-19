@@ -77,29 +77,25 @@ class AgentGenerator:
         """
         Copy the minimal set of files needed to run the agent.
 
-        Priority:
-        1. If a compiled CLI binary exists, copy ONLY that (no plain rulepacks).
-        2. Otherwise, fall back to copying the full agent + rulepacks tree.
+        New behavior (no more venv / source copying):
+
+        - Always use the compiled CompliSenseCLI binary from dist.
+        - If the binary is missing, fail fast with a clear error.
         """
-        if self.cli_binary.exists():
-            # Compiled binary mode: hide rulepacks & sources from clients.
-            shutil.copy2(self.cli_binary, target_dir / "CompliSenseCLI")
-            # Still create a minimal requirements.txt so setup works, but much smaller.
-            (target_dir / "requirements.txt").write_text("requests\n")
-        else:
-            # Fallback: copy source-based agent (dev mode)
-            agent_root = self.base_agent_path
-            if agent_root.exists():
-                for item in agent_root.iterdir():
-                    if item.name in [".git", "__pycache__", "tests", "dist", "build"]:
-                        continue
-                    dest = target_dir / item.name
-                    if item.is_dir():
-                        shutil.copytree(item, dest)
-                    else:
-                        shutil.copy2(item, dest)
-            else:
-                self._create_minimal_agent(target_dir)
+        if not self.cli_binary.exists():
+            raise RuntimeError(
+                "CompliSenseCLI binary not found at "
+                f"{self.cli_binary}. Please build it first with:\n"
+                "  pyinstaller --clean complisensecli.spec\n"
+                "and then retry downloading the agent."
+            )
+
+        # Compiled binary mode: hide rulepacks & sources from clients.
+        shutil.copy2(self.cli_binary, target_dir / "CompliSenseCLI")
+
+        # Provide a tiny requirements.txt so the setup script doesn't pull in
+        # your full server/ML stack. The CLI is already self‑contained.
+        (target_dir / "requirements.txt").write_text("requests\n")
 
     def _create_minimal_agent(self, target_dir: Path):
         """Create a minimal agent structure for testing"""
@@ -205,8 +201,16 @@ def main():
         args = parser.parse_args()
 
         # Validate paths
-        project_path = Path(args.project_path)
-        output_dir = Path(args.output_dir)
+        project_path_str = args.project_path
+        if project_path_str.startswith("./") and (project_path_str[2:8] == "Users/" or project_path_str[2:].startswith("/")):
+            project_path_str = "/" + project_path_str.lstrip("./")
+
+        out_dir_str = args.output_dir
+        if out_dir_str.startswith("./") and (out_dir_str[2:8] == "Users/" or out_dir_str[2:].startswith("/")):
+            out_dir_str = "/" + out_dir_str.lstrip("./")
+
+        project_path = Path(project_path_str).resolve()
+        output_dir = Path(out_dir_str).resolve()
 
         if not project_path.exists():
             print(f"❌ Error: Project path does not exist: {{project_path}}")
@@ -237,21 +241,21 @@ def main():
                         )
                     except Exception:
                         pass  # Ignore if xattr fails (e.g. no quarantine)
-                print("🔍 Running compliance scan via compiled CLI...")
-                rulepack_id = config.get("rulepack_version") or "euai_core_v1"
-                cmd = [
-                    str(cli_path),
-                    "scan",
-                    "--root",
-                    str(project_path),
-                    "--out",
-                    str(output_dir),
-                ]
-                # CLI may accept --pack; if it fails, try without (binary may embed rulepacks)
-                pack_arg = "rulepacks/" + rulepack_id + ".yaml"
-                if (agent_dir / pack_arg).exists():
-                    cmd.extend(["--pack", pack_arg])
-                result = subprocess.run(cmd, check=False, cwd=str(agent_dir))
+
+                    print("🔍 Running compliance scan via compiled CLI...")
+                    rulepack_id = config.get("rulepack_version") or "euai_core_v1"
+                    cmd = [
+                        str(cli_path),
+                        "scan",
+                        "--root",
+                        str(project_path),
+                        "--out",
+                        str(output_dir),
+                        "--pack-id",
+                        rulepack_id,
+                    ]
+                    result = subprocess.run(cmd, check=False, cwd=str(agent_dir))
+
                 if result.returncode != 0:
                     raise RuntimeError("CLI scan failed with exit code " + str(result.returncode))
                 json_path = output_dir / "findings.json"

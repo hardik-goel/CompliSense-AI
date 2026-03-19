@@ -57,8 +57,8 @@ async def prepare_agent_download(scan_id: str, request: Request, current_user: d
     scan["status"] = "downloaded"
     token = secrets.token_urlsafe(32)
     _download_tokens[token] = (current_user["id"], time.time() + _TOKEN_TTL_SEC)
-    base = request.base_url
-    download_url = f"{base.rstrip('/')}/agent/download/{scan_id}?token={token}"
+    base = str(request.base_url).rstrip("/")
+    download_url = f"{base}/agent/download/{scan_id}?token={token}"
     return JSONResponse({"download_url": download_url})
 
 

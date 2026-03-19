@@ -1,23 +1,25 @@
-# PyInstaller spec file for the compiled CLI agent used in client distributions.
+# complisensecli.spec
 #
-# This bundles the `agent` package, rulepacks, and report templates into a
-# single executable suitable for shipping to clients. It is complementary to
-# the ZIP-based agent and is intended for production packaging to protect
-# rule logic from casual inspection.
+# PyInstaller spec file for the compiled CLI agent used in client distributions.
 
-from PyInstaller.utils.hooks import collect_dynamic_libs
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules
 
-# When PyInstaller executes this spec, __file__ is not defined.
-# Assume this spec is run from the project root directory.
 project_root = Path(".").resolve()
+
+# Collect cryptography's shared libraries (Rust extension) explicitly
+crypto_bins = collect_dynamic_libs("cryptography")
 
 a = Analysis(
     [str(project_root / "agent" / "cli.py")],
     pathex=[str(project_root)],
-    binaries=collect_dynamic_libs('_tkinter'),
+    binaries=crypto_bins,  # no tkinter needed for CLI
     datas=[
-        (str(project_root / "rulepacks"), "rulepacks"),
+        # Embedded rulepacks (only the ones you want to support)
+        (str(project_root / "rulepacks" / "euai_core_v1.yaml"), "embedded_rulepacks"),
+        (str(project_root / "rulepacks" / "euai_extended_v1.yaml"), "embedded_rulepacks"),
+
+        # Report templates and artefacts
         (str(project_root / "agent" / "report" / "templates"), "agent/report/templates"),
         (str(project_root / "agent" / "artefacts"), "agent/artefacts"),
     ],
@@ -26,11 +28,15 @@ a = Analysis(
         "agent.rules.loader",
         "agent.scanner",
         "agent.report.render",
+        "agent.db.mongo",
+        "agent.scoring.overall",
         "jinja2",
         "weasyprint",
         "pydyf",
         "tinycss2",
         "cssselect2",
+        *collect_submodules("agent.evaluators"),
+        *collect_submodules("cryptography"),
     ],
     runtime_hooks=[],
     noarchive=False,
@@ -59,4 +65,3 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
-

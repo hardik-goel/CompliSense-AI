@@ -412,4 +412,16 @@ LLD:
 
 MIT License TODO
 
+Start with:
+
+(venv) hardikgoel@192 CompliSense-AI % cd saas/app 
+(venv) hardikgoel@192 app % uvicorn main:app --reload --host 127.0.0.1 --port 8000 --log-level debug
+
+python3 run_scan.py --project-path "/Users/hardikgoel/PycharmProjects/CompliSense-AI" --output-dir "./Users/hardikgoel/PycharmProjects/CompliSense-AI/out"
+pyinstaller --clean CompliSenseAgent.spec
+pyinstaller --clean packaging/CompliSenseCLI.spec
+
+./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
+
+
 💡 Built with love to make AI safer, compliant, and trustworthy.
