@@ -4,17 +4,88 @@
   <meta charset="utf-8"/>
   <title>EU AI Act Audit Report</title>
   <style>
-    body { font: 14px/1.5 system-ui, sans-serif; color: #222; }
-    h1, h2 { margin-bottom: 0.4rem; }
-    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-    th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
-    th { background: #f5f5f5; }
+    @page {
+      size: A4 landscape;
+      margin: 1.5cm;
+    }
+    body { 
+      font: 12px/1.4 system-ui, sans-serif; 
+      color: #222; 
+      margin: 0;
+      padding: 0;
+    }
+    h1, h2 { margin-bottom: 0.4rem; page-break-after: avoid; }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 1rem 0;
+      page-break-inside: avoid;
+      table-layout: fixed;
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 6px 4px; 
+      vertical-align: top;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    th { 
+      background: #f5f5f5; 
+      font-weight: bold;
+      font-size: 11px;
+    }
+    /* Column widths */
+    th:nth-child(1), td:nth-child(1) { width: 20%; } /* Rule */
+    th:nth-child(2), td:nth-child(2) { width: 8%; }  /* Clause */
+    th:nth-child(3), td:nth-child(3) { width: 8%; }  /* Severity */
+    th:nth-child(4), td:nth-child(4) { width: 8%; }  /* Status */
+    th:nth-child(5), td:nth-child(5) { width: 8%; }  /* Confidence */
+    th:nth-child(6), td:nth-child(6) { width: 8%; }  /* Risk */
+    th:nth-child(7), td:nth-child(7) { width: 40%; } /* Evidence & Remediation */
+    
     .PASS { color: #157347; font-weight: 700; }
     .FAIL { color: #b02a37; font-weight: 700; }
+    .MISSING { color: #fd7e14; font-weight: 700; }
+    .PARTIAL { color: #fd7e14; font-weight: 700; }
     .LOW { color: #157347; }
     .MEDIUM { color: #fd7e14; }
     .HIGH { color: #b02a37; font-weight: 700; }
-    .small { color: #666; font-size: 12px; }
+    .small { color: #666; font-size: 10px; }
+    
+    /* Evidence & Remediation styling */
+    .evidence-section {
+      margin: 4px 0;
+      padding: 4px;
+      background: #f9f9f9;
+      border-left: 3px solid #2563eb;
+    }
+    .remediation-section {
+      margin: 4px 0;
+      padding: 4px;
+      background: #fff7ed;
+      border-left: 3px solid #f59e0b;
+    }
+    .evidence-section ul, .remediation-section ul {
+      margin: 2px 0;
+      padding-left: 18px;
+    }
+    .evidence-section li, .remediation-section li {
+      margin: 2px 0;
+      font-size: 10px;
+      line-height: 1.3;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: bold;
+      margin: 1px;
+    }
+    .badge-success { background: #d1e7dd; color: #0f5132; }
+    .badge-warning { background: #fff3cd; color: #856404; }
+    .badge-danger { background: #f8d7da; color: #842029; }
+    .badge-info { background: #cff4fc; color: #055160; }
   </style>
 </head>
 <body>
@@ -22,11 +93,45 @@
 <h1>EU AI Act Audit Report</h1>
 <div class="small">Generated: {{ now }}</div>
 
+<h2>Overall Compliance Assessment</h2>
+
+<p>
+<strong>Verdict:</strong> {{ assessment.verdict }}<br/>
+<strong>Overall Compliance:</strong> {{ assessment.overall_compliance_pct }}%
+</p>
 <h2>Summary</h2>
 <p>
 Passed: {{ summary.passed }} &nbsp;
+Warnings (Missing / Partial): {{ summary.partial }} &nbsp;
 Failed: {{ summary.failed }}
 </p>
+
+<h2>Required EU AI Act Artifacts</h2>
+
+<p>
+Overall artifact compliance:
+<strong>{{ artifacts.compliance_pct }}%</strong>
+</p>
+
+{% if artifacts.missing %}
+<table>
+  <tr>
+    <th>Artifact</th>
+    <th>EU AI Act Article</th>
+    <th>Description</th>
+  </tr>
+  {% for a in artifacts.missing %}
+  <tr>
+    <td>{{ a.name }}</td>
+    <td>{{ a.article }}</td>
+    <td>{{ a.description }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p><strong>All required artifacts are present.</strong></p>
+{% endif %}
+
 
 <h2>Findings</h2>
 
@@ -39,7 +144,7 @@ Failed: {{ summary.failed }}
       <th>Status</th>
       <th>Confidence</th>
       <th>Risk</th>
-      <th>Remediation</th>
+      <th>Evidence & Remediation</th>
     </tr>
   </thead>
   <tbody>
@@ -55,20 +160,113 @@ Failed: {{ summary.failed }}
       <td>{{ item.confidence }}%</td>
       <td class="{{ item.risk }}">{{ item.risk }}</td>
       <td>
-        {% if item.remediation %}
-        <ul>
-          {% for r in item.remediation %}
-          <li>{{ r }}</li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        —
-        {% endif %}
-      </td>
+      {% if item.evidence %}
+        <div class="evidence-section">
+          <strong style="font-size: 10px;">📋 Evidence Found:</strong>
+          <ul style="margin: 2px 0; padding-left: 16px; font-size: 9px;">
+            {% if item.evidence.file_found %}
+              <li><span class="badge badge-success">✓</span> File exists: <code style="font-size: 8px;">{{ item.files_used[0] if item.files_used else "N/A" }}</code></li>
+            {% endif %}
+            {% if item.evidence.schema_valid %}
+              <li><span class="badge badge-success">✓</span> Schema validation passed</li>
+            {% endif %}
+            {% if item.evidence.coverage is defined %}
+              <li><span class="badge badge-info">📊</span> Coverage: <strong>{{ "%.1f"|format(item.evidence.coverage * 100) }}%</strong></li>
+            {% endif %}
+            {% if item.evidence.coverage_score is defined %}
+              <li><span class="badge badge-info">📊</span> Coverage score: <strong>{{ "%.1f"|format(item.evidence.coverage_score * 100) }}%</strong></li>
+            {% endif %}
+            {% if item.evidence.missing_fields %}
+              <li><span class="badge badge-warning">⚠</span> Missing fields: <code style="font-size: 8px;">{{ item.evidence.missing_fields | join(", ") }}</code></li>
+            {% endif %}
+            {% if item.evidence.validation_report and item.evidence.validation_report != "ok" %}
+              <li><span class="badge badge-danger">⚠</span> Validation issues: <span style="font-size: 8px;">{{ item.evidence.validation_report[:100] }}{% if item.evidence.validation_report|length > 100 %}...{% endif %}</span></li>
+            {% endif %}
+            {% if item.evidence.error %}
+              <li><span class="badge badge-danger">❌</span> Error: <span style="font-size: 8px;">{{ item.evidence.error[:80] }}{% if item.evidence.error|length > 80 %}...{% endif %}</span></li>
+            {% endif %}
+          </ul>
+        </div>
+      {% elif item.status == "MISSING" %}
+        <div class="evidence-section">
+          <strong style="font-size: 10px;">❌ Missing Evidence</strong>
+          <ul style="margin: 2px 0; padding-left: 16px; font-size: 9px;">
+            {% for f in item.files_used %}
+              <li><code style="font-size: 8px;">{{ f }}</code></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="evidence-section">
+          {% if item.status == "PASS" %}
+            <span class="small">
+              Automatic evidence collection is not applicable for this rule.
+              Compliance was determined from aggregate checks (for example overall coverage, thresholds, or summary signals),
+              rather than a single concrete artifact.
+            </span>
+          {% else %}
+            <span class="small">
+              No specific artifact was linked as evidence for this rule.
+              Review the rule description and your internal documentation for supporting material;
+              also see the <strong>Why This System Is Not Compliant</strong> section for contributing gaps.
+            </span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if item.remediation %}
+        <div class="remediation-section">
+          <strong style="font-size: 10px;">🔧 Recommended Actions:</strong>
+          <ul style="margin: 2px 0; padding-left: 16px; font-size: 9px;">
+            {% for r in item.remediation %}
+              <li style="margin: 1px 0;">{{ r }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% elif item.status != "PASS" %}
+        <div class="remediation-section">
+          <span style="font-size: 9px; color: #666;">No remediation guidance available for this rule.</span>
+        </div>
+      {% endif %}
+    </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+<h2>Why This System Is Not Compliant</h2>
+
+{% if assessment.why_not_compliant.missing_artifacts %}
+<p><strong>Missing required governance artifacts:</strong></p>
+<ul>
+  {% for a in assessment.why_not_compliant.missing_artifacts %}
+    <li>{{ a }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if assessment.why_not_compliant.failed_rules %}
+<p><strong>Rules indicating non-compliance:</strong></p>
+<ul>
+  {% for r in assessment.why_not_compliant.failed_rules %}
+    <li>{{ r }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<h2>Scope & Limitations</h2>
+
+<p class="small">
+This assessment does <strong>NOT</strong> validate the following unless
+explicit supporting artifacts were provided:
+</p>
+
+<ul class="small">
+  <li>Model performance, accuracy, or benchmarking claims</li>
+  <li>Bias, fairness, or discrimination metrics</li>
+  <li>Dataset representativeness or sampling validity</li>
+  <li>Legal enforceability of internal policies</li>
+  <li>Operational effectiveness of governance controls</li>
+</ul>
 
 <h2>Disclaimer</h2>
 <p class="small">

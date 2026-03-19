@@ -5,12 +5,13 @@ Fixed Authentication system with proper session handling
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 import jwt
 import datetime
 from typing import Optional
 import secrets
 import json
+import bcrypt
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
@@ -29,6 +30,23 @@ class UserRegister(BaseModel):
     password: str
     full_name: str
     company: Optional[str] = None
+
+    @validator("password")
+    def validate_password_strength(cls, v: str) -> str:
+        """Enforce basic password strength requirements."""
+        # bcrypt only supports passwords up to 72 bytes reliably
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password must be at most 72 characters (72 bytes) long.")
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        has_upper = any(c.isupper() for c in v)
+        has_lower = any(c.islower() for c in v)
+        has_digit = any(c.isdigit() for c in v)
+        if not (has_upper and has_lower and has_digit):
+            raise ValueError(
+                "Password must contain at least one uppercase letter, one lowercase letter, and one digit."
+            )
+        return v
 
 
 class UserLogin(BaseModel):
@@ -53,6 +71,26 @@ def create_jwt_token(user_id: str, email: str) -> str:
         "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
     }
     return jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def hash_password(plain_password: str) -> str:
+    """
+    Hash a password using the bcrypt library.
+    """
+    pw_bytes = plain_password.encode("utf-8")
+    return bcrypt.hashpw(pw_bytes, bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verify a password against a bcrypt hash.
+    """
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+        )
+    except Exception:
+        return False
 
 
 async def get_current_user(
@@ -113,7 +151,8 @@ async def register(user_data: UserRegister, response: Response):
     user = {
         "id": user_id,
         "email": user_data.email,
-        "password": user_data.password,
+        # Store only a hashed password
+        "password_hash": hash_password(user_data.password),
         "full_name": user_data.full_name,
         "company": user_data.company,
         "created_at": datetime.datetime.utcnow().isoformat(),
@@ -146,7 +185,21 @@ async def login(login_data: UserLogin, response: Response):
     """User login with cookie setting"""
     user = users_db.get(login_data.email)
 
-    if not user or user["password"] != login_data.password:
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    # Backwards compatibility: if an old plaintext password field exists, allow it once
+    stored_hash = user.get("password_hash")
+    if stored_hash:
+        valid = verify_password(login_data.password, stored_hash)
+    else:
+        # Fallback for any legacy in-memory data
+        valid = login_data.password == user.get("password")
+
+    if not valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"

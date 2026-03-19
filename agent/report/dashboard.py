@@ -25,6 +25,7 @@ def render_dashboard(
 
     total_weight = 0
     failed_weight = 0
+    partial_weight = 0
     critical_failures = 0
 
     for r in findings["results"]:
@@ -35,9 +36,14 @@ def render_dashboard(
             failed_weight += w
             if r.get("severity") == "Critical":
                 critical_failures += 1
+        elif r["status"] == "PARTIAL":
+            # Partial gets half penalty
+            partial_weight += w * 0.5
 
+    # Calculate compliance score: full penalty for FAIL, half penalty for PARTIAL
+    total_penalty = failed_weight + partial_weight
     compliance_score = (
-        round(100 - (failed_weight / total_weight * 100), 1)
+        round(100 - (total_penalty / total_weight * 100), 1)
         if total_weight > 0
         else 100.0
     )
@@ -82,9 +88,10 @@ def render_dashboard(
 
     SEVERITY_ORDER = {"Critical": 3, "Major": 2, "Minor": 1}
 
+    # Include both FAIL and PARTIAL for remediation recommendations
     failed_rules = [
         r for r in findings["results"]
-        if r["status"] == "FAIL"
+        if r["status"] in ("FAIL", "PARTIAL")
     ]
 
     failed_rules.sort(

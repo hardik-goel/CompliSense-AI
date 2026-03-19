@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def render_pdf(results: dict, out_path: Path):
+def render_pdf(results: dict, assessment: dict, out_path: Path):
     """
     Render a PDF audit report from scan results.
 
@@ -22,5 +22,5 @@ def render_pdf(results: dict, out_path: Path):
     )
     tpl = env.get_template("audit_report.html.j2")
 
-    html = tpl.render(now=datetime.utcnow().isoformat() + "Z", **results)
+    html = tpl.render(now=datetime.utcnow().isoformat() + "Z",assessment=assessment, **results)
     HTML(string=html).write_pdf(str(out_path))

@@ -8,31 +8,51 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-dark: #0f0f14;
+            --card-bg: #1a1a22;
+            --text-primary: #e8e8ed;
+            --text-muted: #8b8b9a;
+            --accent: #6d7eea;
+            --border-color: #2d2d3a;
+            --header-bg: linear-gradient(135deg, #2d2d3a 0%, #1a1a22 100%);
+        }
+        body { background: var(--bg-dark); color: var(--text-primary); }
         .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--header-bg);
             color: white;
             padding: 2rem 0;
             margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
         }
         .stat-card {
-            border: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             transition: transform 0.2s;
         }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card .text-muted { color: var(--text-muted) !important; }
         .feature-card {
-            border: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 1.5rem;
             margin-bottom: 1rem;
-            background: #f8f9fa;
+            transition: transform 0.2s;
+            text-decoration: none;
+            color: var(--text-primary);
+            display: block;
         }
-        .alert {
-            border-radius: 10px;
-        }
+        .feature-card:hover { transform: translateY(-3px); color: var(--text-primary); background: #22222a; cursor: pointer; }
+        .feature-card p { color: var(--text-muted); }
+        .alert { border-radius: 10px; }
+        .modal-content { background: var(--card-bg); border-color: var(--border-color); color: var(--text-primary); }
+        .modal-header { border-color: var(--border-color); }
+        .form-control { background: var(--card-bg); border-color: var(--border-color); color: var(--text-primary); }
+        .form-control:focus { background: var(--card-bg); border-color: var(--accent); color: var(--text-primary); }
+        .btn-close { filter: invert(1); }
     </style>
 </head>
 <body>
@@ -45,6 +65,9 @@
                     <p class="lead">EU AI Act Compliance Management Platform</p>
                 </div>
                 <div class="col-md-4 text-end">
+                    <a href="/about" class="btn btn-outline-light me-2">
+                        <i class="fas fa-info-circle me-1"></i>About
+                    </a>
                     <button class="btn btn-outline-light me-2" onclick="showLogin()">
                         <i class="fas fa-sign-in-alt me-1"></i>Login
                     </button>
@@ -100,46 +123,38 @@
             </div>
         </div>
 
-        <!-- Features -->
+        <!-- Features - clickable cards linking to relevant paths (logged-in users land on the right tab) -->
         <div class="row">
             <div class="col-md-6">
-                <div class="feature-card">
+                <a href="/dashboard#agent" class="feature-card">
                     <h4><i class="fas fa-download me-2 text-primary"></i>Download Compliance Agent</h4>
                     <p>Get your customized agent to scan AI systems locally for EU AI Act compliance.</p>
-                    <button class="btn btn-primary" onclick="redirectToDashboard()">
-                        <i class="fas fa-download me-1"></i>Download Agent
-                    </button>
-                </div>
+                    <span class="btn btn-primary btn-sm"><i class="fas fa-download me-1"></i>Download Agent</span>
+                </a>
             </div>
             <div class="col-md-6">
-                <div class="feature-card">
+                <a href="/reports" class="feature-card">
                     <h4><i class="fas fa-chart-bar me-2 text-success"></i>View Compliance Reports</h4>
                     <p>Access detailed compliance reports and analytics for your AI systems.</p>
-                    <button class="btn btn-success" onclick="redirectToDashboard()">
-                        <i class="fas fa-chart-bar me-1"></i>View Reports
-                    </button>
-                </div>
+                    <span class="btn btn-success btn-sm"><i class="fas fa-chart-bar me-1"></i>View Reports</span>
+                </a>
             </div>
         </div>
 
         <div class="row mt-3">
             <div class="col-md-6">
-                <div class="feature-card">
+                <a href="/dashboard#projects" class="feature-card">
                     <h4><i class="fas fa-cogs me-2 text-warning"></i>Configure Scans</h4>
                     <p>Set up custom compliance scans with specific requirements and rules.</p>
-                    <button class="btn btn-warning" onclick="redirectToDashboard()">
-                        <i class="fas fa-cogs me-1"></i>Configure
-                    </button>
-                </div>
+                    <span class="btn btn-warning btn-sm"><i class="fas fa-cogs me-1"></i>Configure</span>
+                </a>
             </div>
             <div class="col-md-6">
-                <div class="feature-card">
+                <a href="/about#help" class="feature-card">
                     <h4><i class="fas fa-question-circle me-2 text-info"></i>Get Help</h4>
                     <p>Need assistance? Contact our support team or check documentation.</p>
-                    <button class="btn btn-info" onclick="getHelp()">
-                        <i class="fas fa-question-circle me-1"></i>Help Center
-                    </button>
-                </div>
+                    <span class="btn btn-info btn-sm"><i class="fas fa-question-circle me-1"></i>Help Center</span>
+                </a>
             </div>
         </div>
     </div>
@@ -197,6 +212,12 @@
                         <div class="mb-3">
                             <label class="form-label">Password</label>
                             <input type="password" class="form-control" id="registerPassword" required>
+                            <div class="form-text" id="passwordHelp">
+                                Password must be at least 8 characters and include upper, lower case letters and a digit.
+                            </div>
+                            <div class="form-text text-danger d-none" id="passwordError">
+                                Password is too weak. Please meet the requirements above.
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-success w-100">
                             <span id="registerSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
@@ -229,30 +250,38 @@
             }, 5000);
         }
 
-        // Check if user is already logged in
+        // Check if user is already logged in without causing redirect loops
         function checkExistingAuth() {
-            // Check if we have an auth token in localStorage (from previous session)
             const token = localStorage.getItem('auth_token');
-            if (token) {
-                // Verify token is still valid by making a simple API call
-                fetch('/api/health', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // Token is valid, redirect to dashboard
-                        window.location.href = '/dashboard';
-                    } else {
-                        // Token invalid, clear it
-                        localStorage.removeItem('auth_token');
-                        localStorage.removeItem('user');
-                    }
-                })
-                .catch(() => {
+            if (!token) {
+                return;
+            }
+
+            // Use /api/stats (auth-protected) instead of /api/health to verify token
+            fetch('/api/stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(async (response) => {
+                if (!response.ok) {
+                    // Token invalid, clear it
                     localStorage.removeItem('auth_token');
                     localStorage.removeItem('user');
-                });
-            }
+                    return;
+                }
+                const data = await response.json();
+                if (data.error) {
+                    // Not authenticated at backend, clear and stay on home
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user');
+                    return;
+                }
+                // Token valid, redirect once to dashboard
+                window.location.href = '/dashboard';
+            })
+            .catch(() => {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+            });
         }
 
         // Load stats
@@ -325,8 +354,17 @@
                     }, 1000);
 
                 } else {
-                    const error = await response.json();
-                    showAlert(error.detail || 'Login failed', 'danger');
+                    let message = 'Login failed';
+                    const raw = await response.text();
+                    try {
+                        const error = JSON.parse(raw);
+                        message = error.detail || message;
+                    } catch (e) {
+                        if (raw) {
+                            message = raw;
+                        }
+                    }
+                    showAlert(message, 'danger');
                 }
             } catch (error) {
                 showAlert('Network error: ' + error.message, 'danger');
@@ -335,6 +373,31 @@
                 submitBtn.disabled = false;
             }
         });
+
+        function isStrongPassword(pwd) {
+            if (!pwd || pwd.length < 8) return false;
+            const hasUpper = /[A-Z]/.test(pwd);
+            const hasLower = /[a-z]/.test(pwd);
+            const hasDigit = /[0-9]/.test(pwd);
+            return hasUpper && hasLower && hasDigit;
+        }
+
+        // Live password strength feedback
+        const registerPasswordInput = document.getElementById('registerPassword');
+        const passwordError = document.getElementById('passwordError');
+        if (registerPasswordInput) {
+            registerPasswordInput.addEventListener('input', () => {
+                if (!registerPasswordInput.value) {
+                    passwordError.classList.add('d-none');
+                    return;
+                }
+                if (isStrongPassword(registerPasswordInput.value)) {
+                    passwordError.classList.add('d-none');
+                } else {
+                    passwordError.classList.remove('d-none');
+                }
+            });
+        }
 
         // Handle register form submission
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -346,6 +409,12 @@
             const password = document.getElementById('registerPassword').value;
             const spinner = document.getElementById('registerSpinner');
             const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            if (!isStrongPassword(password)) {
+                showAlert('Password is too weak. Please meet the password requirements.', 'danger');
+                passwordError.classList.remove('d-none');
+                return;
+            }
 
             spinner.classList.remove('d-none');
             submitBtn.disabled = true;
@@ -381,8 +450,17 @@
                     }, 1000);
 
                 } else {
-                    const error = await response.json();
-                    showAlert(error.detail || 'Registration failed', 'danger');
+                    let message = 'Registration failed';
+                    const raw = await response.text();
+                    try {
+                        const error = JSON.parse(raw);
+                        message = error.detail || message;
+                    } catch (e) {
+                        if (raw) {
+                            message = raw;
+                        }
+                    }
+                    showAlert(message, 'danger');
                 }
             } catch (error) {
                 showAlert('Network error: ' + error.message, 'danger');

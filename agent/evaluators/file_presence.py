@@ -32,11 +32,22 @@ def run(root: Path, inputs: Dict[str, Any]) -> Dict[str, Any]:
 
     req = inputs.get("required_json_fields", [])
     if req:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        missing: List[str] = [k for k in req if k not in data or data.get(k) in (None, "", [])]
-        ctx["missing_fields"] = len(missing)
-        ctx["missing_fields_list"] = missing
-        # Optional snapshot for PDF appendix
-        key = "model_card_snapshot" if "model_card" in str(rel) else "dataset_card_snapshot"
-        ctx[key] = json.dumps({k: data.get(k) for k in req}, indent=2)
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            missing: List[str] = [k for k in req if k not in data or data.get(k) in (None, "", [])]
+            ctx["missing_fields"] = len(missing)
+            ctx["missing_fields_list"] = missing
+            # Optional snapshot for PDF appendix
+            key = "model_card_snapshot" if "model_card" in str(rel) else "dataset_card_snapshot"
+            ctx[key] = json.dumps({k: data.get(k) for k in req}, indent=2)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            ctx["parse_error"] = str(e)
+            ctx["missing_fields"] = len(req)  # Treat parse error as all missing
+    
+    # Add signals for confidence scoring
+    ctx["signals"] = {
+        "file_exists": ctx["exists"],
+        "all_fields_present": ctx.get("missing_fields", 0) == 0 if ctx["exists"] else False
+    }
+    
     return ctx

@@ -173,6 +173,23 @@ async def create_scan_configuration(
     if project["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to configure scans for this project")
 
+    # Enforce free-tier limits: 10 scans/month across all projects
+    if current_user.get("tier", "free") == "free":
+        now = datetime.datetime.utcnow()
+        year_month = (now.year, now.month)
+        user_scans_this_month = [
+            s for s in scans_db.values()
+            if s.get("user_id") == current_user["id"]
+            and s.get("created_at")
+            and (datetime.datetime.fromisoformat(s["created_at"]).year,
+                 datetime.datetime.fromisoformat(s["created_at"]).month) == year_month
+        ]
+        if len(user_scans_this_month) >= 10:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Free tier limit reached: 10 scans per month. Upgrade plan to run more scans."
+            )
+
     scan_id = f"scan_{uuid.uuid4().hex[:8]}"
 
     scan = {

@@ -16,7 +16,12 @@ import datetime
 
 class AgentGenerator:
     def __init__(self, base_agent_path: Path):
+        # base_agent_path should point to the project root so we can
+        # copy binaries and, if needed, source-based fallbacks.
         self.base_agent_path = base_agent_path
+        self.cli_binary = (
+            self.base_agent_path / "dist" / "CompliSenseCLI"
+        )  # compiled CLI (if built)
         self.temp_dir = Path(tempfile.gettempdir()) / "complisense_agents"
         self.temp_dir.mkdir(exist_ok=True)
 
@@ -24,10 +29,19 @@ class AgentGenerator:
         """
         Create a customized agent for a specific scan configuration
 
-        Returns path to the generated agent ZIP file
+        Returns path to the generated agent ZIP file.
+        Caches zip for 1 hour to avoid slow regeneration on repeated downloads.
         """
         scan_id = scan_config["id"]
         project_id = scan_config["project_id"]
+        zip_path = self.temp_dir / f"complisense_agent_{scan_id}.zip"
+
+        # Return cached zip if it exists and is recent (< 1 hour)
+        if zip_path.exists():
+            mtime = zip_path.stat().st_mtime
+            age_seconds = datetime.datetime.now().timestamp() - mtime
+            if age_seconds < 3600:  # 1 hour
+                return zip_path
 
         # Create temporary directory for this agent
         agent_temp_dir = self.temp_dir / f"agent_{scan_id}"
@@ -60,22 +74,28 @@ class AgentGenerator:
             raise e
 
     def _copy_agent_files(self, target_dir: Path):
-        """Copy the base agent files to target directory"""
-        # Copy the entire agent directory structure
-        # This would copy your existing TruthModule
-        if self.base_agent_path.exists():
-            # Copy main agent files
-            for item in self.base_agent_path.iterdir():
-                if item.name in ['.git', '__pycache__', 'tests']:
-                    continue
-                dest = target_dir / item.name
-                if item.is_dir():
-                    shutil.copytree(item, dest)
-                else:
-                    shutil.copy2(item, dest)
-        else:
-            # Create a minimal agent structure if base path doesn't exist
-            self._create_minimal_agent(target_dir)
+        """
+        Copy the minimal set of files needed to run the agent.
+
+        New behavior (no more venv / source copying):
+
+        - Always use the compiled CompliSenseCLI binary from dist.
+        - If the binary is missing, fail fast with a clear error.
+        """
+        if not self.cli_binary.exists():
+            raise RuntimeError(
+                "CompliSenseCLI binary not found at "
+                f"{self.cli_binary}. Please build it first with:\n"
+                "  pyinstaller --clean complisensecli.spec\n"
+                "and then retry downloading the agent."
+            )
+
+        # Compiled binary mode: hide rulepacks & sources from clients.
+        shutil.copy2(self.cli_binary, target_dir / "CompliSenseCLI")
+
+        # Provide a tiny requirements.txt so the setup script doesn't pull in
+        # your full server/ML stack. The CLI is already self‑contained.
+        (target_dir / "requirements.txt").write_text("requests\n")
 
     def _create_minimal_agent(self, target_dir: Path):
         """Create a minimal agent structure for testing"""
@@ -134,8 +154,8 @@ import argparse
 from pathlib import Path
 import requests
 
-# Add agent directory to path
-agent_dir = Path(__file__).parent
+# Add agent directory to path (so `agent` package is importable)
+agent_dir = Path(__file__).resolve().parent
 sys.path.insert(0, str(agent_dir))
 
 def load_config():
@@ -181,8 +201,16 @@ def main():
         args = parser.parse_args()
 
         # Validate paths
-        project_path = Path(args.project_path)
-        output_dir = Path(args.output_dir)
+        project_path_str = args.project_path
+        if project_path_str.startswith("./") and (project_path_str[2:8] == "Users/" or project_path_str[2:].startswith("/")):
+            project_path_str = "/" + project_path_str.lstrip("./")
+
+        out_dir_str = args.output_dir
+        if out_dir_str.startswith("./") and (out_dir_str[2:8] == "Users/" or out_dir_str[2:].startswith("/")):
+            out_dir_str = "/" + out_dir_str.lstrip("./")
+
+        project_path = Path(project_path_str).resolve()
+        output_dir = Path(out_dir_str).resolve()
 
         if not project_path.exists():
             print(f"❌ Error: Project path does not exist: {{project_path}}")
@@ -197,40 +225,108 @@ def main():
         # Send running heartbeat
         send_heartbeat(config, "running")
 
-        # Import and run the compliance scan
         try:
-            from agent.rules.loader import load_rulepack, iter_rules
-            from agent.scanner import run_scan
-            from agent.report.render import render_pdf
+            cli_path = agent_dir / "CompliSenseCLI"
+            results = None
 
-            # Load rulepack
-            rulepack_path = agent_dir / "rulepacks" / "euai_core_v1.yaml"
-            if not rulepack_path.exists():
-                # Use default rulepack
-                rulepack_path = agent_dir / "rulepacks" / "default_rules.yaml"
+            # If compiled CLI exists, use it only (no agent package import)
+            if cli_path.exists():
+                import subprocess
+                # Clear macOS quarantine so Gatekeeper doesn't kill the binary (exit -9)
+                if sys.platform == "darwin":
+                    try:
+                        subprocess.run(
+                            ["xattr", "-d", "com.apple.quarantine", str(cli_path)],
+                            capture_output=True, timeout=5
+                        )
+                    except Exception:
+                        pass  # Ignore if xattr fails (e.g. no quarantine)
 
-            print("🔍 Running compliance scan...")
-            rp = load_rulepack(rulepack_path)
-            results = run_scan(project_path, iter_rules(rp))
+                    print("🔍 Running compliance scan via compiled CLI...")
+                    rulepack_id = config.get("rulepack_version") or "euai_core_v1"
+                    cmd = [
+                        str(cli_path),
+                        "scan",
+                        "--root",
+                        str(project_path),
+                        "--out",
+                        str(output_dir),
+                        "--pack-id",
+                        rulepack_id,
+                    ]
+                    result = subprocess.run(cmd, check=False, cwd=str(agent_dir))
 
-            # Generate reports
+                if result.returncode != 0:
+                    raise RuntimeError("CLI scan failed with exit code " + str(result.returncode))
+                json_path = output_dir / "findings.json"
+                if not json_path.exists():
+                    json_path = output_dir / "compliance_findings.json"
+                if not json_path.exists():
+                    raise RuntimeError("CLI did not produce findings.json or compliance_findings.json")
+                raw = json.loads(json_path.read_text())
+                rule_list = raw.get("results", raw.get("findings", []))
+                summary = raw.get("summary", {{}})
+                if not summary and rule_list:
+                    passed = sum(1 for r in rule_list if r.get("status") == "PASS")
+                    summary = {{"passed": passed, "failed": len(rule_list) - passed}}
+                results = {{"results": rule_list, "summary": summary, "artifacts": raw.get("artifacts", {{}})}}
+            else:
+                # Source-based: import agent and run
+                from agent.rules.loader import load_rulepack, iter_rules
+                from agent.scanner import run_scan
+                from agent.report.render import render_pdf
+                from agent.scoring.overall import compute_overall_compliance, verdict_from_score
+                rulepack_path = agent_dir / "rulepacks" / (config.get("rulepack_version") or "euai_core_v1") + ".yaml"
+                if not rulepack_path.exists():
+                    rulepack_path = agent_dir / "rulepacks" / "euai_core_v1.yaml"
+                if not rulepack_path.exists():
+                    rulepack_path = agent_dir / "rulepacks" / "default_rules.yaml"
+                print("🔍 Running compliance scan...")
+                rp = load_rulepack(rulepack_path)
+                results = run_scan(project_path, iter_rules(rp))
+
+            # Common: build assessment (minimal for CLI-only)
+            artifacts = results.get("artifacts", {{}})
+            rule_results = results.get("results", [])
+            avg_rule_confidence = (
+                sum(r.get("confidence", 0) for r in rule_results) / len(rule_results)
+                if rule_results else 0
+            )
+            if not cli_path.exists():
+                overall_compliance = compute_overall_compliance(
+                    artifacts_pct=artifacts.get("compliance_pct", 0),
+                    avg_rule_confidence=avg_rule_confidence
+                )
+                verdict = verdict_from_score(overall_compliance)
+            else:
+                overall_compliance = avg_rule_confidence * 100.0 if rule_results else 0
+                verdict = "PASS" if overall_compliance >= 70 else "FAIL"
+            assessment = {{
+                "verdict": verdict,
+                "overall_compliance_pct": overall_compliance,
+                "artifact_compliance_pct": artifacts.get("compliance_pct", 0),
+                "avg_rule_confidence": round(avg_rule_confidence, 2),
+                "why_not_compliant": {{
+                    "missing_artifacts": [a.get("name", a.get("id", "unknown")) for a in artifacts.get("missing", [])],
+                    "failed_rules": [r.get("title", "") for r in rule_results if r.get("status") == "FAIL"]
+                }},
+                "tier": "FREE"
+            }}
+
             print("📄 Generating reports...")
-
-            if "json" in config["output_format"]:
-                json_path = output_dir / "compliance_findings.json"
-                json_path.write_text(json.dumps(results, indent=2))
-                print(f"✅ JSON report: {{json_path}}")
-
-            if "pdf" in config["output_format"]:
+            if "json" in config.get("output_format", ["json"]):
+                out_json = output_dir / "compliance_findings.json"
+                out_json.write_text(json.dumps(results, indent=2))
+                print(f"✅ JSON report: {{out_json}}")
+            if "pdf" in config.get("output_format", []) and not cli_path.exists():
                 pdf_path = output_dir / "compliance_report.pdf"
-                render_pdf(results, pdf_path)
+                render_pdf(results, assessment, pdf_path)
                 print(f"✅ PDF report: {{pdf_path}}")
 
-            # Send completion results to SaaS
+            summary = results.get("summary", {{}})
             try:
-                summary = results.get("summary", {{}})
                 requests.post(
-                    f"{{config['saas_base_url']}}/api/agent/results",
+                    f"{{config['saas_base_url']}}/agent/results",
                     json={{
                         "scan_id": config["scan_id"],
                         "status": "completed",
@@ -239,13 +335,11 @@ def main():
                         "timestamp": __import__("datetime").datetime.utcnow().isoformat()
                     }}
                 )
-            except:
+            except Exception:
                 print("⚠️  Could not sync results with SaaS platform")
-
             print()
             print("🎉 Scan completed successfully!")
             print(f"📈 Results: {{summary.get('passed', 0)}} passed, {{summary.get('failed', 0)}} failed")
-
             send_heartbeat(config, "completed")
 
         except Exception as e:
@@ -309,6 +403,18 @@ echo ""
 
         install_path = target_dir / "setup_agent.sh"
         install_path.write_text(install_script)
+        
+        # Make executable on Unix-like systems
+        try:
+            import stat
+            install_path.chmod(install_path.stat().st_mode | stat.S_IEXEC)
+        except Exception:
+            # Fallback: try os.chmod
+            try:
+                import os
+                os.chmod(str(install_path), 0o755)
+            except Exception:
+                pass  # If both fail, user can chmod manually
 
         # Create Windows batch file
         batch_script = '''@echo off
@@ -357,5 +463,5 @@ pause
         return zip_path
 
 
-# Singleton instance
-agent_generator = AgentGenerator(Path("../../agent"))  # Path to your existing TruthModule
+# Singleton instance - base path is project root
+agent_generator = AgentGenerator(Path(__file__).resolve().parents[2])
