@@ -322,6 +322,88 @@ Starting uvicorn server for flask [After implementing JWT and other security con
 export ADMIN_API_TOKEN="dev-token-123" [MAYBE Optional]
 uvicorn server.saas_api:app --reload --port 8080
 
+Production Deployment
+
+Backend entrypoint:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 10000
+```
+
+Required environment variables:
+
+```bash
+MONGO_URI=
+MONGO_DB=complisense
+JWT_SECRET=
+ADMIN_API_TOKEN=
+PORT=10000
+ENVIRONMENT=production
+CORS_ORIGINS=https://your-render-service.onrender.com
+```
+
+Render free-tier deployment:
+
+1. Push this repository to GitHub.
+2. In Render, create a new Web Service from the GitHub repo.
+3. Choose Docker as the environment.
+4. Render will detect `render.yaml`, build the image, and expose port `10000`.
+5. Set `MONGO_URI`, `JWT_SECRET`, and `ADMIN_API_TOKEN` in Render dashboard secrets.
+
+MongoDB Atlas free-tier setup:
+
+1. Create an M0 free cluster.
+2. Create an application user and copy the SRV connection string.
+3. Add Render outbound IP access temporarily, or use `0.0.0.0/0` during setup and then tighten later.
+4. Paste the URI into Render as `MONGO_URI`.
+
+Collections created automatically on startup:
+
+- `users`
+- `projects`
+- `scans`
+- `audit_logs`
+
+Agent upload API contract:
+
+`POST /api/v1/upload-scan`
+
+Authentication:
+
+- `Authorization: Bearer <jwt>` for logged-in users, or
+- `X-API-Key: <ADMIN_API_TOKEN>` for local agents
+
+Example payload:
+
+```json
+{
+  "project_id": "proj_12345678",
+  "scan_summary": { "passed": 12, "failed": 2 },
+  "findings_json": { "summary": { "passed": 12, "failed": 2 }, "results": [] },
+  "timestamp": "2026-04-21T10:00:00Z",
+  "scan_id": "scan_abcdef12",
+  "scan_name": "Weekly compliance run",
+  "rulepack_version": "euai_core_v1"
+}
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "scan_id": "scan_abcdef12",
+  "project_id": "proj_12345678",
+  "stored_at": "2026-04-21T10:01:12.123456"
+}
+```
+
+Optional landing page:
+
+- `landing-page/` contains a minimal Next.js site for Vercel free-tier deployment.
+- Build command: `npm run build`
+- Output: standard Next.js app
+
 building agent:
 
 pyinstaller \

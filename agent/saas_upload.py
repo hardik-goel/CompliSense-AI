@@ -1,27 +1,23 @@
 import requests
+from datetime import datetime
 
-def build_summary_payload(results: dict):
+def build_summary_payload(project_id: str, results: dict, scan_id: str | None = None, scan_name: str | None = None):
     return {
-        "pack_id": "euai_core",
-        "summary": results["summary"],
-        "rules": [
-            {
-                "rule_id": r["rule_id"],
-                "clause": r["clause"],
-                "severity": r["severity"],
-                "status": r["status"]
-            }
-            for r in results["results"]
-        ]
+        "project_id": project_id,
+        "scan_summary": results.get("summary", {}),
+        "findings_json": results,
+        "timestamp": datetime.utcnow().isoformat(),
+        "scan_id": scan_id,
+        "scan_name": scan_name,
     }
 
 def upload_summary(saas_url: str, token: str, payload: dict):
     headers = {
-        "Authorization": f"Bearer {token}",
+        "X-API-Key": token,
         "Content-Type": "application/json"
     }
     response = requests.post(
-        f"{saas_url.rstrip('/')}/results",
+        f"{saas_url.rstrip('/')}/api/v1/upload-scan",
         json=payload,
         headers=headers,
         timeout=30
