@@ -533,7 +533,7 @@ pyinstaller --clean packaging/CompliSenseCLI.spec
     
 Have made the fixes related to dependency install at client's end and therefore the below is the updated command.
 
-bash run_agent.sh --project-path "/path/to/project" --output-dir "./output"
+bash run_agent.sh --project-path "/Users/hardikgoel/PycharmProjects/CompliSense-AI/artefacts" --output-dir "./output"
 
 On Windows, use setup_agent.bat.
 

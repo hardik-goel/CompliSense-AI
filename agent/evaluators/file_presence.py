@@ -1,6 +1,7 @@
 from pathlib import Path
 import json, hashlib
 from typing import Dict, Any, List
+import yaml
 
 def _sha256(path: Path) -> str:
     h = hashlib.sha256()
@@ -33,14 +34,18 @@ def run(root: Path, inputs: Dict[str, Any]) -> Dict[str, Any]:
     req = inputs.get("required_json_fields", [])
     if req:
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            raw_text = path.read_text(encoding="utf-8")
+            if path.suffix.lower() in {".yaml", ".yml"}:
+                data = yaml.safe_load(raw_text) or {}
+            else:
+                data = json.loads(raw_text)
             missing: List[str] = [k for k in req if k not in data or data.get(k) in (None, "", [])]
             ctx["missing_fields"] = len(missing)
             ctx["missing_fields_list"] = missing
             # Optional snapshot for PDF appendix
             key = "model_card_snapshot" if "model_card" in str(rel) else "dataset_card_snapshot"
             ctx[key] = json.dumps({k: data.get(k) for k in req}, indent=2)
-        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        except (json.JSONDecodeError, UnicodeDecodeError, yaml.YAMLError) as e:
             ctx["parse_error"] = str(e)
             ctx["missing_fields"] = len(req)  # Treat parse error as all missing
     
