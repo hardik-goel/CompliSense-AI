@@ -9,23 +9,26 @@ import zipfile
 import json
 import tempfile
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import shutil
 import datetime
 
 
 class AgentGenerator:
     def __init__(self, base_agent_path: Path):
-        # base_agent_path should point to the project root so we can
-        # copy binaries and, if needed, source-based fallbacks.
         self.base_agent_path = base_agent_path
-        self.cli_binary = (
-            self.base_agent_path / "dist" / "CompliSenseCLI"
-        )  # compiled CLI (if built)
+        self.cli_binary = self.base_agent_path / "dist" / "CompliSenseCLI"
+        self.agent_source_dir = self.base_agent_path / "agent"
+        self.rulepacks_dir = self.base_agent_path / "rulepacks"
         self.temp_dir = Path(tempfile.gettempdir()) / "complisense_agents"
         self.temp_dir.mkdir(exist_ok=True)
 
-    def create_custom_agent(self, scan_config: Dict[str, Any], user_info: Dict[str, Any]) -> Path:
+    def create_custom_agent(
+        self,
+        scan_config: Dict[str, Any],
+        user_info: Dict[str, Any],
+        saas_base_url: str,
+    ) -> Path:
         """
         Create a customized agent for a specific scan configuration
 
@@ -51,10 +54,10 @@ class AgentGenerator:
 
         try:
             # Copy base agent files
-            self._copy_agent_files(agent_temp_dir)
+            bundle_mode = self._copy_agent_files(agent_temp_dir)
 
             # Create configuration file
-            self._create_agent_config(agent_temp_dir, scan_config, user_info)
+            self._create_agent_config(agent_temp_dir, scan_config, user_info, saas_base_url, bundle_mode)
 
             # Create customized main script
             self._create_custom_main_script(agent_temp_dir, scan_config)
@@ -73,29 +76,46 @@ class AgentGenerator:
                 shutil.rmtree(agent_temp_dir)
             raise e
 
-    def _copy_agent_files(self, target_dir: Path):
+    def _copy_agent_files(self, target_dir: Path) -> str:
         """
-        Copy the minimal set of files needed to run the agent.
+        Copy the agent files needed for the downloadable bundle.
 
-        New behavior (no more venv / source copying):
-
-        - Always use the compiled CompliSenseCLI binary from dist.
-        - If the binary is missing, fail fast with a clear error.
+        Prefer a compiled CLI when present, otherwise fall back to a portable
+        source bundle so Render can still generate an agent package.
         """
-        if not self.cli_binary.exists():
-            raise RuntimeError(
-                "CompliSenseCLI binary not found at "
-                f"{self.cli_binary}. Please build it first with:\n"
-                "  pyinstaller --clean complisensecli.spec\n"
-                "and then retry downloading the agent."
-            )
+        if self.cli_binary.exists():
+            shutil.copy2(self.cli_binary, target_dir / "CompliSenseCLI")
+            (target_dir / "requirements.txt").write_text("requests\n", encoding="utf-8")
+            return "compiled"
 
-        # Compiled binary mode: hide rulepacks & sources from clients.
-        shutil.copy2(self.cli_binary, target_dir / "CompliSenseCLI")
+        if not self.agent_source_dir.exists():
+            raise RuntimeError(f"Agent source directory not found at {self.agent_source_dir}")
+        if not self.rulepacks_dir.exists():
+            raise RuntimeError(f"Rulepacks directory not found at {self.rulepacks_dir}")
 
-        # Provide a tiny requirements.txt so the setup script doesn't pull in
-        # your full server/ML stack. The CLI is already self‑contained.
-        (target_dir / "requirements.txt").write_text("requests\n")
+        shutil.copytree(self.agent_source_dir, target_dir / "agent", dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        shutil.copytree(self.rulepacks_dir, target_dir / "rulepacks", dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+
+        readme = """CompliSense-AI Portable Agent
+
+This bundle was generated without a precompiled native CLI, so it runs from Python source.
+Setup:
+1. Install Python 3.10 or 3.11
+2. Run ./setup_agent.sh on macOS/Linux or setup_agent.bat on Windows
+3. Run python run_scan.py --project-path /path/to/project --output-dir ./output
+"""
+        (target_dir / "README.txt").write_text(readme, encoding="utf-8")
+
+        requirements = """click==8.1.8
+Jinja2==3.1.6
+jsonschema==4.25.1
+PyYAML==6.0.3
+requests==2.32.5
+rule-engine==4.5.3
+weasyprint==66.0
+"""
+        (target_dir / "requirements.txt").write_text(requirements, encoding="utf-8")
+        return "source"
 
     def _create_minimal_agent(self, target_dir: Path):
         """Create a minimal agent structure for testing"""
@@ -120,7 +140,14 @@ requests
 """
         (target_dir / "requirements.txt").write_text(requirements)
 
-    def _create_agent_config(self, target_dir: Path, scan_config: Dict[str, Any], user_info: Dict[str, Any]):
+    def _create_agent_config(
+        self,
+        target_dir: Path,
+        scan_config: Dict[str, Any],
+        user_info: Dict[str, Any],
+        saas_base_url: str,
+        bundle_mode: str,
+    ):
         """Create agent configuration file"""
         config = {
             "scan_id": scan_config["id"],
@@ -130,13 +157,14 @@ requests
             "rulepack_version": scan_config["rulepack_version"],
             "custom_checks": scan_config["custom_checks"],
             "output_format": scan_config["output_format"],
-            "saas_base_url": "http://localhost:8000",  # Should be configurable
+            "saas_base_url": saas_base_url,
             "created_at": datetime.datetime.utcnow().isoformat(),
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "bundle_mode": bundle_mode,
         }
 
         config_path = target_dir / "agent_config.json"
-        config_path.write_text(json.dumps(config, indent=2))
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
     def _create_custom_main_script(self, target_dir: Path, scan_config: Dict[str, Any]):
         """Create customized main script for the agent"""
@@ -276,11 +304,12 @@ def main():
                 from agent.scanner import run_scan
                 from agent.report.render import render_pdf
                 from agent.scoring.overall import compute_overall_compliance, verdict_from_score
-                rulepack_path = agent_dir / "rulepacks" / (config.get("rulepack_version") or "euai_core_v1") + ".yaml"
+                rulepack_name = (config.get("rulepack_version") or "euai_core_v1") + ".yaml"
+                rulepack_path = agent_dir / "rulepacks" / rulepack_name
                 if not rulepack_path.exists():
                     rulepack_path = agent_dir / "rulepacks" / "euai_core_v1.yaml"
                 if not rulepack_path.exists():
-                    rulepack_path = agent_dir / "rulepacks" / "default_rules.yaml"
+                    raise RuntimeError("No rulepack found in downloaded agent bundle")
                 print("🔍 Running compliance scan...")
                 rp = load_rulepack(rulepack_path)
                 results = run_scan(project_path, iter_rules(rp))
@@ -390,6 +419,7 @@ source complisense_env/bin/activate
 
 # Install dependencies
 echo "📚 Installing dependencies..."
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 
 echo ""
@@ -435,6 +465,7 @@ call complisense_env\\Scripts\\activate.bat
 
 :: Install dependencies
 echo 📚 Installing dependencies...
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 
 echo.
