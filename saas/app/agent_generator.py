@@ -481,6 +481,42 @@ pause
         batch_path = target_dir / "setup_agent.bat"
         batch_path.write_text(batch_script)
 
+        launcher_script = '''#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if [ ! -d "complisense_env" ]; then
+  echo "Python environment not found. Running setup first..."
+  bash setup_agent.sh
+fi
+
+source complisense_env/bin/activate
+python run_scan.py "$@"
+'''
+        launcher_path = target_dir / "run_agent.sh"
+        launcher_path.write_text(launcher_script)
+        try:
+            launcher_path.chmod(0o755)
+        except Exception:
+            pass
+
+        batch_launcher = '''@echo off
+set SCRIPT_DIR=%~dp0
+cd /d "%SCRIPT_DIR%"
+
+if not exist complisense_env (
+  echo Python environment not found. Running setup first...
+  call setup_agent.bat
+)
+
+call complisense_env\\Scripts\\activate.bat
+python run_scan.py %*
+'''
+        launcher_bat_path = target_dir / "run_agent.bat"
+        launcher_bat_path.write_text(batch_launcher)
+
     def _create_zip_file(self, agent_dir: Path, scan_id: str) -> Path:
         """Create ZIP file of the agent"""
         zip_path = self.temp_dir / f"complisense_agent_{scan_id}.zip"
