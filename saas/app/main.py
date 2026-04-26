@@ -137,6 +137,11 @@ async def health_check():
     return {"status": "healthy", "service": settings.app_name}
 
 
+@app.get("/render_health")
+async def render_health():
+    return await health_check()
+
+
 @app.get("/api/stats")
 async def get_dashboard_stats(request: Request):
     user = await get_current_user(request)
