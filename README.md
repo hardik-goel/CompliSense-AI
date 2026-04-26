@@ -505,5 +505,38 @@ pyinstaller --clean packaging/CompliSenseCLI.spec
 
 ./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
 
+  1. Create a clean folder outside your repo, for example:
+
+  mkdir -p ~/Desktop/client-demo
+  mkdir -p ~/Desktop/client-project
+
+  2. Put test artefacts into ~/Desktop/client-project.
+  3. Use a browser or incognito window as a client:
+
+  - log in to your live SaaS
+  - create project
+  - configure scan
+  - download agent
+
+  4. Extract the downloaded zip into:
+
+  ~/Desktop/client-demo
+
+  5. From there, run only the downloaded bundle, not your repo copy.
+
+  On macOS/Linux:
+
+  cd ~/Desktop/client-demo
+  bash setup_agent.sh
+  source complisense_env/bin/activate
+  python run_scan.py --project-path ~/Desktop/client-project --output-dir ./output
+    
+Have made the fixes related to dependency install at client's end and therefore the below is the updated command.
+
+bash run_agent.sh --project-path "/path/to/project" --output-dir "./output"
+
+On Windows, use setup_agent.bat.
+
+
 
 💡 Built with love to make AI safer, compliant, and trustworthy.
