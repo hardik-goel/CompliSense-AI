@@ -1,45 +1,40 @@
-# [file name]: saas/app/projects.py
-"""
-Project management system for CompliSense-AI
-Handles project creation, configuration, and management
-"""
+from __future__ import annotations
+
+import datetime as dt
+import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-import datetime
-import uuid
-from auth import get_current_user
+from pydantic import BaseModel, Field
+
+from saas.app.auth import get_current_user
+from saas.app.database import get_collection, serialize_document
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
-# In-memory storage (replace with database in production)
-projects_db = {}
-scans_db = {}
-
 
 class ProjectCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    model_type: str  # e.g., "LLM", "Computer Vision", "Speech Recognition"
-    compliance_standard: str = "EU_AI_ACT"  # Default to EU AI Act
-    industry: Optional[str] = None
+    name: str = Field(min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=2000)
+    model_type: str = Field(min_length=1, max_length=120)
+    compliance_standard: str = Field(default="EU_AI_ACT", min_length=1, max_length=120)
+    industry: str | None = Field(default=None, max_length=120)
 
 
 class ProjectUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    model_type: Optional[str] = None
-    industry: Optional[str] = None
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=2000)
+    model_type: str | None = Field(default=None, min_length=1, max_length=120)
+    industry: str | None = Field(default=None, max_length=120)
 
 
 class ProjectResponse(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: str | None = None
     model_type: str
     compliance_standard: str
-    industry: Optional[str]
+    industry: str | None = None
     user_id: str
     created_at: str
     updated_at: str
@@ -48,183 +43,154 @@ class ProjectResponse(BaseModel):
 
 class ScanConfiguration(BaseModel):
     project_id: str
-    scan_name: str
-    rulepack_version: str = "euai_core_v1"
-    custom_checks: Optional[List[str]] = None
-    output_format: List[str] = ["pdf", "json"]  # pdf, json, html
+    scan_name: str = Field(min_length=1, max_length=120)
+    rulepack_version: str = Field(default="euai_core_v1", min_length=1, max_length=120)
+    custom_checks: list[str] | None = None
+    output_format: list[str] = Field(default_factory=lambda: ["pdf", "json"])
     notify_on_completion: bool = True
 
 
-@router.post("/", response_model=ProjectResponse)
-async def create_project(
-        project_data: ProjectCreate,
-        current_user: dict = Depends(get_current_user)
-):
-    """Create a new compliance project"""
-    project_id = f"proj_{uuid.uuid4().hex[:8]}"
+def projects_collection():
+    return get_collection("projects")
 
+
+def scans_collection():
+    return get_collection("scans")
+
+
+def _serialize_project(project: dict[str, Any]) -> dict[str, Any]:
+    return serialize_document(project)
+
+
+def _serialize_scan(scan: dict[str, Any]) -> dict[str, Any]:
+    return serialize_document(scan)
+
+
+def get_project_for_user(project_id: str, user_id: str) -> dict[str, Any]:
+    project = projects_collection().find_one({"id": project_id, "user_id": user_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+
+@router.post("/", response_model=ProjectResponse)
+async def create_project(project_data: ProjectCreate, current_user: dict[str, Any] = Depends(get_current_user)):
+    now = dt.datetime.utcnow()
     project = {
-        "id": project_id,
-        "name": project_data.name,
+        "id": f"proj_{uuid.uuid4().hex[:8]}",
+        "name": project_data.name.strip(),
         "description": project_data.description,
-        "model_type": project_data.model_type,
-        "compliance_standard": project_data.compliance_standard,
+        "model_type": project_data.model_type.strip(),
+        "compliance_standard": project_data.compliance_standard.strip(),
         "industry": project_data.industry,
         "user_id": current_user["id"],
-        "created_at": datetime.datetime.utcnow().isoformat(),
-        "updated_at": datetime.datetime.utcnow().isoformat(),
-        "scan_count": 0
+        "created_at": now,
+        "updated_at": now,
     }
+    projects_collection().insert_one(project)
+    clean_project = _serialize_project(project)
+    clean_project["scan_count"] = 0
+    return ProjectResponse(**clean_project)
 
-    projects_db[project_id] = project
 
-    return ProjectResponse(**project)
-
-
-@router.get("/", response_model=List[ProjectResponse])
-async def list_projects(current_user: dict = Depends(get_current_user)):
-    """List all projects for the current user"""
-    user_projects = [p for p in projects_db.values() if p["user_id"] == current_user["id"]]
-
-    # Add scan counts
-    for project in user_projects:
-        project_scans = [s for s in scans_db.values() if s.get("project_id") == project["id"]]
-        project["scan_count"] = len(project_scans)
-
-    return user_projects
+@router.get("/", response_model=list[ProjectResponse])
+async def list_projects(current_user: dict[str, Any] = Depends(get_current_user)):
+    project_docs = list(projects_collection().find({"user_id": current_user["id"]}).sort("created_at", -1))
+    responses: list[ProjectResponse] = []
+    for project in project_docs:
+        clean_project = _serialize_project(project)
+        clean_project["scan_count"] = scans_collection().count_documents({"project_id": clean_project["id"]})
+        responses.append(ProjectResponse(**clean_project))
+    return responses
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: str, current_user: dict = Depends(get_current_user)):
-    """Get a specific project"""
-    project = projects_db.get(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    if project["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to access this project")
-
-    # Add scan count
-    project_scans = [s for s in scans_db.values() if s.get("project_id") == project_id]
-    project["scan_count"] = len(project_scans)
-
-    return ProjectResponse(**project)
+async def get_project(project_id: str, current_user: dict[str, Any] = Depends(get_current_user)):
+    project = get_project_for_user(project_id, current_user["id"])
+    clean_project = _serialize_project(project)
+    clean_project["scan_count"] = scans_collection().count_documents({"project_id": project_id})
+    return ProjectResponse(**clean_project)
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
-        project_id: str,
-        project_data: ProjectUpdate,
-        current_user: dict = Depends(get_current_user)
+    project_id: str,
+    project_data: ProjectUpdate,
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
-    """Update a project"""
-    project = projects_db.get(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    project = get_project_for_user(project_id, current_user["id"])
+    update_data = project_data.model_dump(exclude_unset=True)
+    if not update_data:
+        clean_project = _serialize_project(project)
+        clean_project["scan_count"] = scans_collection().count_documents({"project_id": project_id})
+        return ProjectResponse(**clean_project)
 
-    if project["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to update this project")
-
-    # Update provided fields
-    update_data = project_data.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        project[key] = value
-
-    project["updated_at"] = datetime.datetime.utcnow().isoformat()
-
-    return ProjectResponse(**project)
+    update_data["updated_at"] = dt.datetime.utcnow()
+    projects_collection().update_one({"id": project_id}, {"$set": update_data})
+    updated = projects_collection().find_one({"id": project_id})
+    clean_project = _serialize_project(updated)
+    clean_project["scan_count"] = scans_collection().count_documents({"project_id": project_id})
+    return ProjectResponse(**clean_project)
 
 
 @router.delete("/{project_id}")
-async def delete_project(project_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a project and its associated scans"""
-    project = projects_db.get(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    if project["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this project")
-
-    # Delete project
-    del projects_db[project_id]
-
-    # Delete associated scans
-    scan_ids_to_delete = [
-        scan_id for scan_id, scan in scans_db.items()
-        if scan.get("project_id") == project_id
-    ]
-    for scan_id in scan_ids_to_delete:
-        del scans_db[scan_id]
-
+async def delete_project(project_id: str, current_user: dict[str, Any] = Depends(get_current_user)):
+    get_project_for_user(project_id, current_user["id"])
+    projects_collection().delete_one({"id": project_id})
+    scans_collection().delete_many({"project_id": project_id})
     return {"message": "Project deleted successfully"}
 
 
 @router.post("/{project_id}/scans")
 async def create_scan_configuration(
-        project_id: str,
-        scan_config: ScanConfiguration,
-        current_user: dict = Depends(get_current_user)
+    project_id: str,
+    scan_config: ScanConfiguration,
+    current_user: dict[str, Any] = Depends(get_current_user),
 ):
-    """Create a scan configuration for a project"""
-    project = projects_db.get(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    get_project_for_user(project_id, current_user["id"])
 
-    if project["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to configure scans for this project")
-
-    # Enforce free-tier limits: 10 scans/month across all projects
     if current_user.get("tier", "free") == "free":
-        now = datetime.datetime.utcnow()
-        year_month = (now.year, now.month)
-        user_scans_this_month = [
-            s for s in scans_db.values()
-            if s.get("user_id") == current_user["id"]
-            and s.get("created_at")
-            and (datetime.datetime.fromisoformat(s["created_at"]).year,
-                 datetime.datetime.fromisoformat(s["created_at"]).month) == year_month
-        ]
-        if len(user_scans_this_month) >= 10:
+        start_of_month = dt.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        scan_count = scans_collection().count_documents(
+            {"user_id": current_user["id"], "created_at": {"$gte": start_of_month}}
+        )
+        if scan_count >= 10:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Free tier limit reached: 10 scans per month. Upgrade plan to run more scans."
+                detail="Free tier limit reached: 10 scans per month. Upgrade plan to run more scans.",
             )
 
-    scan_id = f"scan_{uuid.uuid4().hex[:8]}"
-
+    now = dt.datetime.utcnow()
     scan = {
-        "id": scan_id,
+        "id": f"scan_{uuid.uuid4().hex[:8]}",
         "project_id": project_id,
-        "scan_name": scan_config.scan_name,
-        "rulepack_version": scan_config.rulepack_version,
+        "scan_name": scan_config.scan_name.strip(),
+        "rulepack_version": scan_config.rulepack_version.strip(),
         "custom_checks": scan_config.custom_checks or [],
         "output_format": scan_config.output_format,
         "notify_on_completion": scan_config.notify_on_completion,
         "user_id": current_user["id"],
-        "created_at": datetime.datetime.utcnow().isoformat(),
-        "status": "configured",  # configured, downloaded, running, completed, failed
+        "created_at": now,
+        "updated_at": now,
+        "status": "configured",
         "last_downloaded": None,
-        "last_run": None
+        "last_run": None,
+        "last_completed": None,
+        "results_summary": {},
+        "findings_json": None,
+        "results_count": 0,
     }
-
-    scans_db[scan_id] = scan
+    scans_collection().insert_one(scan)
 
     return {
-        "scan_id": scan_id,
+        "scan_id": scan["id"],
         "message": "Scan configuration created successfully",
-        "download_url": f"/agent/download/{scan_id}"
+        "download_url": f"/agent/download/{scan['id']}",
     }
 
 
 @router.get("/{project_id}/scans")
-async def list_project_scans(project_id: str, current_user: dict = Depends(get_current_user)):
-    """List all scans for a project"""
-    project = projects_db.get(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    if project["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to access this project's scans")
-
-    project_scans = [s for s in scans_db.values() if s.get("project_id") == project_id]
-    return project_scans
+async def list_project_scans(project_id: str, current_user: dict[str, Any] = Depends(get_current_user)):
+    get_project_for_user(project_id, current_user["id"])
+    scans = list(scans_collection().find({"project_id": project_id}).sort("created_at", -1))
+    return [_serialize_scan(scan) for scan in scans]

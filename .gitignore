@@ -4,3 +4,16 @@ __MACOSX/
 artefacts/
 out/
 out_headless/
+.env
+.coverage
+.pytest_cache/
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+venv/
+3.10_venv/
+venv-packager/
+build/
+dist/
+htmlcov/
