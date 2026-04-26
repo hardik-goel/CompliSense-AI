@@ -102,7 +102,12 @@ async def prepare_agent_download(scan_id: str, request: Request, current_user: d
 
     try:
         scan_doc = serialize_document(_get_scan(scan_id))
-        zip_path = await asyncio.to_thread(agent_generator.create_custom_agent, scan_doc, current_user)
+        zip_path = await asyncio.to_thread(
+            agent_generator.create_custom_agent,
+            scan_doc,
+            current_user,
+            str(request.base_url).rstrip("/"),
+        )
     except Exception as exc:
         logger.exception("Failed to prepare agent download for scan_id=%s", scan_id)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
