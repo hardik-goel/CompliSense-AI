@@ -185,8 +185,10 @@ async def receive_scan_results(results_data: dict[str, Any]):
 
     scan = scans_collection().find_one({"id": scan_id})
     if scan:
-        summary = results_data.get("summary", {}) or {}
-        findings_json = results_data if isinstance(results_data, dict) else {}
+        findings_json = results_data.get("findings_json") if isinstance(results_data.get("findings_json"), dict) else {}
+        if not findings_json and isinstance(results_data, dict):
+            findings_json = results_data
+        summary = results_data.get("summary") or findings_json.get("summary", {}) or {}
         update_fields = {
             "status": "completed",
             "updated_at": dt.datetime.utcnow(),

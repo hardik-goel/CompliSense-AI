@@ -88,6 +88,18 @@ def _get_user_from_request(request: Request):
     return getattr(request.state, "current_user", None)
 
 
+def _scan_detail_payload(scan: dict) -> dict:
+    clean_scan = serialize_document(scan)
+    findings = clean_scan.get("findings_json") or {}
+    results = findings.get("results", []) if isinstance(findings, dict) else []
+    summary = clean_scan.get("results_summary") or findings.get("summary", {}) or {}
+    total = clean_scan.get("results_count") or len(results) or (summary.get("passed", 0) + summary.get("partial", 0) + summary.get("failed", 0))
+    clean_scan["results_summary"] = summary
+    clean_scan["results_count"] = total
+    clean_scan["findings_results"] = results
+    return clean_scan
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = _get_user_from_request(request)
@@ -114,7 +126,14 @@ async def reports_page(request: Request):
     user = _get_user_from_request(request)
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("reports.html", {"request": request, "user": user})
+    scan_docs = list(scans_collection().find({"user_id": user["id"]}).sort("created_at", -1))
+    project_docs = {project["id"]: serialize_document(project) for project in projects_collection().find({"user_id": user["id"]})}
+    scans = []
+    for scan in scan_docs:
+        payload = _scan_detail_payload(scan)
+        payload["project_name"] = project_docs.get(payload.get("project_id"), {}).get("name", "Unknown project")
+        scans.append(payload)
+    return templates.TemplateResponse("reports.html", {"request": request, "user": user, "scans": scans})
 
 
 @app.get("/scan/{scan_id}", response_class=HTMLResponse)
@@ -126,9 +145,10 @@ async def scan_output_page(scan_id: str, request: Request):
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     project = projects_collection().find_one({"id": scan.get("project_id")})
+    scan_payload = _scan_detail_payload(scan)
     return templates.TemplateResponse(
         "scan_output.html",
-        {"request": request, "user": user, "scan": serialize_document(scan), "project": serialize_document(project or {})},
+        {"request": request, "user": user, "scan": scan_payload, "project": serialize_document(project or {})},
     )
 
 

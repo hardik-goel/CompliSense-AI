@@ -360,6 +360,7 @@ def main():
                         "scan_id": config["scan_id"],
                         "status": "completed",
                         "summary": summary,
+                        "findings_json": results,
                         "results_count": len(results.get("results", [])),
                         "timestamp": __import__("datetime").datetime.utcnow().isoformat()
                     }}

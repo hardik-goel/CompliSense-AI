@@ -246,10 +246,13 @@ def run_scan(
         missing_fields = ctx.get("missing_fields")
         if thresholds and missing_fields is not None:
             # Thresholds for file_presence are based on missing_fields count (lower is better)
-            pass_threshold = thresholds.get("pass", 0.0)  # Allow 0 missing for pass
-            partial_threshold = thresholds.get("partial", 2.0)  # Allow up to 2 missing for partial
-            
-            if missing_fields <= pass_threshold:
+            pass_threshold = thresholds.get("pass", 0.0)
+            partial_threshold = thresholds.get("partial", 2.0)
+
+            if not ctx.get("exists"):
+                status = "MISSING"
+                ok = False
+            elif missing_fields <= pass_threshold:
                 status = "PASS"
                 ok = True
             elif missing_fields <= partial_threshold:
@@ -359,6 +362,8 @@ def run_scan(
             evidence["schema_valid"] = True
         if ctx.get("missing_fields", 0) > 0:
             evidence["missing_fields"] = ctx.get("missing_fields_list", [])
+        if ctx.get("exists") is False:
+            evidence["missing_file"] = True
         if ctx.get("coverage") is not None:
             evidence["coverage"] = ctx.get("coverage")
         if ctx.get("coverage_score") is not None:
