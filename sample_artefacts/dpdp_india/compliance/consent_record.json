@@ -1,0 +1,7 @@
+{
+  "consent_capture_method": "Web checkout consent banner and account sign-up checkbox",
+  "consent_timestamp_policy": "All consent events are stored with UTC timestamps in the consent ledger.",
+  "consent_scope": "Marketing communications and account analytics are collected through separate consent states.",
+  "withdrawal_mechanism": "Data principals can withdraw consent through account settings or by emailing privacy@acme.example.",
+  "audit_trail_reference": "consent_ledger_v2"
+}

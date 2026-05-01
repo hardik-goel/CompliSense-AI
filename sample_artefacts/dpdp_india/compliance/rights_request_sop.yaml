@@ -1,0 +1,8 @@
+intake_channels:
+  - privacy@company.example
+  - in_app_request_form
+identity_verification: account_authenticated_or_manual_verification
+access_request_fulfilment: privacy_team_coordinates_export_and_explanation
+acknowledgement_sla: "3 business days"
+escalation_path: privacy_lead_then_legal
+correction_and_erasure_path: privacy_ops_runbook

@@ -1,0 +1,9 @@
+age_gating:
+  enabled: true
+  method: "date_of_birth_and_parent_check"
+verifiable_parental_consent:
+  enabled: true
+  provider: "otp_plus_email_link"
+restricted_processing_controls:
+  targeted_advertising_disabled: true
+  behavioural_tracking_disabled: true

@@ -4,6 +4,7 @@ import datetime as dt
 import uuid
 from typing import Any
 
+from compliance.registry import DEFAULT_RULEPACK_ID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -17,7 +18,7 @@ class ProjectCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: str | None = Field(default=None, max_length=2000)
     model_type: str = Field(min_length=1, max_length=120)
-    compliance_standard: str = Field(default="EU_AI_ACT", min_length=1, max_length=120)
+    compliance_standard: str = Field(default="GENERAL_COMPLIANCE", min_length=1, max_length=120)
     industry: str | None = Field(default=None, max_length=120)
 
 
@@ -44,7 +45,7 @@ class ProjectResponse(BaseModel):
 class ScanConfiguration(BaseModel):
     project_id: str
     scan_name: str = Field(min_length=1, max_length=120)
-    rulepack_version: str = Field(default="euai_core_v1", min_length=1, max_length=120)
+    rulepack_version: str = Field(default=DEFAULT_RULEPACK_ID, min_length=1, max_length=120)
     custom_checks: list[str] | None = None
     output_format: list[str] = Field(default_factory=lambda: ["pdf", "json"])
     notify_on_completion: bool = True

@@ -63,19 +63,19 @@ def render_dashboard(
     # -----------------------------
     if badge == "GREEN":
         narrative = (
-            "The system demonstrates strong compliance with the EU AI Act. "
+            "The system demonstrates strong alignment with the selected regulatory pack. "
             "Only minor gaps were identified, with no critical systemic risks."
         )
     elif badge == "YELLOW":
         narrative = (
-            "The system shows partial compliance with the EU AI Act. "
+            "The system shows partial alignment with the selected regulatory pack. "
             "Several material gaps require remediation, though no immediate "
             "high-risk violations were detected."
         )
     else:
         narrative = (
-            "The system does not meet EU AI Act compliance expectations. "
-            "Critical risk management or documentation failures were detected "
+            "The system does not meet the selected regulatory pack expectations. "
+            "Critical governance or documentation failures were detected "
             "and require immediate remediation."
         )
 

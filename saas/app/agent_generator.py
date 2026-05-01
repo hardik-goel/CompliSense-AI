@@ -13,6 +13,7 @@ from typing import Dict, Any
 import shutil
 import datetime
 
+from compliance.registry import DEFAULT_RULEPACK_ID
 
 class AgentGenerator:
     def __init__(self, base_agent_path: Path):
@@ -271,7 +272,7 @@ def main():
                         pass  # Ignore if xattr fails (e.g. no quarantine)
 
                     print("🔍 Running compliance scan via compiled CLI...")
-                    rulepack_id = config.get("rulepack_version") or "euai_core_v1"
+                    rulepack_id = config.get("rulepack_version") or DEFAULT_RULEPACK_ID
                     cmd = [
                         str(cli_path),
                         "scan",
@@ -304,10 +305,10 @@ def main():
                 from agent.scanner import run_scan
                 from agent.report.render import render_pdf
                 from agent.scoring.overall import compute_overall_compliance, verdict_from_score
-                rulepack_name = (config.get("rulepack_version") or "euai_core_v1") + ".yaml"
+                rulepack_name = (config.get("rulepack_version") or DEFAULT_RULEPACK_ID) + ".yaml"
                 rulepack_path = agent_dir / "rulepacks" / rulepack_name
                 if not rulepack_path.exists():
-                    rulepack_path = agent_dir / "rulepacks" / "euai_core_v1.yaml"
+                    rulepack_path = agent_dir / "rulepacks" / f"{DEFAULT_RULEPACK_ID}.yaml"
                 if not rulepack_path.exists():
                     raise RuntimeError("No rulepack found in downloaded agent bundle")
                 print("🔍 Running compliance scan...")

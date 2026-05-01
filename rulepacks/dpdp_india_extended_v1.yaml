@@ -1,0 +1,223 @@
+pack_id: "dpdp_india_extended_v1"
+version: "1.0.0"
+jurisdiction: "DPDP_INDIA"
+updated: "2026-05-01"
+rules:
+  - id: DPDP-SEC5-NOTICE-001
+    clause: "Section 5"
+    title: "Privacy notice covers processing essentials"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/privacy_notice.json"
+      required_json_fields:
+        - "data_fiduciary_name"
+        - "processing_purposes"
+        - "categories_of_personal_data"
+        - "rights_summary"
+        - "grievance_contact"
+        - "retention_policy"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+
+  - id: DPDP-SEC6-CONSENT-001
+    clause: "Section 6"
+    title: "Consent record and withdrawal mechanism documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/consent_record.json"
+      required_json_fields:
+        - "consent_capture_method"
+        - "consent_timestamp_policy"
+        - "consent_scope"
+        - "withdrawal_mechanism"
+        - "audit_trail_reference"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+
+  - id: DPDP-SEC7-LEGITIMATE-USE-001
+    clause: "Section 7"
+    title: "Legitimate use register is maintained"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/legitimate_use_register.yaml"
+      required_json_fields:
+        - "use_cases"
+        - "lawful_basis_mapping"
+        - "data_categories"
+        - "review_owner"
+        - "last_reviewed_on"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+
+  - id: DPDP-SEC8-OBLIGATIONS-001
+    clause: "Section 8"
+    title: "Security safeguards and deletion controls documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/security_safeguards.yaml"
+      required_json_fields:
+        - "access_controls"
+        - "encryption_controls"
+        - "breach_response_process"
+        - "deletion_controls"
+        - "vendor_management"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+
+  - id: DPDP-SEC8-OBLIGATIONS-002
+    clause: "Section 8"
+    title: "Breach register structure is maintained"
+    evaluator: "schema_validate"
+    inputs:
+      file: "compliance/breach_register.yaml"
+      schema_file: "schemas/breach_register.schema.json"
+      coverage_min: 0.9
+    expression: "schema_valid and coverage >= coverage_min"
+    thresholds:
+      pass: 0.9
+      partial: 0.5
+    severity: "Major"
+
+  - id: DPDP-SEC8-OBLIGATIONS-003
+    clause: "Section 8"
+    title: "Retention and erasure schedule is documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/retention_schedule.yaml"
+      required_json_fields:
+        - "data_classes"
+        - "retention_periods"
+        - "erasure_workflow"
+        - "legal_hold_exceptions"
+        - "review_cycle"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+
+  - id: DPDP-SEC9-CHILDREN-001
+    clause: "Section 9"
+    title: "Children's data safeguards are documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/child_data_policy.yaml"
+      required_json_fields:
+        - "age_gating"
+        - "verifiable_parental_consent"
+        - "restricted_processing_controls"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Critical"
+
+  - id: DPDP-SEC10-SDF-001
+    clause: "Section 10"
+    title: "Significant Data Fiduciary obligations are mapped"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/significant_data_fiduciary.yaml"
+      required_json_fields:
+        - "dpo_contact"
+        - "independent_auditor"
+        - "data_protection_impact_assessment"
+        - "periodic_audit_cycle"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+
+  - id: DPDP-SEC11-ACCESS-001
+    clause: "Section 11"
+    title: "Access request workflow is documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/rights_request_sop.yaml"
+      required_json_fields:
+        - "intake_channels"
+        - "identity_verification"
+        - "access_request_fulfilment"
+        - "acknowledgement_sla"
+        - "escalation_path"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+
+  - id: DPDP-SEC12-CORRECTION-001
+    clause: "Section 12"
+    title: "Correction and erasure requests are tracked"
+    evaluator: "schema_validate"
+    inputs:
+      file: "compliance/rights_request_register.yaml"
+      schema_file: "schemas/rights_request_register.schema.json"
+      coverage_min: 0.9
+    expression: "schema_valid and coverage >= coverage_min"
+    thresholds:
+      pass: 0.9
+      partial: 0.5
+    severity: "Major"
+
+  - id: DPDP-SEC13-GRIEVANCE-001
+    clause: "Section 13"
+    title: "Grievance redressal workflow is documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/grievance_redressal.yaml"
+      required_json_fields:
+        - "intake_channels"
+        - "resolution_sla"
+        - "escalation_path"
+        - "contact_point"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+
+  - id: DPDP-SEC16-TRANSFER-001
+    clause: "Section 16"
+    title: "Cross-border transfer posture is documented"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/cross_border_transfer_policy.yaml"
+      required_json_fields:
+        - "transfer_destinations"
+        - "approved_transfer_classes"
+        - "vendor_assessment_process"
+        - "government_request_handling"
+        - "review_owner"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+
+  - id: DPDP-SEC8-PROCESSOR-001
+    clause: "Section 8"
+    title: "Processor inventory and ownership are maintained"
+    evaluator: "schema_validate"
+    inputs:
+      file: "vendors/processor_inventory.json"
+      schema_file: "schemas/processor_inventory.schema.json"
+      coverage_min: 0.9
+    expression: "schema_valid and coverage >= coverage_min"
+    thresholds:
+      pass: 0.9
+      partial: 0.5
+    severity: "Major"

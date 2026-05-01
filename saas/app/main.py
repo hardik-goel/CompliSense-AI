@@ -5,6 +5,7 @@ import logging
 import sys
 from pathlib import Path
 
+from compliance.registry import get_rulepack_catalog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -41,7 +42,7 @@ static_dir.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title=settings.app_name,
-    description="Central dashboard for EU AI Act compliance management",
+    description="Central dashboard for regulatory compliance management",
     version=settings.app_version,
 )
 
@@ -235,6 +236,11 @@ async def get_audit_logs(request: Request):
 async def get_plans():
     order = ["free", "standard", "premium", "premium_plus"]
     return [PLANS[key] for key in order if key in PLANS]
+
+
+@app.get("/api/rulepacks")
+async def get_rulepacks():
+    return get_rulepack_catalog()
 
 
 @app.get("/api/reports/{scan_id}/html")

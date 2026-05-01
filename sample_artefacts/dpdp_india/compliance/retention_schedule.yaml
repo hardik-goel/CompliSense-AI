@@ -1,0 +1,13 @@
+data_classes:
+  - customer_profile
+  - support_ticket
+  - billing_record
+retention_periods:
+  customer_profile: "24 months after account closure"
+  support_ticket: "18 months after resolution"
+  billing_record: "8 years"
+erasure_workflow: privacy_ops_and_application_team
+legal_hold_exceptions:
+  - tax_record_preservation
+  - ongoing_dispute
+review_cycle: quarterly

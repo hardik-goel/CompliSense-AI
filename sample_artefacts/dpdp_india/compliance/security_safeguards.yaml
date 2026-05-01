@@ -1,0 +1,15 @@
+access_controls:
+  - role_based_access
+  - periodic_access_reviews
+encryption_controls:
+  - at_rest_aes256
+  - in_transit_tls13
+breach_response_process:
+  owner: security-incident-response
+  notification_window_hours: 24
+deletion_controls:
+  - scheduled_deletion_jobs
+  - manual_erasure_workflow
+vendor_management:
+  - due_diligence_reviews
+  - contractual_data_processing_clauses

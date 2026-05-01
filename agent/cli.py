@@ -1,5 +1,5 @@
 """
-CLI entrypoint for the EU AI Act local compliance agent.
+CLI entrypoint for the local compliance agent.
 Provides commands to run audits against a given project using rulepacks.
 """
 
@@ -10,13 +10,12 @@ import click
 import yaml
 from pathlib import Path
 
+from compliance.registry import DEFAULT_RULEPACK_ID
 from agent.rules.loader import load_rulepack, iter_rules
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
 from agent.db.mongo import insert_report
 from agent.scoring.overall import compute_overall_compliance, verdict_from_score
-
-DEFAULT_PACK_ID = "euai_core_v1"
 
 
 def _resource_path(rel_path: str) -> Path:
@@ -29,7 +28,7 @@ def _resource_path(rel_path: str) -> Path:
 
 def load_embedded_rulepack(pack_id: str) -> dict:
     """
-    Load an embedded rulepack by id (e.g. euai_core_v1, euai_extended_v1).
+    Load an embedded rulepack by id.
     The YAML files are bundled by PyInstaller under embedded_rulepacks/.
     """
     p = _resource_path(f"embedded_rulepacks/{pack_id}.yaml")
@@ -86,7 +85,7 @@ def _cli_progress(event):
 @click.group()
 def cli():
     """
-    Root command group for the EU AI Act local agent.
+    Root command group for the local compliance agent.
     """
 
 @cli.command()
@@ -106,8 +105,8 @@ def cli():
     "--pack-id",
     type=str,
     required=False,
-    default=DEFAULT_PACK_ID,
-    help="Embedded rulepack id to use when --pack is omitted (e.g. euai_core_v1, euai_extended_v1).",
+    default=DEFAULT_RULEPACK_ID,
+    help="Embedded rulepack id to use when --pack is omitted.",
 )
 @click.option(
     "--out",
@@ -138,7 +137,7 @@ def scan(root, pack, pack_id, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
         rp = load_rulepack(Path(pack))
     else:
         # Normal agent: use embedded rulepack selected by id
-        rp = load_embedded_rulepack(pack_id or DEFAULT_PACK_ID)
+        rp = load_embedded_rulepack(pack_id or DEFAULT_RULEPACK_ID)
 
     results = run_scan(root, iter_rules(rp), progress_callback=_cli_progress)
 

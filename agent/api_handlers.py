@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from pathlib import Path
 import tempfile, requests, os, shutil, json
 from typing import Optional
+from compliance.registry import DEFAULT_RULEPACK_ID
 from agent.rules.loader import load_rulepack, iter_rules
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
@@ -17,6 +18,7 @@ class RunRequest(BaseModel):
     model_root: str
     output_dir: str
     rulepack_source: Optional[str] = "embed"  # "embed" | "url" | "local"
+    rulepack_id: Optional[str] = DEFAULT_RULEPACK_ID
     rulepack_path: Optional[str] = None       # if local
     rulepack_url: Optional[str] = None        # if url
     upload_summary: bool = False
@@ -42,8 +44,7 @@ def run(req: RunRequest):
     tempdir = None
     try:
         if req.rulepack_source == "embed":
-            # Assume the agent bundle contains a copy at ./rulepacks/euai_core_v1.yaml
-            rp_path = Path(__file__).parents[1] / "rulepacks" / "euai_core_v1.yaml"
+            rp_path = Path(__file__).parents[1] / "rulepacks" / f"{req.rulepack_id or DEFAULT_RULEPACK_ID}.yaml"
             if not rp_path.exists():
                 raise HTTPException(status_code=400, detail="Embedded rulepack not found in agent bundle.")
         elif req.rulepack_source == "local":

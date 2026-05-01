@@ -1,9 +1,9 @@
 const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://complisense-ai-backend.onrender.com";
 
 const sections = [
-  { href: "#why", label: "Why now" },
+  { href: "#why", label: "Why India first" },
   { href: "#flow", label: "How it works" },
-  { href: "#platform", label: "Platform" },
+  { href: "#platform", label: "Product" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -17,45 +17,45 @@ const primaryActions = [
 const capabilities = [
   {
     title: "Local-first evidence collection",
-    text: "Run scans inside the client environment so model artefacts, documents, and governance evidence stay under the client’s control.",
+    text: "Run scans inside the client environment so privacy notices, consent records, breach registers, and governance evidence stay under the client’s control.",
   },
   {
     title: "Hosted compliance workspace",
-    text: "Use the SaaS dashboard for projects, scan configurations, audit history, and live result review without rebuilding your internal processes.",
+    text: "Use the SaaS dashboard for projects, scan configurations, audit history, and live result review without rebuilding internal compliance operations from scratch.",
   },
   {
     title: "Rule-driven compliance engine",
-    text: "Translate regulatory obligations into machine-checkable controls, then map those controls into findings, confidence, risk, and remediation.",
+    text: "Translate DPDP and other regulatory obligations into machine-checkable controls, then map those controls into findings, confidence, risk, and remediation.",
   },
   {
-    title: "Cross-jurisdiction expansion path",
-    text: "The same engine can evolve from EU AI Act readiness into DPDP, AI governance policies, and internal control frameworks.",
+    title: "India-first launch, multi-jurisdiction core",
+    text: "Start with DPDP for Indian buyers today, then extend the same engine into EU AI Act packs, sector overlays, and internal control frameworks.",
   },
 ];
 
 const flow = [
-  "Create a project in the SaaS workspace and configure a compliance scan.",
-  "Download a customized local agent linked to that project and run it against client artefacts.",
-  "Review synced findings, status, risk, and remediation in the hosted dashboard.",
+  "Create a project in the SaaS workspace and pick the applicable compliance pack, starting with DPDP for India.",
+  "Download a customized local agent linked to that project and run it against client artefacts such as notices, consent records, and governance files.",
+  "Review synced findings, status, risk, remediation, and drill-down evidence in the hosted dashboard.",
 ];
 
 const proofPoints = [
+  { label: "Primary launch market", value: "India" },
+  { label: "Current focus pack", value: "DPDP" },
   { label: "Public SaaS backend", value: "Render" },
-  { label: "Persistence layer", value: "MongoDB Atlas" },
   { label: "Client-side scan mode", value: "Local agent" },
-  { label: "Current regulatory pack", value: "EU AI Act" },
 ];
 
 const outcomes = [
-  "Show what documentation exists, what is missing, and which controls need action.",
-  "Avoid sending sensitive model artefacts to a third-party SaaS by default.",
-  "Give founders and compliance teams a demoable workflow instead of a static checklist.",
+  "Show what privacy documentation exists, what is missing, and which DPDP controls need action.",
+  "Avoid sending sensitive internal artefacts to a third-party SaaS by default.",
+  "Give founders, legal teams, and compliance leads a live workflow instead of a static checklist.",
 ];
 
 const faqs = [
   {
-    q: "Is this only for EU AI Act?",
-    a: "No. The current starter pack is EU AI Act-focused, but the product direction supports additional rulepacks like DPDP or internal AI governance controls.",
+    q: "Is this built only for DPDP?",
+    a: "No. The current go-to-market focus is DPDP for India, but the product architecture is rulepack-driven and can support EU AI Act, sector overlays, and internal controls without rebuilding the engine.",
   },
   {
     q: "Does client data leave their environment?",
@@ -63,7 +63,7 @@ const faqs = [
   },
   {
     q: "Can I see the live SaaS product from here?",
-    a: "Yes. This landing page links directly into the live hosted backend so prospects can move from marketing site to actual product entry points.",
+    a: "Yes. This landing page links directly into the live hosted backend so prospects can move from India-first positioning into the actual product entry points.",
   },
 ];
 
@@ -94,11 +94,12 @@ export default function HomePage() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow">Compliance workflow for AI teams</p>
-          <h1>EU AI Act readiness with a local agent and a hosted command center.</h1>
+          <p className="eyebrow">India-first privacy compliance workflow</p>
+          <h1>Operationalize DPDP compliance with a local agent and a hosted command center.</h1>
           <p className="lede">
-            CompliSense AI helps teams collect evidence locally, translate controls into findings, and review scan
-            outcomes through a public SaaS interface that is ready for live demos and customer onboarding.
+            CompliSense AI helps Indian teams collect privacy evidence locally, translate DPDP obligations into
+            machine-checkable controls, and review findings through a public SaaS interface that is ready for demos,
+            onboarding, and expansion into additional jurisdictions later.
           </p>
           <div className="quick-actions" aria-label="Primary actions">
             {primaryActions.map((action, index) => (
@@ -142,9 +143,9 @@ export default function HomePage() {
               <p>Projects, scans, auth, dashboard, reports, and upload endpoints are already exposed publicly.</p>
             </article>
             <article className="mini-panel">
-              <span className="mini-label">Client workflow</span>
-              <h2>Download agent, run locally, sync findings</h2>
-              <p>The website now links directly into the hosted product rather than acting like an isolated brochure.</p>
+              <span className="mini-label">DPDP workflow</span>
+              <h2>Download agent, scan evidence, sync findings</h2>
+              <p>Use the same flow to check privacy notices, consent records, safeguards, grievance handling, and governance artefacts.</p>
             </article>
           </div>
         </div>
@@ -152,11 +153,11 @@ export default function HomePage() {
 
       <section className="section-grid" id="why">
         <article className="feature-intro">
-          <p className="eyebrow">Why this matters</p>
-          <h2>Most teams cannot prove AI governance quickly enough.</h2>
+          <p className="eyebrow">Why India first</p>
+          <h2>Most teams cannot prove privacy governance quickly enough.</h2>
           <p>
-            Procurement reviews, internal risk checks, investor diligence, and regulator questions usually hit before
-            the company has a clean evidence trail. CompliSense AI turns that problem into a repeatable operating flow.
+            Customer due diligence, enterprise security reviews, internal legal checks, and regulator questions usually
+            hit before the company has a clean evidence trail. CompliSense AI turns that problem into a repeatable operating flow.
           </p>
         </article>
         <div className="grid">
@@ -172,7 +173,7 @@ export default function HomePage() {
       <section className="section-two-column" id="flow">
         <div className="section-copy">
           <p className="eyebrow">How it works</p>
-          <h2>One-page story for a founder, buyer, or compliance lead.</h2>
+          <h2>One-page story for a founder, privacy lead, or enterprise buyer.</h2>
           <ol className="story-list">
             {flow.map((step) => (
               <li key={step}>{step}</li>
@@ -184,21 +185,21 @@ export default function HomePage() {
             <span>1</span>
             <div>
               <strong>Hosted project setup</strong>
-              <p>Users start on the SaaS side and configure scans linked to real projects.</p>
+              <p>Users start on the SaaS side, pick the right compliance pack, and configure scans linked to real projects.</p>
             </div>
           </div>
           <div className="journey-node">
             <span>2</span>
             <div>
               <strong>Local evidence execution</strong>
-              <p>The generated agent runs where the client’s artefacts already live.</p>
+              <p>The generated agent runs where the client’s notices, registers, policies, and other artefacts already live.</p>
             </div>
           </div>
           <div className="journey-node">
             <span>3</span>
             <div>
               <strong>Hosted findings review</strong>
-              <p>Rule outcomes, summaries, and drill-down details can be reviewed from the browser.</p>
+              <p>Rule outcomes, summaries, remediation, and drill-down details can be reviewed from the browser.</p>
             </div>
           </div>
         </div>
@@ -206,8 +207,8 @@ export default function HomePage() {
 
       <section className="section-platform" id="platform">
         <div className="platform-header">
-          <p className="eyebrow">Platform</p>
-          <h2>A sharper front door that leads into the actual product.</h2>
+          <p className="eyebrow">Product</p>
+          <h2>An India-first front door that leads into the actual product.</h2>
         </div>
         <div className="platform-grid">
           <article className="platform-card">
@@ -260,7 +261,7 @@ export default function HomePage() {
       <section className="section-faq" id="faq">
         <div className="platform-header">
           <p className="eyebrow">FAQ</p>
-          <h2>Short answers a prospect should get without booking a call.</h2>
+          <h2>Short answers an India-market prospect should get without booking a call.</h2>
         </div>
         <div className="faq-list">
           {faqs.map((item) => (
@@ -275,7 +276,7 @@ export default function HomePage() {
       <section className="closing-panel">
         <div>
           <p className="eyebrow">Ready to use the live system?</p>
-          <h2>Go from landing page to working SaaS in one click.</h2>
+          <h2>Go from India-first landing page to working SaaS in one click.</h2>
         </div>
         <div className="hero-actions">
           <a className="primary-button" href={`${backendUrl}/`} target="_blank" rel="noreferrer">

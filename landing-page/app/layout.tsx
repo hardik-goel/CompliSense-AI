@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "CompliSense AI",
-  description: "EU AI Act Compliance in Minutes",
+  description: "Regulatory compliance workflows for AI and data systems",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

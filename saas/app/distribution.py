@@ -8,6 +8,7 @@ import time
 import uuid
 from typing import Any
 
+from compliance.registry import DEFAULT_RULEPACK_ID
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -37,7 +38,7 @@ class UploadScanRequest(BaseModel):
     timestamp: dt.datetime
     scan_id: str | None = None
     scan_name: str | None = Field(default=None, max_length=120)
-    rulepack_version: str = Field(default="euai_core_v1", max_length=120)
+    rulepack_version: str = Field(default=DEFAULT_RULEPACK_ID, max_length=120)
 
 
 def projects_collection():

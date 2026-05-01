@@ -253,7 +253,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <h5><i class="fas fa-download me-2 text-primary"></i>Local Compliance Agent</h5>
-                                <p>Download your customized agent to scan AI systems locally for EU AI Act compliance.</p>
+                                <p>Download your customized agent to scan systems locally against the regulatory pack you selected.</p>
 
                                 <div class="mb-3">
                                     <label class="form-label">Select Project:</label>
@@ -344,14 +344,23 @@
                             <textarea class="form-control" name="description" rows="3"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">AI Model Type *</label>
+                            <label class="form-label">System / Processing Type *</label>
                             <select class="form-select" name="model_type" required>
-                                <option value="">-- Select model type --</option>
+                                <option value="">-- Select system type --</option>
                                 <option value="LLM">Large Language Model (LLM)</option>
                                 <option value="Computer Vision">Computer Vision</option>
                                 <option value="Speech Recognition">Speech Recognition</option>
                                 <option value="Recommendation System">Recommendation System</option>
+                                <option value="Data Processing Workflow">Data Processing Workflow</option>
+                                <option value="Consumer Application">Consumer Application</option>
+                                <option value="Enterprise SaaS">Enterprise SaaS</option>
                                 <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Regulatory Program *</label>
+                            <select class="form-select" name="compliance_standard" id="complianceStandardSelect" required>
+                                <option value="">-- Loading programs --</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -385,9 +394,8 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Rulepack Version</label>
-                            <select class="form-select" name="rulepack_version">
-                                <option value="euai_core_v1">EU AI Act Core v1.0</option>
-                                <option value="euai_extended_v1">EU AI Act Extended v1.0</option>
+                            <select class="form-select" name="rulepack_version" id="rulepackVersionSelect">
+                                <option value="">-- Loading rulepacks --</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -441,7 +449,7 @@
     <div class="container mt-4 mb-4">
         <div class="alert alert-secondary small mb-0">
             <strong>Important:</strong> CompliSense-AI is a technical compliance support tool and
-            <strong>does not provide legal advice</strong>. It helps assess alignment with selected provisions of the EU AI Act
+            <strong>does not provide legal advice</strong>. It helps assess alignment with selected provisions of the regulatory pack
             based on the artifacts you supply (risk registers, model cards, dataset documentation, etc.).
         </div>
     </div>
@@ -451,6 +459,7 @@
     <script>
         let projects = [];
         let scans = [];
+        let rulepacks = [];
         let currentProjectId = null;
         let scansChart = null;
 
@@ -506,6 +515,42 @@
             document.getElementById('userTier').textContent = user.tier || 'free';
         }
 
+        async function loadRulepacks() {
+            const response = await fetch('/api/rulepacks');
+            if (!response.ok) {
+                throw new Error('Failed to load rulepacks');
+            }
+            rulepacks = await response.json();
+            populateRulepackOptions();
+            populateCompliancePrograms();
+        }
+
+        function populateRulepackOptions() {
+            const select = document.getElementById('rulepackVersionSelect');
+            if (!select) return;
+            select.innerHTML = rulepacks.map(rulepack =>
+                `<option value="${rulepack.pack_id}">${rulepack.label} (${rulepack.market})</option>`
+            ).join('');
+        }
+
+        function populateCompliancePrograms() {
+            const select = document.getElementById('complianceStandardSelect');
+            if (!select) return;
+            const programs = Array.from(new Map(
+                rulepacks.map(rulepack => [
+                    rulepack.default_project_standard,
+                    `${rulepack.regulation} (${rulepack.market})`
+                ])
+            ).entries());
+            select.innerHTML = '<option value="">-- Select program --</option>' +
+                programs.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+        }
+
+        function getRulepackLabel(packId) {
+            const rulepack = rulepacks.find(item => item.pack_id === packId);
+            return rulepack ? rulepack.label : packId;
+        }
+
         // Load dashboard data - prevent multiple simultaneous calls
         let isLoadingDashboard = false;
         async function loadDashboardData() {
@@ -517,6 +562,7 @@
 
             isLoadingDashboard = true;
             try {
+                await loadRulepacks();
                 const token = getAuthToken();
 
                 // Load stats
@@ -689,6 +735,7 @@
                                 <p class="card-text text-muted">${project.description || 'No description'}</p>
                                 <div class="d-flex gap-3">
                                     <small><i class="fas fa-robot me-1"></i>${project.model_type}</small>
+                                    <small><i class="fas fa-scale-balanced me-1"></i>${project.compliance_standard || 'GENERAL_COMPLIANCE'}</small>
                                     <small><i class="fas fa-industry me-1"></i>${project.industry || 'Not specified'}</small>
                                     <small><i class="fas fa-search me-1"></i>${project.scan_count} scans</small>
                                 </div>
@@ -732,7 +779,7 @@
                                 <h6 class="card-title">${scan.scan_name}</h6>
                                 <div class="d-flex gap-3">
                                     <small><i class="fas fa-project-diagram me-1"></i>${getProjectName(scan.project_id)}</small>
-                                    <small><i class="fas fa-code-branch me-1"></i>${scan.rulepack_version}</small>
+                                    <small><i class="fas fa-code-branch me-1"></i>${getRulepackLabel(scan.rulepack_version)}</small>
                                     <small class="badge bg-${getStatusColor(scan.status)}">${scan.status}</small>
                                 </div>
                             </div>
@@ -898,6 +945,7 @@
                 name: formData.get('name'),
                 description: formData.get('description'),
                 model_type: formData.get('model_type'),
+                compliance_standard: formData.get('compliance_standard'),
                 industry: formData.get('industry')
             };
 

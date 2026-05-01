@@ -1,0 +1,9 @@
+transfer_destinations:
+  - Singapore
+  - Ireland
+approved_transfer_classes:
+  - cloud_hosting
+  - customer_support_tooling
+vendor_assessment_process: legal_security_and_privacy_review
+government_request_handling: legal_review_and_documented_response
+review_owner: privacy_lead
