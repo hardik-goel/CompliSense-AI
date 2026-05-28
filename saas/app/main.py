@@ -122,6 +122,16 @@ async def about_page(request: Request):
     return templates.TemplateResponse("about.html", {"request": request})
 
 
+@app.get("/experience/eu-ai-act", response_class=HTMLResponse)
+async def eu_ai_experience(request: Request):
+    return templates.TemplateResponse("experience_eu.html", {"request": request})
+
+
+@app.get("/experience/dpdp-india", response_class=HTMLResponse)
+async def dpdp_experience(request: Request):
+    return templates.TemplateResponse("experience_dpdp.html", {"request": request})
+
+
 @app.get("/reports", response_class=HTMLResponse)
 async def reports_page(request: Request):
     user = _get_user_from_request(request)

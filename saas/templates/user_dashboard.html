@@ -79,6 +79,14 @@
                             Free scans this month: <span id="freeScansUsed">0</span>/<span id="freeScansLimit">10</span>
                         </small>
                     </div>
+                    <div class="mt-2" style="max-width: 360px;">
+                        <label for="regulationFilter" class="form-label form-label-sm mb-1 text-light">Regulation View</label>
+                        <select class="form-select form-select-sm" id="regulationFilter" onchange="setRegulationFilter(this.value)">
+                            <option value="ALL">All Programs</option>
+                            <option value="DPDP_INDIA">DPDP India</option>
+                            <option value="EU_AI_ACT">EU AI Act</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-4 text-end">
                     <!-- Add Home Button -->
@@ -462,6 +470,7 @@
         let rulepacks = [];
         let currentProjectId = null;
         let scansChart = null;
+        let regulationFilter = 'ALL';
 
         // Show alerts
         function showAlert(message, type = 'info') {
@@ -523,13 +532,14 @@
             rulepacks = await response.json();
             populateRulepackOptions();
             populateCompliancePrograms();
+            populateRegulationFilterOptions();
         }
 
         function populateRulepackOptions() {
             const select = document.getElementById('rulepackVersionSelect');
             if (!select) return;
             select.innerHTML = rulepacks.map(rulepack =>
-                `<option value="${rulepack.pack_id}">${rulepack.label} (${rulepack.market})</option>`
+                `<option value="${rulepack.pack_id}" ${rulepack.is_default ? 'selected' : ''}>${rulepack.label} (${rulepack.market})</option>`
             ).join('');
         }
 
@@ -543,12 +553,65 @@
                 ])
             ).entries());
             select.innerHTML = '<option value="">-- Select program --</option>' +
-                programs.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+                programs.map(([value, label]) => {
+                    const matchesDefault = rulepacks.some(rulepack => rulepack.is_default && rulepack.default_project_standard === value);
+                    return `<option value="${value}" ${matchesDefault ? 'selected' : ''}>${label}</option>`;
+                }).join('');
+        }
+
+        function populateRegulationFilterOptions() {
+            const select = document.getElementById('regulationFilter');
+            if (!select) return;
+            const defaults = ['<option value="ALL">All Programs</option>'];
+            const uniquePrograms = Array.from(new Set(rulepacks.map(r => r.default_project_standard))).filter(Boolean);
+            uniquePrograms.sort();
+            select.innerHTML = defaults.concat(
+                uniquePrograms.map(program => `<option value="${program}">${program}</option>`)
+            ).join('');
+            select.value = regulationFilter;
         }
 
         function getRulepackLabel(packId) {
             const rulepack = rulepacks.find(item => item.pack_id === packId);
             return rulepack ? rulepack.label : packId;
+        }
+
+        function getRulepackById(packId) {
+            return rulepacks.find(item => item.pack_id === packId);
+        }
+
+        function getScanProgram(scan) {
+            const rp = getRulepackById(scan.rulepack_version);
+            return rp ? rp.default_project_standard : null;
+        }
+
+        function projectMatchesFilter(project) {
+            if (regulationFilter === 'ALL') return true;
+            return (project.compliance_standard || '') === regulationFilter;
+        }
+
+        function scanMatchesFilter(scan) {
+            if (regulationFilter === 'ALL') return true;
+            const program = getScanProgram(scan);
+            return program === regulationFilter;
+        }
+
+        function getFilteredProjects() {
+            return projects.filter(projectMatchesFilter);
+        }
+
+        function getFilteredScans() {
+            return scans.filter(scanMatchesFilter);
+        }
+
+        function setRegulationFilter(value) {
+            regulationFilter = value || 'ALL';
+            currentProjectId = null;
+            renderProjects();
+            renderScans();
+            updateProjectSelect();
+            updateChartProjectDropdown();
+            loadProjectScans('');
         }
 
         // Load dashboard data - prevent multiple simultaneous calls
@@ -715,18 +778,19 @@
         // Render projects
         function renderProjects() {
             const container = document.getElementById('projectsList');
+            const visibleProjects = getFilteredProjects();
 
-            if (projects.length === 0) {
+            if (visibleProjects.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No projects yet. Create your first project to get started!</p>
+                        <p class="text-muted">No projects found for the selected regulation filter.</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = projects.map(project => `
+            container.innerHTML = visibleProjects.map(project => `
                 <div class="card project-card">
                     <div class="card-body">
                         <div class="row align-items-center">
@@ -760,18 +824,19 @@
         // Render scans
         function renderScans() {
             const container = document.getElementById('scansList');
+            const visibleScans = getFilteredScans();
 
-            if (scans.length === 0) {
+            if (visibleScans.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
                         <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No scans yet. Configure a scan for one of your projects.</p>
+                        <p class="text-muted">No scans found for the selected regulation filter.</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = scans.map(scan => `
+            container.innerHTML = visibleScans.map(scan => `
                 <div class="card project-card">
                     <div class="card-body">
                         <div class="row align-items-center">
@@ -812,14 +877,14 @@
         function updateProjectSelect() {
             const select = document.getElementById('projectSelect');
             select.innerHTML = '<option value="">-- Select a project --</option>' +
-                projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                getFilteredProjects().map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
 
         function updateChartProjectDropdown() {
             const sel = document.getElementById('chartProjectSelect');
             if (!sel) return;
             sel.innerHTML = '<option value="">-- Select project --</option>' +
-                projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                getFilteredProjects().map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             updateChartScanDropdown();
         }
 
@@ -828,7 +893,7 @@
             const scanSel = document.getElementById('chartScanSelect');
             if (!scanSel || !projectSel) return;
             const pid = projectSel.value;
-            const projectScans = pid ? scans.filter(s => s.project_id === pid) : [];
+            const projectScans = pid ? getFilteredScans().filter(s => s.project_id === pid) : [];
             scanSel.innerHTML = '<option value="">-- Select scan --</option>' +
                 projectScans.map(s => `<option value="${s.id}">${s.scan_name || s.id}</option>`).join('');
             updateScanChart();
@@ -901,7 +966,7 @@
                 return;
             }
 
-            const projectScans = scans.filter(s => s.project_id === projectId);
+            const projectScans = getFilteredScans().filter(s => s.project_id === projectId);
 
             scanSelect.disabled = false;
             scanSelect.innerHTML = '<option value="">-- Select a scan configuration --</option>' +

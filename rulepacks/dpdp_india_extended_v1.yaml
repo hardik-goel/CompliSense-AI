@@ -2,6 +2,7 @@ pack_id: "dpdp_india_extended_v1"
 version: "1.0.0"
 jurisdiction: "DPDP_INDIA"
 updated: "2026-05-01"
+required_artifacts_manifest: "agent/artefacts/required_artifacts_dpdp.yaml"
 rules:
   - id: DPDP-SEC5-NOTICE-001
     clause: "Section 5"

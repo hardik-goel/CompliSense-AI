@@ -79,7 +79,12 @@ def get_rulepack(pack_id: str | None = None) -> RulepackDefinition:
 
 
 def get_rulepack_catalog() -> list[dict[str, str]]:
-    return [asdict(rulepack) for rulepack in RULEPACKS]
+    catalog = []
+    for rulepack in RULEPACKS:
+        payload = asdict(rulepack)
+        payload["is_default"] = rulepack.pack_id == DEFAULT_RULEPACK_ID
+        catalog.append(payload)
+    return catalog
 
 
 def get_rulepack_ids() -> list[str]:

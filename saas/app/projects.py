@@ -4,7 +4,7 @@ import datetime as dt
 import uuid
 from typing import Any
 
-from compliance.registry import DEFAULT_RULEPACK_ID
+from compliance.registry import DEFAULT_RULEPACK_ID, get_rulepack
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -12,13 +12,14 @@ from saas.app.auth import get_current_user
 from saas.app.database import get_collection, serialize_document
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+DEFAULT_RULEPACK = get_rulepack(DEFAULT_RULEPACK_ID)
 
 
 class ProjectCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: str | None = Field(default=None, max_length=2000)
     model_type: str = Field(min_length=1, max_length=120)
-    compliance_standard: str = Field(default="GENERAL_COMPLIANCE", min_length=1, max_length=120)
+    compliance_standard: str = Field(default=DEFAULT_RULEPACK.default_project_standard, min_length=1, max_length=120)
     industry: str | None = Field(default=None, max_length=120)
 
 

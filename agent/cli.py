@@ -139,7 +139,12 @@ def scan(root, pack, pack_id, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
         # Normal agent: use embedded rulepack selected by id
         rp = load_embedded_rulepack(pack_id or DEFAULT_RULEPACK_ID)
 
-    results = run_scan(root, iter_rules(rp), progress_callback=_cli_progress)
+    results = run_scan(
+        root,
+        iter_rules(rp),
+        required_artifacts_manifest=rp.get("required_artifacts_manifest"),
+        progress_callback=_cli_progress,
+    )
 
     # Compute assessment (like agent_runner does)
     artifacts = results["artifacts"]

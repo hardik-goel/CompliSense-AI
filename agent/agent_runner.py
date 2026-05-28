@@ -49,6 +49,7 @@ def run_agent(
     results = run_scan(
         root,
         rules,
+        required_artifacts_manifest=rp.get("required_artifacts_manifest"),
         llm_enabled=config.llm_enabled,
         progress_callback=progress_callback,
         cancel_event=config.cancel_flag

@@ -71,7 +71,11 @@ def run(req: RunRequest):
         rules = iter_rules(pack)
 
         # Step 3: Run scanner
-        results = run_scan(model_root, rules)
+        results = run_scan(
+            model_root,
+            rules,
+            required_artifacts_manifest=pack.get("required_artifacts_manifest"),
+        )
 
         # Step 4: Save JSON + PDF
         findings_path = output_dir / "findings.json"
