@@ -8,6 +8,7 @@ import time
 import uuid
 from typing import Any
 
+from compliance.registry import DEFAULT_RULEPACK_ID
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -37,7 +38,7 @@ class UploadScanRequest(BaseModel):
     timestamp: dt.datetime
     scan_id: str | None = None
     scan_name: str | None = Field(default=None, max_length=120)
-    rulepack_version: str = Field(default="euai_core_v1", max_length=120)
+    rulepack_version: str = Field(default=DEFAULT_RULEPACK_ID, max_length=120)
 
 
 def projects_collection():
@@ -189,6 +190,9 @@ async def receive_scan_results(results_data: dict[str, Any]):
         if not findings_json and isinstance(results_data, dict):
             findings_json = results_data
         summary = results_data.get("summary") or findings_json.get("summary", {}) or {}
+        client_run_metadata = results_data.get("client_run_metadata")
+        if not isinstance(client_run_metadata, dict):
+            client_run_metadata = {}
         update_fields = {
             "status": "completed",
             "updated_at": dt.datetime.utcnow(),
@@ -196,6 +200,7 @@ async def receive_scan_results(results_data: dict[str, Any]):
             "results_summary": summary,
             "findings_json": findings_json,
             "results_count": results_data.get("results_count", _count_findings(findings_json)),
+            "client_run_metadata": client_run_metadata,
         }
         scans_collection().update_one({"id": scan_id}, {"$set": update_fields})
 
@@ -212,6 +217,7 @@ async def receive_scan_results(results_data: dict[str, Any]):
                     "metadata": {
                         "results_count": update_fields["results_count"],
                         "summary": summary,
+                        "client_run_metadata": client_run_metadata,
                     },
                 }
             )

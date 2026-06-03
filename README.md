@@ -1,328 +1,247 @@
 # CompliSense-AI
-Smart compliance insights that detect, guide, and fix AI risks—without storing your data.
 
-Why CompliSense-AI?
+CompliSense-AI is a local-agent plus SaaS compliance platform for scanning project artefacts against configurable regulatory rulepacks.
 
-The EU AI Act and upcoming regulations worldwide place strict compliance obligations on companies using AI.
-Non-compliance can mean heavy fines, reputational risk, or blocked deployments.
+The codebase now supports multiple packs side by side. Today that includes:
 
-CompliSense-AI is a hybrid agent + SaaS platform that:
+- `euai_core_v1`
+- `euai_extended_v1`
+- `dpdp_india_core_v1`
+- `dpdp_india_extended_v1`
 
-Runs locally in client infrastructure (no sensitive data leaves)
+The architecture is intentionally additive. EU support is still present, and India-first operation is handled through configuration rather than by removing EU logic.
 
-Scans ML pipelines, datasets, and models against legal obligations
+Desktop app now supports:
 
-Generates audit-ready reports (JSON/PDF)
+- selecting a rulepack directly before running a scan
+- opening dedicated DPDP and EU experience URLs (`COMPLISENSE_DPDP_URL`, `COMPLISENSE_EU_URL`)
 
-Scales into guided remediation and automated fixes
+## What The Product Does
 
-Features
+- runs evidence collection locally on the client machine
+- evaluates artefacts against a selected rulepack
+- produces findings and remediation
+- syncs scan metadata and findings to a hosted SaaS dashboard
+- keeps the engine extendable for new markets such as UK, India, or sector-specific overlays
 
-✅ Local-first Agent — privacy-preserving compliance scans
-✅ Rule Engine — maps EU AI Act obligations → testable checks
-✅ Audit Reports — JSON + PDF outputs, ready for regulators
-✅ CLI & API — use via terminal or integrate into pipelines
-✅ Extendable — add new rulepacks for other jurisdictions (US, ISO, etc.)
-✅ Premium Roadmap — remediation guides + auto-fix in GitHub (agentic AI)
+## Current Rulepack Model
 
-This project is divided into two modules. 
+Rulepacks are registered in:
 
-TruthModule = The core compliance engine (your existing code)
-ClientModule = The user-facing interface that runs locally on client machines
+- [compliance/registry.py](compliance/registry.py)
 
-Architecture
+They are exposed to the SaaS UI through:
 
-                    ┌───────────────────────────────┐
-                    │            SaaS Layer          │
-                    │  - Dashboard (future)          │
-                    │  - Rulepack updates            │
-                    │  - User/Org management         │
-                    │  - Report archival             │
-                    └───────────────▲────────────────┘
-                                    │
-                   Rulepack updates │ Compliance summaries
-                                    │
-       ┌────────────────────────────┴────────────────────────────┐
-       │                   Local Agent (this repo)               │
-       │  - CLI & FastAPI API                                    │
-       │  - Evaluators (schema_validate, file_presence, etc.)    │
-       │  - Rule Engine (py-rule-engine)                         │
-       │  - Report Generator (Jinja2 + WeasyPrint)               │
-       │  - Artefact Scanner (model cards, dataset cards, risks) │
-       └────────────────────────────▲────────────────────────────┘
-                                    │
-                    Project artefacts│ (kept inside client system)
-                                    │
-     ┌──────────────────────────────┴────────────────────────────┐
-     │     ML Models, Datasets, Docs (compliance evidence)       │
-     │  e.g., model_card.json, dataset_card.json, risk_register  │
-     └───────────────────────────────────────────────────────────┘
+- `GET /api/rulepacks`
 
-Project structure:
+The dashboard UI loads the full catalog, so both EU and DPDP packs should be visible in the scan configuration UI.
 
-```CompliSense-AI/
-│
-├── agent/                      # core package
-│   ├── __init__.py
-│   ├── scanner.py              # runs evaluators + rules
-│   ├── rules/
-│   │   ├── __init__.py
-│   │   └── loader.py           # load rulepacks
-│   ├── report/
-│   │   ├── __init__.py
-│   │   ├── render.py           # Jinja2 + WeasyPrint renderer
-│   │   └── templates/
-│   │       └── audit_report.html.j2
-│   └── evaluators/             # pluggable checks (planned)
-│
-├── cli.py                      # Click CLI entrypoint
-├── rulepacks/                  # rule definitions (EU AI Act v1)
-│   └── euai_core_v1.yaml
-├── artefacts/                  # sample artefacts for testing
-│   ├── compliance/risk_register.yaml
-│   ├── schemas/risk_register.schema.json
-│   ├── data/dataset_card.json
-│   └── model/model_card.json
-│
-├── tests/                      # pytest unit tests
-│   ├── test_loader.py
-│   ├── test_scanner.py
-│   ├── test_render.py
-│   └── test_cli.py
-│
-├── pytest.ini                  # pytest configuration
-└── README.md                   # this file
+Each rulepack can also specify its own artifact manifest via `required_artifacts_manifest`, so EU and DPDP evidence coverage is scored independently.
+
+## Configuration-Driven Market Focus
+
+The default pack is controlled by environment variable:
+
+```env
+DEFAULT_RULEPACK_ID=dpdp_india_core_v1
 ```
 
-Code Flow:
+That means:
 
-1. CLI 
+- if you want India-first behavior, set `DEFAULT_RULEPACK_ID=dpdp_india_core_v1` or `dpdp_india_extended_v1`
+- if you want EU-first behavior, set `DEFAULT_RULEPACK_ID=euai_core_v1` or `euai_extended_v1`
 
-```python cli.py scan --root artefacts --pack rulepacks/euai_core_v1.yaml --out out```
+This changes:
 
-2. Rulepack Loading
+- default selected rulepack in the UI
+- default compliance program in project creation
+- default local agent pack when a pack is not explicitly chosen
 
-loader.py loads YAML rules → list of obligations (Art. 9, 10, 11).
+It does **not** remove the other packs from the product. They remain available in the UI and through the CLI.
 
-3. Scan Execution
+## Project Structure
 
-* scanner.py runs evaluators (e.g., file_presence, schema_validate).
-
-* Context dict built per rule (exists? schema_valid? missing_fields?).
-
-* Expression (e.g. exists and missing_fields == 0) evaluated by rule_engine.
-
-4. Results Aggregation
-
-Summary + detailed results stored in findings.json.
-
-5. Report Generation
-
-render.py renders audit_report.pdf with Jinja2 + WeasyPrint.
-
-6. (Optional API)
-
-uvicorn agent.api:app runs the same logic behind an HTTP endpoint.
-
-[TODO]
-
-Testing
-
-Uses pytest with pytest-cov for coverage reporting.
-
-Test suite covers:
-
-Rulepack loading
-
-Scanner logic with mocked evaluators
-
-Report rendering
-
-CLI command execution
-
-Run tests with coverage:
-
-pytest -v
-
-Generate HTML coverage report:
-
-pytest --cov=agent --cov=cli --cov-report=html
-open htmlcov/index.html
-
-
-Example Run:
-
-### Run scan
-```python3 -m agent.cli scan --root artefacts --pack rulepacks/euai_core_v1.yaml --out out```
-
-## Outputs:
-### - out/findings.json
-### - out/audit_report.pdf
-
-sample_findings.json:
-
-```
-{
-  "summary": {"passed": 2, "failed": 1},
-  "results": [
-    {
-      "rule_id": "EUAI-ART9-RISK-MGMT-001",
-      "clause": "Art.9",
-      "title": "Risk management system documented",
-      "status": "FAIL",
-      "context": {"schema_valid": true, "coverage": 0.0}
-    }
-  ]
-}
+```text
+CompliSense-AI/
+├── agent/                         # local agent, scanner, evaluators, reporting
+├── compliance/                    # rulepack registry and market metadata
+├── rulepacks/                     # executable compliance packs
+├── artefacts/                     # EU sample artefacts
+├── sample_artefacts/dpdp_india/   # DPDP sample artefacts
+├── saas/                          # FastAPI SaaS templates and backend
+├── landing-page/                  # Next.js landing page for Vercel
+├── main.py                        # Render/FastAPI entrypoint
+└── .env.example                   # deployment config example
 ```
 
-Roadmap
+## Supported Sample Artefact Roots
 
-```commandline
- EU AI Act (Arts 9–11) rulepack
+EU sample root:
 
- CLI scans & PDF reports
+- `artefacts`
 
- Unit tests + coverage
+DPDP sample root:
 
- Add more evaluators (bias checks, explainability)
+- `sample_artefacts/dpdp_india`
 
- API endpoints for remote triggering
+## Local Setup
 
- SaaS dashboard with multi-tenant org support
+Use the repo venv if you already have it:
 
- Remediation suggestions in premium tier
-
- Auto-fix + GitHub PR (agentic AI co-pilot)
+```bash
+cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
+source 3.11_venv/bin/activate
 ```
 
-TO RUN:
+If you need a fresh environment:
 
-python3 -m agent.cli scan \
-  --root artefacts \
-  --pack rulepacks/euai_core_v1.yaml \
-  --out out \
-  --mongo \
-  --mongo-uri mongodb://localhost:27017 \
-  --mongo-db complisense \
-  --mongo-coll findings_
+```bash
+cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
+python3.11 -m venv 3.11_venv
+source 3.11_venv/bin/activate
+pip install -r requirements.txt
+```
 
-fire up mongodb : [EITHER OR ALL]
+If your venv was created against a removed Python install, recreate it.
 
-mongod --config /usr/local/etc/mongod.conf
-mongod
-mongosh
+## One-Command Bundle Refresh (Recommended)
 
-CLIENT JOURNEY:
-1. Client visits your SaaS dashboard (web)
-2. Client configures scan (model path, custom requirements via chat)
-3. Client downloads **customized agent** for their specific scan
-4. Agent runs locally (no data leaves their system)
-5. Results sync back to SaaS dashboard (anonymized metadata only)
-6. Client views beautiful reports in web dashboard
+To rebuild the compiled client CLI, clear cached generated ZIPs, and validate all four rulepacks in one go:
 
-To run the dashboard:
+```bash
+cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
+make refresh-agent-bundles
+```
 
-cd saas/app
-python3 main.py
-http://0.0.0.0:8000/
+After this completes, generate/download the agent ZIP again from SaaS (old ZIPs can be stale).
 
-![img.png](img.png)
+Other useful commands:
 
-Building steps for ClientModule (local agent):
+```bash
+make build-cli
+make build-cli-clean
+make clean-agent-cache
+make smoke-cli-all
+make smoke-cli-compiled
+```
 
-1. SaaS Web Dashboard 
+`make build-cli` is the default recommended build. Use `make build-cli-clean` only when you explicitly want a PyInstaller clean build.
+`make smoke-cli-all` validates all four packs through `python -m agent.cli`.
+`make smoke-cli-compiled` validates the frozen binary itself.
 
-- FastAPI Backend (saas/app/main.py)
-  * Web server with CORS support 
-  * Static file serving 
-  * Template rendering 
-  * Basic API endpoints
+## Run The SaaS Locally
 
-- Authentication System (saas/app/auth.py)
-  * User registration/login 
-  * JWT token generation 
-  * Protected routes 
-  * Session management
+This runs the FastAPI dashboard on `localhost:8000`.
 
-- Web Interface (saas/templates/dashboard.html)
-  - Responsive Bootstrap UI 
-  - Stats dashboard 
-  - Feature cards 
-  - Modal forms
+### Start local SaaS (single command flow)
 
-2. Project Management System
+```bash
+cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
+source 3.11_venv/bin/activate
+export DEFAULT_RULEPACK_ID=dpdp_india_core_v1  # or euai_core_v1
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
 
-   - Create, read, update, delete projects 
-   - Project-specific configurations 
-   - Scan configuration management 
-   - User isolation (users only see their own projects)
+Open:
 
-3. Agent Generation Service
+- `http://127.0.0.1:8000/`
 
-   - Dynamic agent creation per scan configuration 
-   - Customized main scripts with project-specific settings 
-   - Cross-platform support (Windows, macOS, Linux)
-   - Integration with existing TruthModule
+What you should see:
 
-4. Secure Distribution System 
+- both EU and DPDP rulepacks available in the dashboard scan configuration
+- the configured `DEFAULT_RULEPACK_ID` preselected by default
 
-   - Protected download endpoints 
-   - Agent customization based on user/project 
-   - Heartbeat and results reporting 
-   - Status tracking
+You do not need separate backend runs for DPDP vs EUAI. Keep one backend running and switch the selected rulepack in the UI while configuring scans.
 
-5. Enhanced User Dashboard
+## Test The Rulepack Catalog Locally
 
-   - Project management interface 
-   - Scan configuration workflow 
-   - Agent download with project selection 
-   - Real-time statistics
+With the SaaS running:
 
-Workflow:
+```bash
+curl http://127.0.0.1:8000/api/rulepacks
+```
 
-- Register/Login
-- Create a project 
-- Configure a scan 
-- Download the customized agent 
-- Run the agent locally
+You should see entries for:
 
-Step-by-Step Guide for Clients
-Step 1: Extract and Set Up
-bash
-# Extract the downloaded agent
-unzip complisense_agent_YOUR_SCAN_ID.zip -d complisense_agent
-cd complisense_agent
+- `euai_core_v1`
+- `euai_extended_v1`
+- `dpdp_india_core_v1`
+- `dpdp_india_extended_v1`
 
-# Set up the environment (Linux/macOS)
+The configured default pack will also be flagged in the response.
+
+For repo development, prefer `--pack-id`. `--pack /path/to/*.yaml` is mainly for dev/testing custom packs.
+
+## Client Bundle Command (`run_scan.py`)
+
+If a client is using a generated/downloaded agent bundle (not this repo), the command is:
+
+```bash
+python run_scan.py --project-path /path/to/your/project --output-dir ./scan_results
+```
+e.g. 
+```bash
+python3 run_scan.py --project-path /Users/hardikgoel/PycharmProjects/CompliSense-AI/artefacts --output-dir ./scan_results
+```
+
+macOS/Linux full flow:
+
+```bash
+cd /path/to/complisense_agent
 chmod +x setup_agent.sh
 ./setup_agent.sh
-
-# Or on Windows, just double-click: setup_agent.bat
-Step 2: Activate the Environment
-bash
-# Linux/macOS
 source complisense_env/bin/activate
+python run_scan.py --project-path /path/to/your/project --output-dir ./scan_results
+```
 
-# Windows
+Windows full flow:
+
+```bat
+cd C:\path\to\complisense_agent
+setup_agent.bat
 complisense_env\Scripts\activate.bat
-Step 3: Run the Scan (THIS IS THE KEY PART)
-bash
-# Basic scan - replace "/path/to/your/ml/model" with your actual model path
-python3 run_scan.py --project-path /Users/hardikgoel/Downloads/complisense_AI/model_2mb.pkl --output-dir ./scan_results
-Step 4: Find Your Results
-After scanning, check the output directory (default: ./complisense_output or your specified --output-dir) for:
+python run_scan.py --project-path "C:\path\to\your\project" --output-dir ".\scan_results"
+```
 
-compliance_findings.json - Detailed results
+If present, launcher wrappers can also be used:
 
-scan_summary.txt - Summary report
+- macOS/Linux: `./run_agent.sh --project-path /path/to/your/project --output-dir ./scan_results`
+- Windows: `run_agent.bat --project-path "C:\path\to\your\project" --output-dir ".\scan_results"`
 
-Starting uvicorn server for flask [After implementing JWT and other security considerations relating to pem keys]:
+Outputs are written into the selected `--out` directory, especially:
 
-export ADMIN_API_TOKEN="dev-token-123" [MAYBE Optional]
-uvicorn server.saas_api:app --reload --port 8080
+- `compliance_findings.json`
+- (compiled CLI path may also produce `findings.json` internally; `run_scan.py` normalizes output handling)
+- `compliance_report.pdf` only when PDF output is enabled and source-mode bundle is used
 
-Production Deployment
+If you see `Embedded rulepack not found for pack_id=...`, the bundle was generated from an older CLI build.
+Run `make refresh-agent-bundles` and then regenerate/download the agent ZIP.
+
+## Run The Desktop Agent UI
+
+```bash
+cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
+source 3.11_venv/bin/activate
+python -m agent.agent_ui
+```
+
+The UI now uses the configured default pack rather than a hardcoded EU pack.
+
+## India-First Product Flow
+
+1. Start the SaaS locally with `DEFAULT_RULEPACK_ID=dpdp_india_core_v1`
+2. Register a user at `http://127.0.0.1:8000/`
+3. Create a project
+4. Confirm the compliance program defaults to DPDP
+5. Configure a scan and confirm DPDP is preselected
+6. Run a local DPDP sample scan against:
+   - `sample_artefacts/dpdp_india`
+7. Upload findings through the local or hosted flow
+8. Review results in:
+   - `/dashboard`
+   - `/reports`
+
+## Deployment
 
 Backend entrypoint:
 
@@ -332,46 +251,45 @@ uvicorn main:app --host 0.0.0.0 --port 10000
 
 Required environment variables:
 
-```bash
-MONGO_URI=
-MONGO_DB=complisense
-JWT_SECRET=
-ADMIN_API_TOKEN=
-PORT=10000
+```env
 ENVIRONMENT=production
+PORT=10000
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/complisense?retryWrites=true&w=majority
+MONGO_DB=complisense
+DEFAULT_RULEPACK_ID=dpdp_india_core_v1
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+ADMIN_API_TOKEN=replace-with-a-long-random-agent-token
 CORS_ORIGINS=https://your-render-service.onrender.com
+LOG_LEVEL=INFO
+SECURE_COOKIES=true
 ```
 
-Render free-tier deployment:
+If you use GitHub Actions, add these repository secrets with the same names:
 
-1. Push this repository to GitHub.
-2. In Render, create a new Web Service from the GitHub repo.
-3. Choose Docker as the environment.
-4. Render will detect `render.yaml`, build the image, and expose port `10000`.
-5. Set `MONGO_URI`, `JWT_SECRET`, and `ADMIN_API_TOKEN` in Render dashboard secrets.
+- `MONGO_URI`
+- `JWT_SECRET`
+- `ADMIN_API_TOKEN`
 
-MongoDB Atlas free-tier setup:
+`.github/workflows/backend-secrets-smoke.yml` maps those secrets into job environment variables and runs a backend health check. This covers GitHub Actions runs only. Render, Railway, or any other host still needs its own environment variables unless deployment is also performed through GitHub Actions.
 
-1. Create an M0 free cluster.
-2. Create an application user and copy the SRV connection string.
-3. Add Render outbound IP access temporarily, or use `0.0.0.0/0` during setup and then tighten later.
-4. Paste the URI into Render as `MONGO_URI`.
+Recommended deployment split:
 
-Collections created automatically on startup:
+- Render: FastAPI backend
+- MongoDB Atlas: persistence
+- Vercel: `landing-page/`
 
-- `users`
-- `projects`
-- `scans`
-- `audit_logs`
+## Agent Upload API
 
-Agent upload API contract:
+Endpoint:
 
 `POST /api/v1/upload-scan`
 
 Authentication:
 
-- `Authorization: Bearer <jwt>` for logged-in users, or
-- `X-API-Key: <ADMIN_API_TOKEN>` for local agents
+- `Authorization: Bearer <jwt>`
+- or `X-API-Key: <ADMIN_API_TOKEN>`
 
 Example payload:
 
@@ -379,164 +297,53 @@ Example payload:
 {
   "project_id": "proj_12345678",
   "scan_summary": { "passed": 12, "failed": 2 },
-  "findings_json": { "summary": { "passed": 12, "failed": 2 }, "results": [] },
+  "findings_json": {
+    "summary": { "passed": 12, "failed": 2 },
+    "results": []
+  },
   "timestamp": "2026-04-21T10:00:00Z",
   "scan_id": "scan_abcdef12",
   "scan_name": "Weekly compliance run",
-  "rulepack_version": "euai_core_v1"
+  "rulepack_version": "dpdp_india_core_v1"
 }
 ```
 
-Success response:
+## Current DPDP Packs
 
-```json
-{
-  "success": true,
-  "scan_id": "scan_abcdef12",
-  "project_id": "proj_12345678",
-  "stored_at": "2026-04-21T10:01:12.123456"
-}
-```
+### `dpdp_india_core_v1`
 
-Optional landing page:
+Starter checks for:
 
-- `landing-page/` contains a minimal Next.js site for Vercel free-tier deployment.
-- Build command: `npm run build`
-- Output: standard Next.js app
+- notice
+- consent
+- safeguards
+- breach register
+- children’s data
+- Significant Data Fiduciary basics
+- grievance redressal
 
-building agent:
+### `dpdp_india_extended_v1`
 
-pyinstaller \
-  --onefile \
-  --windowed \
-  --name CompliSenseAgent \
-  agent/agent_ui.py
+Adds:
 
+- legitimate use register
+- retention and erasure schedule
+- access workflow
+- correction/erasure request register
+- processor inventory
+- cross-border transfer posture
 
-running agent:
+Roadmap document:
 
-python3 -m agent.agent_ui
+- [DPDP_EXTENDED_V1_ROADMAP.md](DPDP_EXTENDED_V1_ROADMAP.md)
 
-What client will choose as input:
+## Notes
 
-/ml-project/
- ├── model/
- │   ├── model.pkl
- │   ├── model_card.json
- ├── data/
- │   ├── dataset.csv
- │   ├── dataset_card.json
- ├── training/
- │   ├── train.py
- ├── configs/
- │   ├── config.yaml
-
-
-run (Dev testing): 
-
-python3 -m agent.agent_ui
-
-Confidence Scoring Framework (0–100%)
-Core idea
-
-Every EU AI obligation gets:
-
-Evidence signals
-
-Weights
-
-Confidence score
-
-New concept
-
-Each rule returns signals, not just pass/fail.
-
-rm -rf build dist
-
-Rebuilding app:
-
-pyinstaller CompliSenseAgent.spec --clean  [IF MEA... Issue occurs or only use this to generate .pkg]
-
-pyinstaller --onefile --windowed --name CompliSenseAgent agent/agent_ui.py
-or pyinstaller CompliSenseAgent.spec
-
-zip -r dist/CompliSenseAgent-macos.zip dist/CompliSenseAgent.app
-
-if you want your dev to bypass apple app run, 
-xattr -dr com.apple.quarantine CompliSenseAgent.app
-
-issue in signing the app for now, therefore open through this:
-./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
-
-if you get this error: 
-
-(venv) hardikgoel@192 CompliSense-AI % ./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
-
-urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
-macOS 15 (1507) or later required, have instead 15 (1506) !
-zsh: abort      ./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
-
-
-Just run source 3.10_venv/bin/activate
-export MACOSX_DEPLOYMENT_TARGET=15.6
-
-HLD:
-
-![img_1.png](img_1.png)
-
-
-LLD:
-
-![img_2.png](img_2.png)
-
-
-📜 License
-
-MIT License TODO
-
-Start with:
-
-(venv) hardikgoel@192 CompliSense-AI % cd saas/app 
-(venv) hardikgoel@192 app % uvicorn main:app --reload --host 127.0.0.1 --port 8000 --log-level debug
-
-python3 run_scan.py --project-path "/Users/hardikgoel/PycharmProjects/CompliSense-AI" --output-dir "./Users/hardikgoel/PycharmProjects/CompliSense-AI/out"
-pyinstaller --clean CompliSenseAgent.spec
-pyinstaller --clean packaging/CompliSenseCLI.spec
-
-./dist/CompliSenseAgent.app/Contents/MacOS/CompliSenseAgent
-
-  1. Create a clean folder outside your repo, for example:
-
-  mkdir -p ~/Desktop/client-demo
-  mkdir -p ~/Desktop/client-project
-
-  2. Put test artefacts into ~/Desktop/client-project.
-  3. Use a browser or incognito window as a client:
-
-  - log in to your live SaaS
-  - create project
-  - configure scan
-  - download agent
-
-  4. Extract the downloaded zip into:
-
-  ~/Desktop/client-demo
-
-  5. From there, run only the downloaded bundle, not your repo copy.
-
-  On macOS/Linux:
-
-  cd ~/Desktop/client-demo
-  bash setup_agent.sh
-  source complisense_env/bin/activate
-  python run_scan.py --project-path ~/Desktop/client-project --output-dir ./output
-    
-Have made the fixes related to dependency install at client's end and therefore the below is the updated command.
-
-bash run_agent.sh --project-path "/Users/hardikgoel/PycharmProjects/CompliSense-AI/artefacts" --output-dir "./output"
-
-On Windows, use setup_agent.bat.
-
-
-
-💡 Built with love to make AI safer, compliant, and trustworthy.
+- The product is now configurable by rulepack, not locked to EU AI Act.
+- EU support remains available.
+- India-first operation is controlled by `DEFAULT_RULEPACK_ID`.
+- Adding UK or another market should follow the same model:
+  - add a rulepack
+  - add sample artefacts
+  - register it in `compliance/registry.py`
+  - expose its legal/control metadata in the SaaS UI

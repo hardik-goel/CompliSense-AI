@@ -1,11 +1,17 @@
 import requests
 from datetime import datetime
 
-def build_summary_payload(project_id: str, results: dict, scan_id: str | None = None, scan_name: str | None = None):
+def build_summary_payload(project_id_or_results, results: dict | None = None, scan_id: str | None = None, scan_name: str | None = None):
+    if isinstance(project_id_or_results, dict) and results is None:
+        project_id = "local_project"
+        findings = project_id_or_results
+    else:
+        project_id = project_id_or_results
+        findings = results or {}
     return {
         "project_id": project_id,
-        "scan_summary": results.get("summary", {}),
-        "findings_json": results,
+        "scan_summary": findings.get("summary", {}),
+        "findings_json": findings,
         "timestamp": datetime.utcnow().isoformat(),
         "scan_id": scan_id,
         "scan_name": scan_name,

@@ -1,0 +1,17 @@
+{
+  "data_fiduciary_name": "Acme Data Services Pvt Ltd",
+  "processing_purposes": [
+    "Customer onboarding",
+    "Order fulfilment",
+    "Support and grievance handling"
+  ],
+  "categories_of_personal_data": [
+    "Name",
+    "Email",
+    "Phone number",
+    "Shipping address"
+  ],
+  "rights_summary": "Access, correction, erasure, grievance redressal, and nomination requests are supported through the privacy portal.",
+  "grievance_contact": "privacy@acme.example",
+  "retention_policy": "Customer records are retained for 7 years after account closure unless earlier deletion is required by law."
+}

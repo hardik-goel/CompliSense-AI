@@ -1,0 +1,19 @@
+{
+  "coverage": 1.0,
+  "processors": [
+    {
+      "name": "Cloud Hosting Vendor",
+      "service_category": "infrastructure",
+      "data_categories": ["account_data", "application_logs"],
+      "contract_owner": "legal_ops",
+      "review_cycle": "annual"
+    },
+    {
+      "name": "Customer Support Platform",
+      "service_category": "support",
+      "data_categories": ["contact_details", "support_tickets"],
+      "contract_owner": "privacy_ops",
+      "review_cycle": "annual"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ pack_id: "euai_extended"
 version: "1.0.0"
 jurisdiction: "EU_AI_ACT"
 updated: "2026-03-12"
+required_artifacts_manifest: "agent/artefacts/required_artifacts_euai.yaml"
 rules:
   - id: EUAI-ART9-RISK-MGMT-001
     clause: "Art.9"
@@ -220,4 +221,3 @@ rules:
     sla:
       warn_ms: 300
       fail_ms: 1000
-

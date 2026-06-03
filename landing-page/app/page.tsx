@@ -3,7 +3,7 @@ const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://complisense-
 const sections = [
   { href: "#why", label: "Why now" },
   { href: "#flow", label: "How it works" },
-  { href: "#platform", label: "Platform" },
+  { href: "#platform", label: "Product" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -17,45 +17,45 @@ const primaryActions = [
 const capabilities = [
   {
     title: "Local-first evidence collection",
-    text: "Run scans inside the client environment so model artefacts, documents, and governance evidence stay under the client’s control.",
+    text: "Run scans inside the client environment so privacy notices, consent records, breach registers, and governance evidence stay under the client’s control.",
   },
   {
     title: "Hosted compliance workspace",
-    text: "Use the SaaS dashboard for projects, scan configurations, audit history, and live result review without rebuilding your internal processes.",
+    text: "Use the SaaS dashboard for projects, scan configurations, audit history, and live result review without rebuilding internal compliance operations from scratch.",
   },
   {
     title: "Rule-driven compliance engine",
-    text: "Translate regulatory obligations into machine-checkable controls, then map those controls into findings, confidence, risk, and remediation.",
+    text: "Translate DPDP, EU AI Act, and adjacent regulatory obligations into machine-checkable controls, then map those controls into findings, confidence, risk, and remediation.",
   },
   {
-    title: "Cross-jurisdiction expansion path",
-    text: "The same engine can evolve from EU AI Act readiness into DPDP, AI governance policies, and internal control frameworks.",
+    title: "Multi-jurisdiction architecture",
+    text: "Support India DPDP and EU AI Act from the same product surface, with room for sector overlays and internal control frameworks without rebuilding the engine.",
   },
 ];
 
 const flow = [
-  "Create a project in the SaaS workspace and configure a compliance scan.",
-  "Download a customized local agent linked to that project and run it against client artefacts.",
-  "Review synced findings, status, risk, and remediation in the hosted dashboard.",
+  "Create a project in the SaaS workspace and pick the applicable compliance pack, including DPDP for India or EU AI Act for AI governance workflows.",
+  "Download a customized local agent linked to that project and run it against client artefacts such as notices, consent records, and governance files.",
+  "Review synced findings, status, risk, remediation, and drill-down evidence in the hosted dashboard.",
 ];
 
 const proofPoints = [
-  { label: "Public SaaS backend", value: "Render" },
-  { label: "Persistence layer", value: "MongoDB Atlas" },
+  { label: "Supported jurisdictions", value: "India + EU" },
+  { label: "Parallel rulepacks", value: "DPDP + EU AI Act" },
+  { label: "Live product surface", value: "SaaS + local agent" },
   { label: "Client-side scan mode", value: "Local agent" },
-  { label: "Current regulatory pack", value: "EU AI Act" },
 ];
 
 const outcomes = [
-  "Show what documentation exists, what is missing, and which controls need action.",
-  "Avoid sending sensitive model artefacts to a third-party SaaS by default.",
-  "Give founders and compliance teams a demoable workflow instead of a static checklist.",
+  "Show what privacy and AI governance documentation exists, what is missing, and which controls need action.",
+  "Avoid sending sensitive internal artefacts to a third-party SaaS by default.",
+  "Give founders, legal teams, compliance leads, and AI governance teams a live workflow instead of a static checklist.",
 ];
 
 const faqs = [
   {
-    q: "Is this only for EU AI Act?",
-    a: "No. The current starter pack is EU AI Act-focused, but the product direction supports additional rulepacks like DPDP or internal AI governance controls.",
+    q: "Does this support DPDP and EU AI Act in parallel?",
+    a: "Yes. CompliSense is rulepack-driven and already supports both DPDP for India and EU AI Act workflows in the same product. Teams can choose the applicable pack per project and expand into additional overlays without rebuilding the engine.",
   },
   {
     q: "Does client data leave their environment?",
@@ -63,7 +63,7 @@ const faqs = [
   },
   {
     q: "Can I see the live SaaS product from here?",
-    a: "Yes. This landing page links directly into the live hosted backend so prospects can move from marketing site to actual product entry points.",
+    a: "Yes. This landing page links directly into the live hosted backend so prospects can move from India-first positioning into the actual product entry points.",
   },
 ];
 
@@ -94,11 +94,12 @@ export default function HomePage() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow">Compliance workflow for AI teams</p>
-          <h1>EU AI Act readiness with a local agent and a hosted command center.</h1>
+          <p className="eyebrow">DPDP and EU AI Act in one compliance system</p>
+          <h1>Run DPDP and EU AI Act workflows in parallel with a local agent and a hosted command center.</h1>
           <p className="lede">
-            CompliSense AI helps teams collect evidence locally, translate controls into findings, and review scan
-            outcomes through a public SaaS interface that is ready for live demos and customer onboarding.
+            CompliSense AI helps teams collect evidence locally, translate both DPDP and EU AI Act obligations into
+            machine-checkable controls, and review findings in one SaaS workspace. The same product can support India
+            privacy programs and EU AI governance programs side by side, project by project.
           </p>
           <div className="quick-actions" aria-label="Primary actions">
             {primaryActions.map((action, index) => (
@@ -137,14 +138,14 @@ export default function HomePage() {
           </div>
           <div className="panel-stack">
             <article className="mini-panel">
-              <span className="mini-label">Public SaaS</span>
-              <h2>Hosted on Render</h2>
-              <p>Projects, scans, auth, dashboard, reports, and upload endpoints are already exposed publicly.</p>
+              <span className="mini-label">Unified workspace</span>
+              <h2>One product surface for both regulatory tracks</h2>
+              <p>Projects, scans, auth, dashboard, reports, and upload endpoints support multi-pack workflows instead of locking teams to one regime.</p>
             </article>
             <article className="mini-panel">
-              <span className="mini-label">Client workflow</span>
-              <h2>Download agent, run locally, sync findings</h2>
-              <p>The website now links directly into the hosted product rather than acting like an isolated brochure.</p>
+              <span className="mini-label">DPDP + EU AI Act</span>
+              <h2>Download agent, choose pack, scan evidence, sync findings</h2>
+              <p>Use the same operating flow to check privacy notices, consent records, safeguards, AI governance evidence, grievance handling, and operational controls.</p>
             </article>
           </div>
         </div>
@@ -152,11 +153,11 @@ export default function HomePage() {
 
       <section className="section-grid" id="why">
         <article className="feature-intro">
-          <p className="eyebrow">Why this matters</p>
-          <h2>Most teams cannot prove AI governance quickly enough.</h2>
+          <p className="eyebrow">Why now</p>
+          <h2>Most teams cannot prove privacy and AI governance quickly enough.</h2>
           <p>
-            Procurement reviews, internal risk checks, investor diligence, and regulator questions usually hit before
-            the company has a clean evidence trail. CompliSense AI turns that problem into a repeatable operating flow.
+            Customer due diligence, enterprise security reviews, internal legal checks, procurement reviews, and regulator
+            questions usually hit before the company has a clean evidence trail. CompliSense AI turns that problem into a repeatable operating flow across both privacy and AI governance programs.
           </p>
         </article>
         <div className="grid">
@@ -172,7 +173,7 @@ export default function HomePage() {
       <section className="section-two-column" id="flow">
         <div className="section-copy">
           <p className="eyebrow">How it works</p>
-          <h2>One-page story for a founder, buyer, or compliance lead.</h2>
+          <h2>One operating model for a founder, privacy lead, AI governance team, or enterprise buyer.</h2>
           <ol className="story-list">
             {flow.map((step) => (
               <li key={step}>{step}</li>
@@ -184,21 +185,21 @@ export default function HomePage() {
             <span>1</span>
             <div>
               <strong>Hosted project setup</strong>
-              <p>Users start on the SaaS side and configure scans linked to real projects.</p>
+              <p>Users start in the SaaS workspace, choose DPDP or EU AI Act for the project, and configure scans linked to real evidence.</p>
             </div>
           </div>
           <div className="journey-node">
             <span>2</span>
             <div>
               <strong>Local evidence execution</strong>
-              <p>The generated agent runs where the client’s artefacts already live.</p>
+              <p>The generated agent runs where the client’s notices, registers, policies, and other artefacts already live.</p>
             </div>
           </div>
           <div className="journey-node">
             <span>3</span>
             <div>
               <strong>Hosted findings review</strong>
-              <p>Rule outcomes, summaries, and drill-down details can be reviewed from the browser.</p>
+              <p>Rule outcomes, summaries, remediation, and drill-down details can be reviewed from the browser for either pack.</p>
             </div>
           </div>
         </div>
@@ -206,8 +207,8 @@ export default function HomePage() {
 
       <section className="section-platform" id="platform">
         <div className="platform-header">
-          <p className="eyebrow">Platform</p>
-          <h2>A sharper front door that leads into the actual product.</h2>
+          <p className="eyebrow">Product</p>
+          <h2>A front door that shows both rulepacks as first-class product paths.</h2>
         </div>
         <div className="platform-grid">
           <article className="platform-card">
@@ -275,7 +276,7 @@ export default function HomePage() {
       <section className="closing-panel">
         <div>
           <p className="eyebrow">Ready to use the live system?</p>
-          <h2>Go from landing page to working SaaS in one click.</h2>
+          <h2>Go from landing page to a DPDP or EU AI Act workflow in one click.</h2>
         </div>
         <div className="hero-actions">
           <a className="primary-button" href={`${backendUrl}/`} target="_blank" rel="noreferrer">

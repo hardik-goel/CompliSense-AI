@@ -17,6 +17,7 @@ from agent.report.render import render_pdf
 from agent.scoring.heatmap import build_heatmap
 from agent.scoring.overall import compute_overall_compliance, verdict_from_score
 from agent.utils.resources import resource_path
+from compliance.registry import get_rulepack_display_label
 
 
 def run_agent(
@@ -49,6 +50,7 @@ def run_agent(
     results = run_scan(
         root,
         rules,
+        required_artifacts_manifest=rp.get("required_artifacts_manifest"),
         llm_enabled=config.llm_enabled,
         progress_callback=progress_callback,
         cancel_event=config.cancel_flag
@@ -84,6 +86,13 @@ def run_agent(
         "why_not_compliant": why_not_compliant,
         "tier": getattr(config, "tier", "FREE")
     }
+
+    report_context = {
+        "rulepack_id": rp.get("pack_id") or rulepack_path.replace(".yaml", ""),
+        "rulepack_version": rp.get("version"),
+        "program_label": get_rulepack_display_label(rp.get("pack_id") or rulepack_path.replace(".yaml", "")),
+    }
+    results["report_context"] = report_context
 
     if progress_callback:
         progress_callback("Writing findings.json…")
@@ -125,7 +134,8 @@ def run_agent(
         {
             "summary": results["summary"],
             "results": results["results"],
-            "artifacts": artifacts
+            "artifacts": artifacts,
+            "report_context": report_context,
         },
         assessment,
         pdf_path
