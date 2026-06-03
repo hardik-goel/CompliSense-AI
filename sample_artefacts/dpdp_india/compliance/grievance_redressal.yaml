@@ -1,0 +1,8 @@
+intake_channels:
+  - privacy_portal
+  - email
+resolution_sla: "15 business days"
+escalation_path:
+  - privacy_operations
+  - grievance_officer
+contact_point: "grievance@acme.example"

@@ -4,9 +4,11 @@ from tkinter import filedialog, messagebox, ttk
 import threading
 import traceback
 from pathlib import Path
+import os
 
 from agent.agent_runner import run_agent
 from agent.config import AgentConfig
+from compliance.registry import DEFAULT_RULEPACK_ID, get_rulepack_catalog
 
 import logging
 
@@ -20,7 +22,7 @@ logging.basicConfig(
 class CompliSenseApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("CompliSense AI - EU AI Act Compliance Scanner")
+        self.root.title("CompliSense AI - Regulatory Compliance Scanner")
         self.root.geometry("700x650")
         self.root.configure(bg="#f5f5f5")
 
@@ -32,6 +34,10 @@ class CompliSenseApp:
         self.cancel_event = threading.Event()
         self.scanned_files = []
         self.scan_running = False
+        self.rulepacks = get_rulepack_catalog()
+        self.rulepack_id = tk.StringVar(value=DEFAULT_RULEPACK_ID)
+        self.dpdp_portal_url = os.getenv("COMPLISENSE_DPDP_URL", "http://127.0.0.1:8000/experience/dpdp-india")
+        self.eu_portal_url = os.getenv("COMPLISENSE_EU_URL", "http://127.0.0.1:8000/experience/eu-ai-act")
         self._build_ui()
 
     def _build_ui(self):
@@ -50,7 +56,7 @@ class CompliSenseApp:
 
         tk.Label(
             header_frame,
-            text="EU AI Act Compliance Scanner",
+            text="Regulatory Compliance Scanner",
             font=("Helvetica", 11),
             bg="#2563eb",
             fg="#e0e7ff"
@@ -63,7 +69,7 @@ class CompliSenseApp:
         # Description
         desc_label = tk.Label(
             content_frame,
-            text="Run EU AI Act compliance checks locally.\nNo data ever leaves your system.",
+            text="Run regulatory compliance checks locally.\nNo data ever leaves your system.",
             font=("Helvetica", 10),
             bg="#f5f5f5",
             fg="#6b7280",
@@ -129,6 +135,56 @@ class CompliSenseApp:
         out_entry_frame.pack(fill="x")
         tk.Entry(out_entry_frame, textvariable=self.out_path, font=("Helvetica", 10)).pack(side="left", fill="x", expand=True, padx=(0, 5))
         tk.Button(out_entry_frame, text="Browse", command=self.choose_output, bg="#2563eb", fg="white", padx=15).pack(side="right")
+
+        # Regulatory program
+        tk.Label(
+            input_frame,
+            text="Regulatory Rulepack",
+            font=("Helvetica", 10, "bold"),
+            bg="#ffffff",
+            anchor="w"
+        ).pack(fill="x", pady=(15, 5))
+
+        self.rulepack_select = ttk.Combobox(
+            input_frame,
+            textvariable=self.rulepack_id,
+            state="readonly",
+            values=[rp["pack_id"] for rp in self.rulepacks]
+        )
+        self.rulepack_select.pack(fill="x")
+        self.rulepack_select.bind("<<ComboboxSelected>>", self._on_rulepack_change)
+
+        self.rulepack_hint = tk.Label(
+            input_frame,
+            text="",
+            font=("Helvetica", 9),
+            bg="#ffffff",
+            fg="#6b7280",
+            anchor="w",
+            wraplength=600,
+            justify="left"
+        )
+        self.rulepack_hint.pack(fill="x", pady=(5, 0))
+        self._refresh_rulepack_hint()
+
+        portal_frame = tk.Frame(input_frame, bg="#ffffff")
+        portal_frame.pack(fill="x", pady=(12, 0))
+        tk.Button(
+            portal_frame,
+            text="Open DPDP Portal",
+            command=lambda: webbrowser.open(self.dpdp_portal_url),
+            bg="#0f766e",
+            fg="white",
+            padx=12
+        ).pack(side="left", padx=(0, 8))
+        tk.Button(
+            portal_frame,
+            text="Open EU AI Portal",
+            command=lambda: webbrowser.open(self.eu_portal_url),
+            bg="#334155",
+            fg="white",
+            padx=12
+        ).pack(side="left")
 
         # Progress section
         progress_frame = tk.LabelFrame(
@@ -263,6 +319,19 @@ class CompliSenseApp:
         if path:
             self.out_path.set(path)
             self.status.set(f"Output: {Path(path).name}")
+
+    def _on_rulepack_change(self, _event=None):
+        self._refresh_rulepack_hint()
+
+    def _refresh_rulepack_hint(self):
+        selected = self.rulepack_id.get()
+        rp = next((item for item in self.rulepacks if item["pack_id"] == selected), None)
+        if not rp:
+            self.rulepack_hint.config(text="")
+            return
+        self.rulepack_hint.config(
+            text=f"{rp['label']} | Regulation: {rp['regulation']} | Market: {rp['market']}"
+        )
 
     def start_scan(self):
         if not self.model_path.get() or not self.out_path.get():
@@ -452,7 +521,7 @@ class CompliSenseApp:
             result = run_agent(
                 model_root=self.model_path.get(),
                 out_dir=self.out_path.get(),
-                rulepack_path="euai_core_v1.yaml",
+                rulepack_path=f"{self.rulepack_id.get()}.yaml",
                 progress_callback=self._handle_progress,
                 config=config
             )

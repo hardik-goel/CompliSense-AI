@@ -5,6 +5,7 @@ import logging
 import sys
 from pathlib import Path
 
+from compliance.registry import get_rulepack_catalog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -41,7 +42,7 @@ static_dir.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title=settings.app_name,
-    description="Central dashboard for EU AI Act compliance management",
+    description="Central dashboard for regulatory compliance management",
     version=settings.app_version,
 )
 
@@ -93,6 +94,10 @@ def _scan_detail_payload(scan: dict) -> dict:
     findings = clean_scan.get("findings_json") or {}
     results = findings.get("results", []) if isinstance(findings, dict) else []
     summary = clean_scan.get("results_summary") or findings.get("summary", {}) or {}
+    if isinstance(results, list) and results:
+        missing_count = sum(1 for item in results if item.get("status") == "MISSING")
+        if summary.get("missing") is None:
+            summary["missing"] = missing_count
     total = clean_scan.get("results_count") or len(results) or (summary.get("passed", 0) + summary.get("partial", 0) + summary.get("failed", 0))
     clean_scan["results_summary"] = summary
     clean_scan["results_count"] = total
@@ -119,6 +124,16 @@ async def user_dashboard(request: Request):
 @app.get("/about", response_class=HTMLResponse)
 async def about_page(request: Request):
     return templates.TemplateResponse("about.html", {"request": request})
+
+
+@app.get("/experience/eu-ai-act", response_class=HTMLResponse)
+async def eu_ai_experience(request: Request):
+    return templates.TemplateResponse("experience_eu.html", {"request": request})
+
+
+@app.get("/experience/dpdp-india", response_class=HTMLResponse)
+async def dpdp_experience(request: Request):
+    return templates.TemplateResponse("experience_dpdp.html", {"request": request})
 
 
 @app.get("/reports", response_class=HTMLResponse)
@@ -235,6 +250,11 @@ async def get_audit_logs(request: Request):
 async def get_plans():
     order = ["free", "standard", "premium", "premium_plus"]
     return [PLANS[key] for key in order if key in PLANS]
+
+
+@app.get("/api/rulepacks")
+async def get_rulepacks():
+    return get_rulepack_catalog()
 
 
 @app.get("/api/reports/{scan_id}/html")

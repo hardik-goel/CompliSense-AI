@@ -1,0 +1,11 @@
+use_cases:
+  - customer_support_follow_up
+  - fraud_detection
+lawful_basis_mapping:
+  customer_support_follow_up: contract_and_service_delivery
+  fraud_detection: security_and_abuse_prevention
+data_categories:
+  - contact_details
+  - account_activity
+review_owner: privacy_operations
+last_reviewed_on: "2026-04-15"

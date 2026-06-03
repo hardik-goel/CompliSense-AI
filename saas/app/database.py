@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
+import certifi
 from bson import ObjectId
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
@@ -19,7 +20,10 @@ _client: MongoClient | None = None
 def get_client() -> MongoClient:
     global _client
     if _client is None:
-        _client = MongoClient(settings.mongo_uri, uuidRepresentation="standard")
+        client_kwargs: dict[str, Any] = {"uuidRepresentation": "standard"}
+        if settings.mongo_uri.startswith("mongodb+srv://") or "tls=true" in settings.mongo_uri.lower():
+            client_kwargs["tlsCAFile"] = certifi.where()
+        _client = MongoClient(settings.mongo_uri, **client_kwargs)
     return _client
 
 
@@ -68,4 +72,3 @@ def serialize_document(value: Any) -> Any:
     if isinstance(value, dict):
         return {key: serialize_document(item) for key, item in value.items() if key != "_id"}
     return value
-

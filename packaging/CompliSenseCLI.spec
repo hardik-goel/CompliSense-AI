@@ -15,9 +15,11 @@ a = Analysis(
     pathex=[str(project_root)],
     binaries=crypto_bins,  # no tkinter needed for CLI
     datas=[
-        # Embedded rulepacks (only the ones you want to support)
+        # Embedded rulepacks
         (str(project_root / "rulepacks" / "euai_core_v1.yaml"), "embedded_rulepacks"),
         (str(project_root / "rulepacks" / "euai_extended_v1.yaml"), "embedded_rulepacks"),
+        (str(project_root / "rulepacks" / "dpdp_india_core_v1.yaml"), "embedded_rulepacks"),
+        (str(project_root / "rulepacks" / "dpdp_india_extended_v1.yaml"), "embedded_rulepacks"),
 
         # Report templates and artefacts
         (str(project_root / "agent" / "report" / "templates"), "agent/report/templates"),

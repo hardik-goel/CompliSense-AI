@@ -64,5 +64,54 @@ REMEDIATIONS = {
         "Specify data retention periods",
         "Define audit trail requirements",
         "Document how logs are stored and accessed"
+    ],
+    "DPDP-SEC5": [
+        "Create a privacy notice artifact (compliance/privacy_notice.json)",
+        "Document the data fiduciary identity and processing purposes",
+        "List data categories, rights summary, grievance contact, and retention policy"
+    ],
+    "DPDP-SEC6": [
+        "Create a consent record artifact (compliance/consent_record.json)",
+        "Document how consent is captured, scoped, stored, and withdrawn",
+        "Maintain an auditable consent ledger reference"
+    ],
+    "DPDP-SEC8": [
+        "Document security safeguards and deletion controls",
+        "Maintain a breach register with severity, categories, and decisions",
+        "Define vendor management and incident response ownership"
+    ],
+    "DPDP-SEC9": [
+        "Document child-data safeguards and age-gating",
+        "Add verifiable parental consent controls",
+        "Describe restricted processing controls for children"
+    ],
+    "DPDP-SEC10": [
+        "Map Significant Data Fiduciary obligations",
+        "Add DPO contact, DPIA process, independent auditor, and periodic audit cycle"
+    ],
+    "DPDP-SEC13": [
+        "Document grievance intake channels and contact points",
+        "Define a resolution SLA and escalation path",
+        "Link grievance handling to privacy operations ownership"
+    ],
+    "DPDP-SEC7": [
+        "Create a legitimate use register artifact (compliance/legitimate_use_register.yaml)",
+        "Map each use case to a lawful basis and the personal-data categories involved",
+        "Assign a review owner and review cadence for legitimate-use decisions"
+    ],
+    "DPDP-SEC11": [
+        "Create a rights request SOP (compliance/rights_request_sop.yaml)",
+        "Document intake channels, identity verification, fulfilment steps, and acknowledgement SLA",
+        "Assign an escalation path for delayed or disputed access requests"
+    ],
+    "DPDP-SEC12": [
+        "Create a rights request register artifact (compliance/rights_request_register.yaml)",
+        "Track correction and erasure requests with owner, status, and completion timestamps",
+        "Link the register to retention and deletion workflows"
+    ],
+    "DPDP-SEC16": [
+        "Create a cross-border transfer policy artifact (compliance/cross_border_transfer_policy.yaml)",
+        "Document transfer destinations, approved transfer classes, and vendor assessment steps",
+        "Define handling for regulator or government data-access requests"
     ]
 }
