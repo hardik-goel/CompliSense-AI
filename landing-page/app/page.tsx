@@ -11,7 +11,7 @@ const primaryActions = [
   { href: `${backendUrl}/`, label: "Login" },
   { href: `${backendUrl}/`, label: "Register" },
   { href: `${backendUrl}/reports`, label: "Open Reports" },
-  { href: "mailto:demo@complisense.ai?subject=Request%20Demo", label: "Request Demo" },
+  { href: "mailto:complisenseaisupport@gmail.com?subject=Request%20Demo", label: "Request Demo" },
 ];
 
 const capabilities = [
@@ -63,7 +63,7 @@ const faqs = [
   },
   {
     q: "Can I see the live SaaS product from here?",
-    a: "Yes. This landing page links directly into the live hosted backend so prospects can move from India-first positioning into the actual product entry points.",
+    a: "Yes. This landing page at https://compli-sense-ai.vercel.app/ links directly into the live hosted backend so prospects can move into the actual product entry points.",
   },
 ];
 
@@ -285,7 +285,7 @@ export default function HomePage() {
           <a className="secondary-button" href={`${backendUrl}/reports`} target="_blank" rel="noreferrer">
             Open Reports
           </a>
-          <a className="ghost-button" href="mailto:demo@complisense.ai?subject=Request%20Demo">
+          <a className="ghost-button" href="mailto:complisenseaisupport@gmail.com?subject=Request%20Demo">
             Request Demo
           </a>
         </div>
