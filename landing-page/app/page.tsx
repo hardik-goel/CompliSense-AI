@@ -1,7 +1,7 @@
 const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://complisense-ai-backend.onrender.com";
 
 const sections = [
-  { href: "#why", label: "Why India first" },
+  { href: "#why", label: "Why now" },
   { href: "#flow", label: "How it works" },
   { href: "#platform", label: "Product" },
   { href: "#faq", label: "FAQ" },
@@ -25,37 +25,37 @@ const capabilities = [
   },
   {
     title: "Rule-driven compliance engine",
-    text: "Translate DPDP and other regulatory obligations into machine-checkable controls, then map those controls into findings, confidence, risk, and remediation.",
+    text: "Translate DPDP, EU AI Act, and adjacent regulatory obligations into machine-checkable controls, then map those controls into findings, confidence, risk, and remediation.",
   },
   {
-    title: "India-first launch, multi-jurisdiction core",
-    text: "Start with DPDP for Indian buyers today, then extend the same engine into EU AI Act packs, sector overlays, and internal control frameworks.",
+    title: "Multi-jurisdiction architecture",
+    text: "Support India DPDP and EU AI Act from the same product surface, with room for sector overlays and internal control frameworks without rebuilding the engine.",
   },
 ];
 
 const flow = [
-  "Create a project in the SaaS workspace and pick the applicable compliance pack, starting with DPDP for India.",
+  "Create a project in the SaaS workspace and pick the applicable compliance pack, including DPDP for India or EU AI Act for AI governance workflows.",
   "Download a customized local agent linked to that project and run it against client artefacts such as notices, consent records, and governance files.",
   "Review synced findings, status, risk, remediation, and drill-down evidence in the hosted dashboard.",
 ];
 
 const proofPoints = [
-  { label: "Primary launch market", value: "India" },
-  { label: "Current focus pack", value: "DPDP" },
+  { label: "Supported jurisdictions", value: "India + EU" },
+  { label: "Active rulepacks", value: "DPDP + EU AI Act" },
   { label: "Public SaaS backend", value: "Render" },
   { label: "Client-side scan mode", value: "Local agent" },
 ];
 
 const outcomes = [
-  "Show what privacy documentation exists, what is missing, and which DPDP controls need action.",
+  "Show what privacy and AI governance documentation exists, what is missing, and which controls need action.",
   "Avoid sending sensitive internal artefacts to a third-party SaaS by default.",
-  "Give founders, legal teams, and compliance leads a live workflow instead of a static checklist.",
+  "Give founders, legal teams, compliance leads, and AI governance teams a live workflow instead of a static checklist.",
 ];
 
 const faqs = [
   {
-    q: "Is this built only for DPDP?",
-    a: "No. The current go-to-market focus is DPDP for India, but the product architecture is rulepack-driven and can support EU AI Act, sector overlays, and internal controls without rebuilding the engine.",
+    q: "Is this built only for one regulation?",
+    a: "No. CompliSense is rulepack-driven and already supports both DPDP for India and EU AI Act workflows, with room for additional packs, sector overlays, and internal controls.",
   },
   {
     q: "Does client data leave their environment?",
@@ -94,12 +94,12 @@ export default function HomePage() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow">India-first privacy compliance workflow</p>
-          <h1>Operationalize DPDP compliance with a local agent and a hosted command center.</h1>
+          <p className="eyebrow">DPDP and EU AI Act compliance workflow</p>
+          <h1>Operationalize privacy and AI governance compliance with a local agent and a hosted command center.</h1>
           <p className="lede">
-            CompliSense AI helps Indian teams collect privacy evidence locally, translate DPDP obligations into
-            machine-checkable controls, and review findings through a public SaaS interface that is ready for demos,
-            onboarding, and expansion into additional jurisdictions later.
+            CompliSense AI helps teams collect evidence locally, translate DPDP and EU AI Act obligations into
+            machine-checkable controls, and review findings through a public SaaS interface built for demos,
+            onboarding, and multi-jurisdiction expansion.
           </p>
           <div className="quick-actions" aria-label="Primary actions">
             {primaryActions.map((action, index) => (
@@ -143,9 +143,9 @@ export default function HomePage() {
               <p>Projects, scans, auth, dashboard, reports, and upload endpoints are already exposed publicly.</p>
             </article>
             <article className="mini-panel">
-              <span className="mini-label">DPDP workflow</span>
+              <span className="mini-label">DPDP + EU AI Act</span>
               <h2>Download agent, scan evidence, sync findings</h2>
-              <p>Use the same flow to check privacy notices, consent records, safeguards, grievance handling, and governance artefacts.</p>
+              <p>Use the same flow to check privacy notices, consent records, safeguards, AI governance evidence, grievance handling, and operational controls.</p>
             </article>
           </div>
         </div>
@@ -153,11 +153,11 @@ export default function HomePage() {
 
       <section className="section-grid" id="why">
         <article className="feature-intro">
-          <p className="eyebrow">Why India first</p>
-          <h2>Most teams cannot prove privacy governance quickly enough.</h2>
+          <p className="eyebrow">Why now</p>
+          <h2>Most teams cannot prove privacy and AI governance quickly enough.</h2>
           <p>
-            Customer due diligence, enterprise security reviews, internal legal checks, and regulator questions usually
-            hit before the company has a clean evidence trail. CompliSense AI turns that problem into a repeatable operating flow.
+            Customer due diligence, enterprise security reviews, internal legal checks, procurement reviews, and regulator
+            questions usually hit before the company has a clean evidence trail. CompliSense AI turns that problem into a repeatable operating flow.
           </p>
         </article>
         <div className="grid">
@@ -208,7 +208,7 @@ export default function HomePage() {
       <section className="section-platform" id="platform">
         <div className="platform-header">
           <p className="eyebrow">Product</p>
-          <h2>An India-first front door that leads into the actual product.</h2>
+          <h2>A multi-pack front door that leads into the actual product.</h2>
         </div>
         <div className="platform-grid">
           <article className="platform-card">
