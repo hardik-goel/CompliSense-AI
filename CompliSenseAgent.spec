@@ -15,6 +15,8 @@ a = Analysis(
         ('agent/artefacts/required_artifacts.yaml', 'agent/artefacts'),
         ("rulepacks/euai_core_v1.yaml", "embedded_rulepacks"),
         ("rulepacks/euai_extended_v1.yaml", "embedded_rulepacks"),
+        ("rulepacks/dpdp_india_core_v1.yaml", "embedded_rulepacks"),
+        ("rulepacks/dpdp_india_extended_v1.yaml", "embedded_rulepacks"),
     ],
     hiddenimports=[
         '_tkinter',

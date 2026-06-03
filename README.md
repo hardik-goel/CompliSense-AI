@@ -90,38 +90,56 @@ Use the repo venv if you already have it:
 
 ```bash
 cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
+source 3.11_venv/bin/activate
 ```
 
 If you need a fresh environment:
 
 ```bash
 cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-python3.10 -m venv 3.10_venv
-source 3.10_venv/bin/activate
+python3.11 -m venv 3.11_venv
+source 3.11_venv/bin/activate
 pip install -r requirements.txt
 ```
+
+If your venv was created against a removed Python install, recreate it.
+
+## One-Command Bundle Refresh (Recommended)
+
+To rebuild the compiled client CLI, clear cached generated ZIPs, and validate all four rulepacks in one go:
+
+```bash
+cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
+make refresh-agent-bundles
+```
+
+After this completes, generate/download the agent ZIP again from SaaS (old ZIPs can be stale).
+
+Other useful commands:
+
+```bash
+make build-cli
+make build-cli-clean
+make clean-agent-cache
+make smoke-cli-all
+make smoke-cli-compiled
+```
+
+`make build-cli` is the default recommended build. Use `make build-cli-clean` only when you explicitly want a PyInstaller clean build.
+`make smoke-cli-all` validates all four packs through `python -m agent.cli`.
+`make smoke-cli-compiled` validates the frozen binary itself.
 
 ## Run The SaaS Locally
 
 This runs the FastAPI dashboard on `localhost:8000`.
 
-### India-first local run
+### Start local SaaS (single command flow)
 
 ```bash
 cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
-export DEFAULT_RULEPACK_ID=dpdp_india_core_v1
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
-
-### EU-first local run
-
-```bash
-cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
-export DEFAULT_RULEPACK_ID=euai_core_v1
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+source 3.11_venv/bin/activate
+export DEFAULT_RULEPACK_ID=dpdp_india_core_v1  # or euai_core_v1
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Open:
@@ -132,6 +150,8 @@ What you should see:
 
 - both EU and DPDP rulepacks available in the dashboard scan configuration
 - the configured `DEFAULT_RULEPACK_ID` preselected by default
+
+You do not need separate backend runs for DPDP vs EUAI. Keep one backend running and switch the selected rulepack in the UI while configuring scans.
 
 ## Test The Rulepack Catalog Locally
 
@@ -150,66 +170,58 @@ You should see entries for:
 
 The configured default pack will also be flagged in the response.
 
-## Run Agent Scans Locally
+For repo development, prefer `--pack-id`. `--pack /path/to/*.yaml` is mainly for dev/testing custom packs.
 
-### EU core sample
+## Client Bundle Command (`run_scan.py`)
 
-```bash
-cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
-python -m agent.cli scan \
-  --root artefacts \
-  --pack rulepacks/euai_core_v1.yaml \
-  --out /tmp/euai_core_out \
-  --no-pdf
-```
-
-### EU extended sample
+If a client is using a generated/downloaded agent bundle (not this repo), the command is:
 
 ```bash
-cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
-python -m agent.cli scan \
-  --root artefacts \
-  --pack rulepacks/euai_extended_v1.yaml \
-  --out /tmp/euai_extended_out \
-  --no-pdf
+python run_scan.py --project-path /path/to/your/project --output-dir ./scan_results
+```
+e.g. 
+```bash
+python3 run_scan.py --project-path /Users/hardikgoel/PycharmProjects/CompliSense-AI/artefacts --output-dir ./scan_results
 ```
 
-### DPDP core sample
+macOS/Linux full flow:
 
 ```bash
-cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
-python -m agent.cli scan \
-  --root sample_artefacts/dpdp_india \
-  --pack rulepacks/dpdp_india_core_v1.yaml \
-  --out /tmp/dpdp_core_out \
-  --no-pdf
+cd /path/to/complisense_agent
+chmod +x setup_agent.sh
+./setup_agent.sh
+source complisense_env/bin/activate
+python run_scan.py --project-path /path/to/your/project --output-dir ./scan_results
 ```
 
-### DPDP extended sample
+Windows full flow:
 
-```bash
-cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
-python -m agent.cli scan \
-  --root sample_artefacts/dpdp_india \
-  --pack rulepacks/dpdp_india_extended_v1.yaml \
-  --out /tmp/dpdp_extended_out \
-  --no-pdf
+```bat
+cd C:\path\to\complisense_agent
+setup_agent.bat
+complisense_env\Scripts\activate.bat
+python run_scan.py --project-path "C:\path\to\your\project" --output-dir ".\scan_results"
 ```
+
+If present, launcher wrappers can also be used:
+
+- macOS/Linux: `./run_agent.sh --project-path /path/to/your/project --output-dir ./scan_results`
+- Windows: `run_agent.bat --project-path "C:\path\to\your\project" --output-dir ".\scan_results"`
 
 Outputs are written into the selected `--out` directory, especially:
 
-- `findings.json`
-- optionally `audit_report.pdf` if PDF rendering is enabled
+- `compliance_findings.json`
+- (compiled CLI path may also produce `findings.json` internally; `run_scan.py` normalizes output handling)
+- `compliance_report.pdf` only when PDF output is enabled and source-mode bundle is used
+
+If you see `Embedded rulepack not found for pack_id=...`, the bundle was generated from an older CLI build.
+Run `make refresh-agent-bundles` and then regenerate/download the agent ZIP.
 
 ## Run The Desktop Agent UI
 
 ```bash
 cd /Users/hardikgoel/PycharmProjects/CompliSense-AI
-source 3.10_venv/bin/activate
+source 3.11_venv/bin/activate
 python -m agent.agent_ui
 ```
 
@@ -253,6 +265,14 @@ CORS_ORIGINS=https://your-render-service.onrender.com
 LOG_LEVEL=INFO
 SECURE_COOKIES=true
 ```
+
+If you use GitHub Actions, add these repository secrets with the same names:
+
+- `MONGO_URI`
+- `JWT_SECRET`
+- `ADMIN_API_TOKEN`
+
+`.github/workflows/backend-secrets-smoke.yml` maps those secrets into job environment variables and runs a backend health check. This covers GitHub Actions runs only. Render, Railway, or any other host still needs its own environment variables unless deployment is also performed through GitHub Actions.
 
 Recommended deployment split:
 

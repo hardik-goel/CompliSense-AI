@@ -94,6 +94,10 @@ def _scan_detail_payload(scan: dict) -> dict:
     findings = clean_scan.get("findings_json") or {}
     results = findings.get("results", []) if isinstance(findings, dict) else []
     summary = clean_scan.get("results_summary") or findings.get("summary", {}) or {}
+    if isinstance(results, list) and results:
+        missing_count = sum(1 for item in results if item.get("status") == "MISSING")
+        if summary.get("missing") is None:
+            summary["missing"] = missing_count
     total = clean_scan.get("results_count") or len(results) or (summary.get("passed", 0) + summary.get("partial", 0) + summary.get("failed", 0))
     clean_scan["results_summary"] = summary
     clean_scan["results_count"] = total

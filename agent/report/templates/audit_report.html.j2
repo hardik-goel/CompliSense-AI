@@ -114,6 +114,7 @@
 {% set present_count = artifacts.present|length %}
 {% set missing_artifacts_count = artifacts.missing|length %}
 <h1>Compliance Audit Report</h1>
+<p><strong>Program:</strong> {{ report_context.program_label if report_context else "Unknown Rulepack" }}</p>
 <div class="small">Generated: {{ now }}</div>
 <div class="hero">
   <div class="panel">

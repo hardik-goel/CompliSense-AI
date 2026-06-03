@@ -11,6 +11,7 @@ import yaml
 from pathlib import Path
 
 from compliance.registry import DEFAULT_RULEPACK_ID
+from compliance.registry import get_rulepack_display_label
 from agent.rules.loader import load_rulepack, iter_rules
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
@@ -32,11 +33,18 @@ def load_embedded_rulepack(pack_id: str) -> dict:
     The YAML files are bundled by PyInstaller under embedded_rulepacks/.
     """
     p = _resource_path(f"embedded_rulepacks/{pack_id}.yaml")
-    if not p.exists():
-        raise click.ClickException(
-            f"Embedded rulepack not found for pack_id={pack_id}. Expected: {p}"
-        )
-    return yaml.safe_load(p.read_text(encoding="utf-8"))
+    if p.exists():
+        return yaml.safe_load(p.read_text(encoding="utf-8"))
+
+    # Source/dev fallback: allow --pack-id to work from repo without PyInstaller.
+    repo_rulepack = Path(__file__).resolve().parents[1] / "rulepacks" / f"{pack_id}.yaml"
+    if repo_rulepack.exists():
+        return yaml.safe_load(repo_rulepack.read_text(encoding="utf-8"))
+
+    raise click.ClickException(
+        "Embedded rulepack not found for pack_id="
+        f"{pack_id}. Checked: {p} and {repo_rulepack}"
+    )
 
 
 import threading
@@ -173,6 +181,13 @@ def scan(root, pack, pack_id, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
         },
         "tier": "FREE"
     }
+
+    report_context = {
+        "rulepack_id": rp.get("pack_id") or (pack_id or DEFAULT_RULEPACK_ID),
+        "rulepack_version": rp.get("version"),
+        "program_label": get_rulepack_display_label(rp.get("pack_id") or (pack_id or DEFAULT_RULEPACK_ID)),
+    }
+    results["report_context"] = report_context
 
     # Save JSON report
     json_path = out / "findings.json"

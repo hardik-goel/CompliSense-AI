@@ -89,3 +89,24 @@ def get_rulepack_catalog() -> list[dict[str, str]]:
 
 def get_rulepack_ids() -> list[str]:
     return [rulepack.pack_id for rulepack in RULEPACKS]
+
+
+def get_rulepack_display_label(pack_id: str | None) -> str:
+    """
+    Return human-readable labels used in reports for both v1 and non-v1 IDs.
+    """
+    if not pack_id:
+        return "Unknown Rulepack"
+
+    key = pack_id.strip().lower()
+    mapping = {
+        "dpdp_india_core": "DPDP-Core",
+        "dpdp_india_core_v1": "DPDP-Core",
+        "dpdp_india_extended": "DPDP-Extended",
+        "dpdp_india_extended_v1": "DPDP-Extended",
+        "euai_core": "EU-AI Core",
+        "euai_core_v1": "EU-AI Core",
+        "euai_extended": "EU-AI Extended",
+        "euai_extended_v1": "EU-AI Extended",
+    }
+    return mapping.get(key, pack_id)

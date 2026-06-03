@@ -190,6 +190,9 @@ async def receive_scan_results(results_data: dict[str, Any]):
         if not findings_json and isinstance(results_data, dict):
             findings_json = results_data
         summary = results_data.get("summary") or findings_json.get("summary", {}) or {}
+        client_run_metadata = results_data.get("client_run_metadata")
+        if not isinstance(client_run_metadata, dict):
+            client_run_metadata = {}
         update_fields = {
             "status": "completed",
             "updated_at": dt.datetime.utcnow(),
@@ -197,6 +200,7 @@ async def receive_scan_results(results_data: dict[str, Any]):
             "results_summary": summary,
             "findings_json": findings_json,
             "results_count": results_data.get("results_count", _count_findings(findings_json)),
+            "client_run_metadata": client_run_metadata,
         }
         scans_collection().update_one({"id": scan_id}, {"$set": update_fields})
 
@@ -213,6 +217,7 @@ async def receive_scan_results(results_data: dict[str, Any]):
                     "metadata": {
                         "results_count": update_fields["results_count"],
                         "summary": summary,
+                        "client_run_metadata": client_run_metadata,
                     },
                 }
             )
