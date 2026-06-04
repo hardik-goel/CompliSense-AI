@@ -1,8 +1,10 @@
 # agent/get_token_and_upload.py
+import os
+
 import requests
 from pathlib import Path
 
-SAAS_BASE = "http://localhost:8000"
+SAAS_BASE = os.getenv("COMPLISENSE_API_URL", "https://api.complisenseai.com")
 INSTALL_CODE = "one-time-install-123"
 
 # 1: fetch token

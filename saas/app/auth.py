@@ -162,15 +162,19 @@ async def get_current_user(
 
 
 def _set_auth_cookie(response: Response, token: str) -> None:
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=settings.secure_cookies or settings.is_production,
-        samesite="lax",
-        max_age=settings.jwt_expiration_hours * 3600,
-        expires=settings.jwt_expiration_hours * 3600,
-    )
+    cookie_args = {
+        "key": "access_token",
+        "value": token,
+        "httponly": True,
+        "secure": settings.secure_cookies or settings.is_production,
+        "samesite": "lax",
+        "max_age": settings.jwt_expiration_hours * 3600,
+        "expires": settings.jwt_expiration_hours * 3600,
+        "path": "/",
+    }
+    if settings.cookie_domain:
+        cookie_args["domain"] = settings.cookie_domain
+    response.set_cookie(**cookie_args)
 
 
 @router.post("/register", response_model=dict)
@@ -228,7 +232,16 @@ async def login(login_data: UserLogin, response: Response):
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie("access_token")
+    delete_args = {
+        "key": "access_token",
+        "path": "/",
+        "secure": settings.secure_cookies or settings.is_production,
+        "httponly": True,
+        "samesite": "lax",
+    }
+    if settings.cookie_domain:
+        delete_args["domain"] = settings.cookie_domain
+    response.delete_cookie(**delete_args)
     return {"message": "Logged out successfully"}
 
 

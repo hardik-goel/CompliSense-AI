@@ -254,6 +254,11 @@ Required environment variables:
 ```env
 ENVIRONMENT=production
 PORT=10000
+MARKETING_SITE_URL=https://complisenseai.com
+APP_BASE_URL=https://app.complisenseai.com
+API_BASE_URL=https://api.complisenseai.com
+COOKIE_DOMAIN=.complisenseai.com
+SUPPORT_EMAIL=support@complisenseai.com
 MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/complisense?retryWrites=true&w=majority
 MONGO_DB=complisense
 DEFAULT_RULEPACK_ID=dpdp_india_core_v1
@@ -261,7 +266,7 @@ JWT_SECRET=replace-with-a-long-random-secret
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
 ADMIN_API_TOKEN=replace-with-a-long-random-agent-token
-CORS_ORIGINS=https://your-render-service.onrender.com
+CORS_ORIGINS=https://complisenseai.com,https://app.complisenseai.com,https://api.complisenseai.com
 LOG_LEVEL=INFO
 SECURE_COOKIES=true
 ```
