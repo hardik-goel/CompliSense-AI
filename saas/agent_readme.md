@@ -197,11 +197,10 @@ Receive security patches
 Manual updates may be required for major version changes.
 
 Need Help?
-📧 Email: support@complisense.ai
+📧 Email: complisenseaisupport@gmail.com
 
-🌐 Website: https://complisense.ai
+🌐 Website: https://compli-sense-ai.vercel.app/
 
-📚 Docs: https://docs.complisense.ai
 
 Scan ID: [SCAN_ID]
 Generated on: [GENERATION_DATE]
