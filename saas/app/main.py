@@ -48,6 +48,12 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
+templates.env.globals.update(
+    app_base_url=settings.app_base_url,
+    api_base_url=settings.api_base_url,
+    marketing_site_url=settings.marketing_site_url,
+    support_email=settings.support_email,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -74,11 +80,55 @@ async def startup_event():
     logger.info("Application startup complete")
 
 
+def _request_host(request: Request) -> str:
+    return request.headers.get("host", "").split(":", 1)[0].lower()
+
+
+def _build_external_url(base_url: str, path: str, query: str | None = None) -> str:
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    url = f"{base_url.rstrip('/')}{normalized_path}"
+    return f"{url}?{query}" if query else url
+
+
+def _is_html_app_path(path: str) -> bool:
+    return (
+        path == "/"
+        or path.startswith("/dashboard")
+        or path.startswith("/about")
+        or path.startswith("/reports")
+        or path.startswith("/scan/")
+        or path.startswith("/experience/")
+    )
+
+
+def _should_apply_noindex(path: str, content_type: str | None) -> bool:
+    if not content_type or "text/html" not in content_type:
+        return False
+    return _is_html_app_path(path)
+
+
+def _template_context(request: Request, **extra):
+    context = {
+        "request": request,
+        "app_base_url": settings.app_base_url,
+        "api_base_url": settings.api_base_url,
+        "marketing_site_url": settings.marketing_site_url,
+        "support_email": settings.support_email,
+    }
+    context.update(extra)
+    return context
+
+
 @app.middleware("http")
 async def attach_user_context(request: Request, call_next):
     request.state.current_user = await get_current_user_optional(request, None, request.cookies.get("access_token"))
+    host = _request_host(request)
+    if settings.is_production and host == settings.api_host and _is_html_app_path(request.url.path):
+        return RedirectResponse(url=_build_external_url(settings.app_base_url, request.url.path, request.url.query), status_code=307)
     try:
         response = await call_next(request)
+        if _should_apply_noindex(request.url.path, response.headers.get("content-type")):
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response
     except Exception:
         logger.exception("Unhandled application error for path=%s", request.url.path)
@@ -110,7 +160,7 @@ async def home(request: Request):
     user = _get_user_from_request(request)
     if user:
         return RedirectResponse(url="/dashboard")
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard.html", _template_context(request))
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -118,22 +168,22 @@ async def user_dashboard(request: Request):
     user = _get_user_from_request(request)
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("user_dashboard.html", {"request": request, "user": user})
+    return templates.TemplateResponse("user_dashboard.html", _template_context(request, user=user))
 
 
 @app.get("/about", response_class=HTMLResponse)
 async def about_page(request: Request):
-    return templates.TemplateResponse("about.html", {"request": request})
+    return templates.TemplateResponse("about.html", _template_context(request))
 
 
 @app.get("/experience/eu-ai-act", response_class=HTMLResponse)
 async def eu_ai_experience(request: Request):
-    return templates.TemplateResponse("experience_eu.html", {"request": request})
+    return templates.TemplateResponse("experience_eu.html", _template_context(request))
 
 
 @app.get("/experience/dpdp-india", response_class=HTMLResponse)
 async def dpdp_experience(request: Request):
-    return templates.TemplateResponse("experience_dpdp.html", {"request": request})
+    return templates.TemplateResponse("experience_dpdp.html", _template_context(request))
 
 
 @app.get("/reports", response_class=HTMLResponse)
@@ -148,7 +198,7 @@ async def reports_page(request: Request):
         payload = _scan_detail_payload(scan)
         payload["project_name"] = project_docs.get(payload.get("project_id"), {}).get("name", "Unknown project")
         scans.append(payload)
-    return templates.TemplateResponse("reports.html", {"request": request, "user": user, "scans": scans})
+    return templates.TemplateResponse("reports.html", _template_context(request, user=user, scans=scans))
 
 
 @app.get("/scan/{scan_id}", response_class=HTMLResponse)
@@ -163,13 +213,18 @@ async def scan_output_page(scan_id: str, request: Request):
     scan_payload = _scan_detail_payload(scan)
     return templates.TemplateResponse(
         "scan_output.html",
-        {"request": request, "user": user, "scan": scan_payload, "project": serialize_document(project or {})},
+        _template_context(request, user=user, scan=scan_payload, project=serialize_document(project or {})),
     )
 
 
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "service": settings.app_name}
+
+
+@app.get("/health")
+async def simple_health_check():
+    return await health_check()
 
 
 @app.get("/render_health")

@@ -36,8 +36,8 @@ class CompliSenseApp:
         self.scan_running = False
         self.rulepacks = get_rulepack_catalog()
         self.rulepack_id = tk.StringVar(value=DEFAULT_RULEPACK_ID)
-        self.dpdp_portal_url = os.getenv("COMPLISENSE_DPDP_URL", "http://127.0.0.1:8000/experience/dpdp-india")
-        self.eu_portal_url = os.getenv("COMPLISENSE_EU_URL", "http://127.0.0.1:8000/experience/eu-ai-act")
+        self.dpdp_portal_url = os.getenv("COMPLISENSE_DPDP_URL", "https://app.complisenseai.com/experience/dpdp-india")
+        self.eu_portal_url = os.getenv("COMPLISENSE_EU_URL", "https://app.complisenseai.com/experience/eu-ai-act")
         self._build_ui()
 
     def _build_ui(self):
