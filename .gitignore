@@ -1,7 +1,6 @@
 __MACOSX/
 .DS_Store
 ._*
-artefacts/
 out/
 out_headless/
 .env
@@ -17,3 +16,15 @@ venv-packager/
 build/
 dist/
 htmlcov/
+.next/
+node_modules/
+3.11_venv/
+.pyinstaller-cache/
+CODEBASE_FLOW_EU_DPDP.md
+DPDP_EXTENDED_V1_ROADMAP.md
+GEMINI.md
+NONTECH_FLOW_EXPLAIN.md
+CODEX_ENDTOEND
+NEXT_PHASEWISE_STEPS
+TODO_NEXT_MAIN
+
