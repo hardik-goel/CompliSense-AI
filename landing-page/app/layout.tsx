@@ -12,11 +12,11 @@ const inter = Inter({
 
 const siteUrl = "https://complisenseai.com";
 const description =
-  "AI-native compliance platform for DPDP compliance, AI governance, policy management, risk assessments, vendor reviews, and audit readiness.";
+  "Automate DPDP compliance, AI governance, and audit readiness from one platform. Built for startups and mid-market teams.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "CompliSense-AI | AI-Native Compliance Platform",
+  title: "CompliSense-AI — AI-Native Compliance Platform",
   description,
   applicationName: "CompliSense-AI",
   keywords: [
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     canonical: siteUrl,
   },
   openGraph: {
-    title: "CompliSense-AI | AI-Native Compliance Platform",
+    title: "CompliSense-AI — AI-Native Compliance Platform",
     description,
     url: siteUrl,
     siteName: "CompliSense-AI",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CompliSense-AI | AI-Native Compliance Platform",
+    title: "CompliSense-AI — AI-Native Compliance Platform",
     description,
     images: ["/twitter-image"],
   },

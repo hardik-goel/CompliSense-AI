@@ -1,0 +1,47 @@
+version: "v1"
+scope: "EU AI Act – High Risk Systems"
+
+artifacts:
+  - id: model_card
+    name: Model Card
+    required: true
+    files:
+      - model_card.md
+      - model_card.pdf
+    article: "Art. 11"
+    description: "System overview, intended use, limitations"
+
+  - id: risk_assessment
+    name: Risk Management File
+    required: true
+    files:
+      - risk_assessment.json
+      - risk_assessment.md
+    article: "Art. 9"
+
+  - id: data_governance
+    name: Data Governance Documentation
+    required: true
+    files:
+      - data_governance.md
+    article: "Art. 10"
+
+  - id: human_oversight
+    name: Human Oversight Plan
+    required: true
+    files:
+      - human_oversight.md
+    article: "Art. 14"
+
+  - id: logging
+    name: Logging & Traceability
+    required: true
+    files:
+      - logs/
+    article: "Art. 12"
+
+  - id: monitoring
+    name: Post-market Monitoring
+    files: ["monitoring_plan.md"]
+    required: true
+    article: "Art. 61"

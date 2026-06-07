@@ -26,7 +26,7 @@ def _default_cors_origins() -> str:
             [
                 "https://complisenseai.com",
                 "https://www.complisenseai.com",
-                "https://app.complisenseai.com",
+                "https://complisense-ai-backend.onrender.com",
                 "https://api.complisenseai.com",
             ]
         )
@@ -39,7 +39,7 @@ class Settings:
     app_version: str = os.getenv("APP_VERSION", "1.0.0")
     environment: str = os.getenv("ENVIRONMENT", "development")
     marketing_site_url: str = os.getenv("MARKETING_SITE_URL", "https://complisenseai.com")
-    app_base_url: str = os.getenv("APP_BASE_URL", "https://app.complisenseai.com")
+    app_base_url: str = os.getenv("APP_BASE_URL", "https://complisense-ai-backend.onrender.com")
     api_base_url: str = os.getenv("API_BASE_URL", "https://api.complisenseai.com")
     support_email: str = os.getenv("SUPPORT_EMAIL", "support@complisenseai.com")
     cookie_domain: str | None = os.getenv("COOKIE_DOMAIN", ".complisenseai.com")

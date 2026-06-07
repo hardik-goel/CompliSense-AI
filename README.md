@@ -255,7 +255,7 @@ Required environment variables:
 ENVIRONMENT=production
 PORT=10000
 MARKETING_SITE_URL=https://complisenseai.com
-APP_BASE_URL=https://app.complisenseai.com
+APP_BASE_URL=https://complisense-ai-backend.onrender.com
 API_BASE_URL=https://api.complisenseai.com
 COOKIE_DOMAIN=.complisenseai.com
 SUPPORT_EMAIL=support@complisenseai.com
@@ -266,7 +266,7 @@ JWT_SECRET=replace-with-a-long-random-secret
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
 ADMIN_API_TOKEN=replace-with-a-long-random-agent-token
-CORS_ORIGINS=https://complisenseai.com,https://app.complisenseai.com,https://api.complisenseai.com
+CORS_ORIGINS=https://complisenseai.com,https://complisense-ai-backend.onrender.com,https://api.complisenseai.com
 LOG_LEVEL=INFO
 SECURE_COOKIES=true
 ```
