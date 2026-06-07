@@ -166,6 +166,7 @@ p.body-text, .faq-item p {
 .brand-logo {
   height: 40px;
   width: auto;
+  object-fit: contain;
 }
 
 @media (max-width: 768px) {
@@ -239,14 +240,241 @@ p.body-text, .faq-item p {
 
 /* Sections */
 .content-section {
-  padding: 120px 0;
+  padding: 64px 0;
 }
 @media (max-width: 768px) {
-  .content-section { padding: 80px 0; }
+  .content-section { padding: 48px 0; }
 }
 
 .section-header {
-  margin-bottom: 48px;
+  margin-bottom: 32px;
+}
+
+/* Trust Chips */
+.trust-chip {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: transparent;
+  white-space: nowrap;
+}
+
+/* Score Arc */
+.score-arc {
+  transform: rotate(-90deg);
+}
+
+.score-arc path {
+  stroke-dasharray: 0 62.8;
+  transition: stroke-dasharray 1s ease-out;
+}
+
+[data-visible="true"] .score-arc path {
+  stroke-dasharray: 48.9 62.8; /* 78% of 62.8 */
+}
+
+/* Charts */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 0.75rem;
+}
+
+.bar-label {
+  width: 120px;
+  color: var(--text-secondary);
+}
+
+.bar-bg {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: 4px;
+  width: 0;
+  transition: width 1s ease-out;
+}
+
+[data-visible="true"] .bar-fill {
+  width: var(--percent);
+}
+
+.donut-chart {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 16px;
+}
+
+.donut-chart svg {
+  transform: rotate(-90deg);
+}
+
+.donut-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.segmented-bar {
+  display: flex;
+  height: 24px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 24px 0 12px;
+}
+
+.segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+}
+
+/* Workflow Connector */
+.workflow-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 48px 0;
+}
+
+.workflow-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.workflow-arrow {
+  color: var(--border-bright);
+  font-weight: bold;
+}
+
+.pulse-line {
+  height: 1px;
+  flex: 1;
+  max-width: 40px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 200% 100%;
+  animation: pulse-flow 3s infinite linear;
+}
+
+@keyframes pulse-flow {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 768px) {
+  .workflow-connector { flex-direction: column; gap: 16px; }
+  .pulse-line { height: 40px; width: 1px; background: linear-gradient(180deg, transparent, var(--accent), transparent); background-size: 100% 200%; }
+}
+
+/* Trust Banner */
+.trust-banner {
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 16px 16px 0;
+  padding: 48px;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  margin: 64px 0;
+}
+
+.trust-icon { font-size: 3rem; }
+.trust-content { flex: 1; }
+.trust-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  .trust-banner { flex-direction: column; text-align: center; gap: 32px; padding: 32px; }
+}
+
+/* Pricing */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.pricing-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.pricing-card.popular {
+  border-color: var(--accent);
+  background: var(--surface-elevated);
+}
+
+.pricing-card.enterprise {
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(37,99,235,0.05) 100%);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1200px) {
+  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .pricing-grid { grid-template-columns: 1fr; }
 }
 
 /* Hero Section */
@@ -952,6 +1180,17 @@ p.body-text, .faq-item p {
 }
 
 /* Scroll Animations */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 [data-animate] {
   opacity: 0;
   transform: translateY(16px);
@@ -964,7 +1203,7 @@ p.body-text, .faq-item p {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-animate], .hero-glow, .hero-headline .highlight::after, .btn-primary, .btn-ghost, .feature-card {
+  [data-animate], .fade-up, .hero-glow, .hero-headline .highlight::after, .btn-primary, .btn-ghost, .feature-card {
     transition: none !important;
     animation: none !important;
     opacity: 1 !important;
