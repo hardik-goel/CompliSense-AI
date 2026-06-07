@@ -7,6 +7,7 @@ from pathlib import Path
 
 from agent.agent_runner import run_agent
 from agent.config import AgentConfig
+from compliance.registry import DEFAULT_RULEPACK_ID
 
 import logging
 
@@ -20,7 +21,7 @@ logging.basicConfig(
 class CompliSenseApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("CompliSense AI - EU AI Act Compliance Scanner")
+        self.root.title("CompliSense AI - Regulatory Compliance Scanner")
         self.root.geometry("700x650")
         self.root.configure(bg="#f5f5f5")
 
@@ -50,7 +51,7 @@ class CompliSenseApp:
 
         tk.Label(
             header_frame,
-            text="EU AI Act Compliance Scanner",
+            text="Regulatory Compliance Scanner",
             font=("Helvetica", 11),
             bg="#2563eb",
             fg="#e0e7ff"
@@ -63,7 +64,7 @@ class CompliSenseApp:
         # Description
         desc_label = tk.Label(
             content_frame,
-            text="Run EU AI Act compliance checks locally.\nNo data ever leaves your system.",
+            text="Run regulatory compliance checks locally.\nNo data ever leaves your system.",
             font=("Helvetica", 10),
             bg="#f5f5f5",
             fg="#6b7280",
@@ -452,7 +453,7 @@ class CompliSenseApp:
             result = run_agent(
                 model_root=self.model_path.get(),
                 out_dir=self.out_path.get(),
-                rulepack_path="euai_core_v1.yaml",
+                rulepack_path=f"{DEFAULT_RULEPACK_ID}.yaml",
                 progress_callback=self._handle_progress,
                 config=config
             )

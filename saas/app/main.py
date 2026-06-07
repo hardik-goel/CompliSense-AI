@@ -5,6 +5,7 @@ import logging
 import sys
 from pathlib import Path
 
+from compliance.registry import get_rulepack_catalog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -41,12 +42,18 @@ static_dir.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title=settings.app_name,
-    description="Central dashboard for EU AI Act compliance management",
+    description="Central dashboard for regulatory compliance management",
     version=settings.app_version,
 )
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
+templates.env.globals.update(
+    app_base_url=settings.app_base_url,
+    api_base_url=settings.api_base_url,
+    marketing_site_url=settings.marketing_site_url,
+    support_email=settings.support_email,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,11 +80,55 @@ async def startup_event():
     logger.info("Application startup complete")
 
 
+def _request_host(request: Request) -> str:
+    return request.headers.get("host", "").split(":", 1)[0].lower()
+
+
+def _build_external_url(base_url: str, path: str, query: str | None = None) -> str:
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    url = f"{base_url.rstrip('/')}{normalized_path}"
+    return f"{url}?{query}" if query else url
+
+
+def _is_html_app_path(path: str) -> bool:
+    return (
+        path == "/"
+        or path.startswith("/dashboard")
+        or path.startswith("/about")
+        or path.startswith("/reports")
+        or path.startswith("/scan/")
+        or path.startswith("/experience/")
+    )
+
+
+def _should_apply_noindex(path: str, content_type: str | None) -> bool:
+    if not content_type or "text/html" not in content_type:
+        return False
+    return _is_html_app_path(path)
+
+
+def _template_context(request: Request, **extra):
+    context = {
+        "request": request,
+        "app_base_url": settings.app_base_url,
+        "api_base_url": settings.api_base_url,
+        "marketing_site_url": settings.marketing_site_url,
+        "support_email": settings.support_email,
+    }
+    context.update(extra)
+    return context
+
+
 @app.middleware("http")
 async def attach_user_context(request: Request, call_next):
     request.state.current_user = await get_current_user_optional(request, None, request.cookies.get("access_token"))
+    host = _request_host(request)
+    if settings.is_production and host == settings.api_host and _is_html_app_path(request.url.path):
+        return RedirectResponse(url=_build_external_url(settings.app_base_url, request.url.path, request.url.query), status_code=307)
     try:
         response = await call_next(request)
+        if _should_apply_noindex(request.url.path, response.headers.get("content-type")):
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response
     except Exception:
         logger.exception("Unhandled application error for path=%s", request.url.path)
@@ -88,12 +139,28 @@ def _get_user_from_request(request: Request):
     return getattr(request.state, "current_user", None)
 
 
+def _scan_detail_payload(scan: dict) -> dict:
+    clean_scan = serialize_document(scan)
+    findings = clean_scan.get("findings_json") or {}
+    results = findings.get("results", []) if isinstance(findings, dict) else []
+    summary = clean_scan.get("results_summary") or findings.get("summary", {}) or {}
+    if isinstance(results, list) and results:
+        missing_count = sum(1 for item in results if item.get("status") == "MISSING")
+        if summary.get("missing") is None:
+            summary["missing"] = missing_count
+    total = clean_scan.get("results_count") or len(results) or (summary.get("passed", 0) + summary.get("partial", 0) + summary.get("failed", 0))
+    clean_scan["results_summary"] = summary
+    clean_scan["results_count"] = total
+    clean_scan["findings_results"] = results
+    return clean_scan
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = _get_user_from_request(request)
     if user:
         return RedirectResponse(url="/dashboard")
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard.html", _template_context(request))
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -101,12 +168,22 @@ async def user_dashboard(request: Request):
     user = _get_user_from_request(request)
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("user_dashboard.html", {"request": request, "user": user})
+    return templates.TemplateResponse("user_dashboard.html", _template_context(request, user=user))
 
 
 @app.get("/about", response_class=HTMLResponse)
 async def about_page(request: Request):
-    return templates.TemplateResponse("about.html", {"request": request})
+    return templates.TemplateResponse("about.html", _template_context(request))
+
+
+@app.get("/experience/eu-ai-act", response_class=HTMLResponse)
+async def eu_ai_experience(request: Request):
+    return templates.TemplateResponse("experience_eu.html", _template_context(request))
+
+
+@app.get("/experience/dpdp-india", response_class=HTMLResponse)
+async def dpdp_experience(request: Request):
+    return templates.TemplateResponse("experience_dpdp.html", _template_context(request))
 
 
 @app.get("/reports", response_class=HTMLResponse)
@@ -114,7 +191,14 @@ async def reports_page(request: Request):
     user = _get_user_from_request(request)
     if not user:
         return RedirectResponse(url="/")
-    return templates.TemplateResponse("reports.html", {"request": request, "user": user})
+    scan_docs = list(scans_collection().find({"user_id": user["id"]}).sort("created_at", -1))
+    project_docs = {project["id"]: serialize_document(project) for project in projects_collection().find({"user_id": user["id"]})}
+    scans = []
+    for scan in scan_docs:
+        payload = _scan_detail_payload(scan)
+        payload["project_name"] = project_docs.get(payload.get("project_id"), {}).get("name", "Unknown project")
+        scans.append(payload)
+    return templates.TemplateResponse("reports.html", _template_context(request, user=user, scans=scans))
 
 
 @app.get("/scan/{scan_id}", response_class=HTMLResponse)
@@ -126,15 +210,21 @@ async def scan_output_page(scan_id: str, request: Request):
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     project = projects_collection().find_one({"id": scan.get("project_id")})
+    scan_payload = _scan_detail_payload(scan)
     return templates.TemplateResponse(
         "scan_output.html",
-        {"request": request, "user": user, "scan": serialize_document(scan), "project": serialize_document(project or {})},
+        _template_context(request, user=user, scan=scan_payload, project=serialize_document(project or {})),
     )
 
 
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "service": settings.app_name}
+
+
+@app.get("/health")
+async def simple_health_check():
+    return await health_check()
 
 
 @app.get("/render_health")
@@ -215,6 +305,11 @@ async def get_audit_logs(request: Request):
 async def get_plans():
     order = ["free", "standard", "premium", "premium_plus"]
     return [PLANS[key] for key in order if key in PLANS]
+
+
+@app.get("/api/rulepacks")
+async def get_rulepacks():
+    return get_rulepack_catalog()
 
 
 @app.get("/api/reports/{scan_id}/html")

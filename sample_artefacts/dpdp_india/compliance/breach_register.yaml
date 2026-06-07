@@ -1,0 +1,10 @@
+coverage: 1.0
+incidents:
+  - incident_id: "INC-2026-001"
+    date_detected: "2026-01-14"
+    severity: "medium"
+    affected_data_categories:
+      - "email"
+      - "phone"
+    containment_status: "closed"
+    notification_decision: "notified internally"

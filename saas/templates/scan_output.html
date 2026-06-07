@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scan Output - {{ scan.scan_name or scan.id }} - CompliSense-AI</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -137,6 +139,16 @@
         }
         .btn-out-secondary:hover { background: var(--card-hover); color: var(--text-primary); }
         .actions-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+        .rule-row { border-top: 1px solid var(--border-color); padding: 1rem 1.25rem; }
+        .rule-row:first-child { border-top: 0; }
+        .rule-head { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+        .rule-meta { font-size: 0.8rem; color: var(--text-muted); }
+        .rule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 0.9rem 0; }
+        .rule-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.8rem; }
+        .rule-box .label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; }
+        .rule-box .value { margin-top: 0.2rem; font-weight: 600; }
+        .detail-list { margin: 0.6rem 0 0; padding-left: 1.1rem; color: var(--text-primary); }
+        .detail-list li { margin-bottom: 0.3rem; }
     </style>
 </head>
 <body>
@@ -164,8 +176,9 @@
                     <div class="card-body">
                         {% set summary = scan.get('results_summary') or {} %}
                         {% set passed = summary.get('passed', 0) %}
+                        {% set partial = summary.get('partial', 0) %}
                         {% set failed = summary.get('failed', 0) %}
-                        {% set total = scan.get('results_count') or (passed + failed) or 0 %}
+                        {% set total = scan.get('results_count') or (passed + partial + failed) or 0 %}
                         <div class="stat-row">
                             <div class="stat-box total">
                                 <div class="value">{{ total }}</div>
@@ -174,6 +187,10 @@
                             <div class="stat-box passed">
                                 <div class="value">{{ passed }}</div>
                                 <div class="label">Passed</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="value" style="color: var(--warning)">{{ partial }}</div>
+                                <div class="label">Partial / Missing</div>
                             </div>
                             <div class="stat-box failed">
                                 <div class="value">{{ failed }}</div>
@@ -196,6 +213,69 @@
                             <tr><th>Last completed</th><td>{{ (scan.get('last_completed') or '—')[:19] if scan.get('last_completed') else '—' }}</td></tr>
                             <tr><th>Last downloaded</th><td>{{ (scan.get('last_downloaded') or '—')[:19] if scan.get('last_downloaded') else '—' }}</td></tr>
                         </table>
+                    </div>
+                </div>
+
+                <div class="card-out">
+                    <div class="card-head">
+                        <i class="fas fa-list-check"></i> Rule Drill-Down
+                    </div>
+                    <div class="card-body p-0">
+                        {% set findings = scan.get('findings_results') or [] %}
+                        {% if findings %}
+                            {% for item in findings %}
+                                <div class="rule-row">
+                                    <div class="rule-head">
+                                        <div>
+                                            <div class="fw-semibold">{{ item.title }}</div>
+                                            <div class="rule-meta">{{ item.rule_id }} | {{ item.clause }}</div>
+                                        </div>
+                                        <span class="badge-status {{ 'completed' if item.status == 'PASS' else ('running' if item.status in ['PARTIAL', 'MISSING'] else 'failed') }}">{{ item.status }}</span>
+                                    </div>
+                                    <div class="rule-grid">
+                                        <div class="rule-box"><div class="label">Severity</div><div class="value">{{ item.severity }}</div></div>
+                                        <div class="rule-box"><div class="label">Confidence</div><div class="value">{{ item.confidence }}%</div></div>
+                                        <div class="rule-box"><div class="label">Risk</div><div class="value">{{ item.risk }}</div></div>
+                                        <div class="rule-box"><div class="label">Execution time</div><div class="value">{{ item.execution_time_sec }}s</div></div>
+                                    </div>
+                                    <div>
+                                        <strong class="small text-uppercase">What this means</strong>
+                                        <ul class="detail-list">
+                                            {% if item.evidence and item.evidence.missing_file %}
+                                                <li>The expected supporting file was not found: {{ item.files_used|join(', ') }}</li>
+                                            {% endif %}
+                                            {% if item.evidence and item.evidence.missing_fields %}
+                                                <li>The file exists, but required fields are missing: {{ item.evidence.missing_fields|join(', ') }}</li>
+                                            {% endif %}
+                                            {% if item.evidence and item.evidence.coverage_score is defined %}
+                                                <li>Documentation coverage score: {{ "%.0f"|format(item.evidence.coverage_score * 100) }}%</li>
+                                            {% endif %}
+                                            {% if item.evidence and item.evidence.coverage is defined %}
+                                                <li>Schema/data coverage: {{ "%.0f"|format(item.evidence.coverage * 100) }}%</li>
+                                            {% endif %}
+                                            {% if item.evidence and item.evidence.validation_report and item.evidence.validation_report != 'ok' %}
+                                                <li>Validation notes: {{ item.evidence.validation_report }}</li>
+                                            {% endif %}
+                                            {% if not item.evidence and item.status == 'PASS' %}
+                                                <li>Available evidence was sufficient for this control at scan time.</li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                    {% if item.remediation %}
+                                        <div class="mt-3">
+                                            <strong class="small text-uppercase">Suggested next actions</strong>
+                                            <ul class="detail-list">
+                                                {% for action in item.remediation %}
+                                                    <li>{{ action }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="p-4 text-muted">Detailed per-rule findings are not stored for this scan yet. Run a fresh scan after the latest backend update to populate this section.</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

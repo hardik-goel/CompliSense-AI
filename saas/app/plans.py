@@ -15,7 +15,7 @@ PLANS: Dict[str, Dict[str, Any]] = {
         "monthly_scan_limit": 10,
         "max_projects": 2,
         "features": [
-            "Core EU AI Act checks (selected rules for Articles 9, 10, 11, 13, 14, 15, 20)",
+            "Core regulatory checks from the selected compliance pack",
             "Local agent + basic SaaS dashboard",
             "Compliance percentage and key issues overview",
         ],
@@ -27,7 +27,7 @@ PLANS: Dict[str, Dict[str, Any]] = {
         "features": [
             "Everything in Free",
             "Step-by-step remediation guidance for improving coverage and compliance",
-            "All core EU rules, including more detailed checks for Articles 12, 17, 19 (extended logging & monitoring)",
+            "Expanded rulepack coverage, including more detailed logging and monitoring checks",
             "Basic history and scan comparison in SaaS dashboard (MongoDB required)",
             "Email notifications on scan completion",
         ],
@@ -65,4 +65,3 @@ PLANS: Dict[str, Dict[str, Any]] = {
 def get_plan(tier: str) -> Dict[str, Any]:
     """Return plan configuration for a tier, defaulting to free."""
     return PLANS.get(tier, PLANS["free"])
-

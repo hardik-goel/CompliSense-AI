@@ -33,10 +33,11 @@ def _is_missing_evidence(ctx: Dict[str, Any]) -> bool:
     return signals in (None, {}, [])
 
 
-def scan_required_artifacts(root: Path) -> Dict[str, Any]:
+def scan_required_artifacts(root: Path, manifest_path: str | None = None) -> Dict[str, Any]:
     """Scan for required artifacts with better error handling."""
     try:
-        manifest = Path(resource_path("agent/artefacts/required_artifacts.yaml"))
+        manifest_rel = manifest_path or "agent/artefacts/required_artifacts.yaml"
+        manifest = Path(resource_path(manifest_rel))
         if not manifest.exists():
             logger.error(f"Required artifacts manifest not found at {manifest}")
             return {
@@ -143,6 +144,7 @@ def _run_evaluator(root: Path, evaluator: str, inputs: Dict[str, Any]) -> Dict[s
 def run_scan(
     root: Path,
     rules: List[Dict[str, Any]],
+    required_artifacts_manifest: str | None = None,
     llm_enabled: bool = False,
     progress_callback=None,
     cancel_event=None
@@ -167,7 +169,7 @@ def run_scan(
     counts = {"passed": 0, "partial": 0, "failed": 0}
     
     try:
-        artifact_scan = scan_required_artifacts(root)
+        artifact_scan = scan_required_artifacts(root, required_artifacts_manifest)
     except Exception as e:
         logger.exception(f"Error scanning artifacts: {e}")
         artifact_scan = {
@@ -246,10 +248,13 @@ def run_scan(
         missing_fields = ctx.get("missing_fields")
         if thresholds and missing_fields is not None:
             # Thresholds for file_presence are based on missing_fields count (lower is better)
-            pass_threshold = thresholds.get("pass", 0.0)  # Allow 0 missing for pass
-            partial_threshold = thresholds.get("partial", 2.0)  # Allow up to 2 missing for partial
-            
-            if missing_fields <= pass_threshold:
+            pass_threshold = thresholds.get("pass", 0.0)
+            partial_threshold = thresholds.get("partial", 2.0)
+
+            if not ctx.get("exists"):
+                status = "MISSING"
+                ok = False
+            elif missing_fields <= pass_threshold:
                 status = "PASS"
                 ok = True
             elif missing_fields <= partial_threshold:
@@ -359,6 +364,8 @@ def run_scan(
             evidence["schema_valid"] = True
         if ctx.get("missing_fields", 0) > 0:
             evidence["missing_fields"] = ctx.get("missing_fields_list", [])
+        if ctx.get("exists") is False:
+            evidence["missing_file"] = True
         if ctx.get("coverage") is not None:
             evidence["coverage"] = ctx.get("coverage")
         if ctx.get("coverage_score") is not None:

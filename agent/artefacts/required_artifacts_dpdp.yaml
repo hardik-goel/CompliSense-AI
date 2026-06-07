@@ -1,0 +1,33 @@
+artifacts:
+  - id: "privacy_notice"
+    name: "Privacy Notice"
+    clause: "Section 5"
+    description: "Notice describing purposes, categories, rights and grievance contact."
+    files:
+      - "compliance/privacy_notice.json"
+      - "compliance/privacy_notice.yaml"
+      - "compliance/privacy_notice.yml"
+  - id: "consent_record"
+    name: "Consent Record"
+    clause: "Section 6"
+    description: "Consent capture and withdrawal documentation."
+    files:
+      - "compliance/consent_record.json"
+      - "compliance/consent_record.yaml"
+      - "compliance/consent_record.yml"
+  - id: "security_safeguards"
+    name: "Security Safeguards"
+    clause: "Section 8"
+    description: "Security and deletion safeguards documentation."
+    files:
+      - "compliance/security_safeguards.yaml"
+      - "compliance/security_safeguards.yml"
+      - "compliance/security_safeguards.json"
+  - id: "grievance_redressal"
+    name: "Grievance Redressal Workflow"
+    clause: "Section 13"
+    description: "Principal-facing grievance intake and resolution workflow."
+    files:
+      - "compliance/grievance_redressal.yaml"
+      - "compliance/grievance_redressal.yml"
+      - "compliance/grievance_redressal.json"

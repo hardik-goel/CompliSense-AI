@@ -33,7 +33,7 @@ def generate_remediation(rule_id: str, confidence: int):
     if not base:
         # Generic remediation if no specific rule found
         return [
-            "Review the rule requirements in the EU AI Act",
+            "Review the control requirements for the selected regulatory pack",
             "Create the required documentation artifacts",
             "Ensure all required fields are present and valid"
         ]

@@ -13,6 +13,7 @@ from typing import Dict, Any
 import shutil
 import datetime
 
+from compliance.registry import DEFAULT_RULEPACK_ID
 
 class AgentGenerator:
     def __init__(self, base_agent_path: Path):
@@ -179,6 +180,7 @@ import os
 import sys
 import json
 import argparse
+import platform
 from pathlib import Path
 import requests
 
@@ -191,6 +193,19 @@ def load_config():
     config_path = agent_dir / "agent_config.json"
     with open(config_path) as f:
         return json.load(f)
+
+def _rulepack_program_label(rulepack_id: str) -> str:
+    mapping = {{
+        "dpdp_india_core": "DPDP-Core",
+        "dpdp_india_core_v1": "DPDP-Core",
+        "dpdp_india_extended": "DPDP-Extended",
+        "dpdp_india_extended_v1": "DPDP-Extended",
+        "euai_core": "EU-AI Core",
+        "euai_core_v1": "EU-AI Core",
+        "euai_extended": "EU-AI Extended",
+        "euai_extended_v1": "EU-AI Extended",
+    }}
+    return mapping.get((rulepack_id or "").lower(), rulepack_id or "Unknown Rulepack")
 
 def send_heartbeat(config, status):
     """Send heartbeat to SaaS platform"""
@@ -269,20 +284,19 @@ def main():
                         )
                     except Exception:
                         pass  # Ignore if xattr fails (e.g. no quarantine)
-
-                    print("🔍 Running compliance scan via compiled CLI...")
-                    rulepack_id = config.get("rulepack_version") or "euai_core_v1"
-                    cmd = [
-                        str(cli_path),
-                        "scan",
-                        "--root",
-                        str(project_path),
-                        "--out",
-                        str(output_dir),
-                        "--pack-id",
-                        rulepack_id,
-                    ]
-                    result = subprocess.run(cmd, check=False, cwd=str(agent_dir))
+                print("🔍 Running compliance scan via compiled CLI...")
+                rulepack_id = config.get("rulepack_version") or DEFAULT_RULEPACK_ID
+                cmd = [
+                    str(cli_path),
+                    "scan",
+                    "--root",
+                    str(project_path),
+                    "--out",
+                    str(output_dir),
+                    "--pack-id",
+                    rulepack_id,
+                ]
+                result = subprocess.run(cmd, check=False, cwd=str(agent_dir))
 
                 if result.returncode != 0:
                     raise RuntimeError("CLI scan failed with exit code " + str(result.returncode))
@@ -292,6 +306,13 @@ def main():
                 if not json_path.exists():
                     raise RuntimeError("CLI did not produce findings.json or compliance_findings.json")
                 raw = json.loads(json_path.read_text())
+                # Normalize to a single output artifact for clients.
+                canonical_json = output_dir / "compliance_findings.json"
+                if json_path != canonical_json:
+                    try:
+                        json_path.unlink(missing_ok=True)
+                    except Exception:
+                        pass
                 rule_list = raw.get("results", raw.get("findings", []))
                 summary = raw.get("summary", {{}})
                 if not summary and rule_list:
@@ -304,15 +325,21 @@ def main():
                 from agent.scanner import run_scan
                 from agent.report.render import render_pdf
                 from agent.scoring.overall import compute_overall_compliance, verdict_from_score
-                rulepack_name = (config.get("rulepack_version") or "euai_core_v1") + ".yaml"
+                rulepack_name = (config.get("rulepack_version") or DEFAULT_RULEPACK_ID) + ".yaml"
                 rulepack_path = agent_dir / "rulepacks" / rulepack_name
                 if not rulepack_path.exists():
-                    rulepack_path = agent_dir / "rulepacks" / "euai_core_v1.yaml"
+                    rulepack_path = agent_dir / "rulepacks" / f"{DEFAULT_RULEPACK_ID}.yaml"
                 if not rulepack_path.exists():
                     raise RuntimeError("No rulepack found in downloaded agent bundle")
                 print("🔍 Running compliance scan...")
                 rp = load_rulepack(rulepack_path)
                 results = run_scan(project_path, iter_rules(rp))
+
+            selected_rulepack = config.get("rulepack_version") or DEFAULT_RULEPACK_ID
+            results["report_context"] = {{
+                "rulepack_id": selected_rulepack,
+                "program_label": _rulepack_program_label(selected_rulepack),
+            }}
 
             # Common: build assessment (minimal for CLI-only)
             artifacts = results.get("artifacts", {{}})
@@ -354,13 +381,23 @@ def main():
 
             summary = results.get("summary", {{}})
             try:
+                client_run_metadata = {{
+                    "project_path": str(project_path),
+                    "output_dir": str(output_dir),
+                    "bundle_mode": config.get("bundle_mode"),
+                    "cli_mode": bool(cli_path.exists()),
+                    "python_version": sys.version.split(" ")[0],
+                    "platform": platform.platform(),
+                }}
                 requests.post(
                     f"{{config['saas_base_url']}}/agent/results",
                     json={{
                         "scan_id": config["scan_id"],
                         "status": "completed",
                         "summary": summary,
+                        "findings_json": results,
                         "results_count": len(results.get("results", [])),
+                        "client_run_metadata": client_run_metadata,
                         "timestamp": __import__("datetime").datetime.utcnow().isoformat()
                     }}
                 )

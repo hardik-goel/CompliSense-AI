@@ -1,0 +1,14 @@
+coverage: 1.0
+requests:
+  - request_id: rr_001
+    request_type: access
+    status: closed
+    received_at: "2026-03-02"
+    completed_at: "2026-03-05"
+    owner: privacy_ops
+  - request_id: rr_002
+    request_type: erasure
+    status: in_progress
+    received_at: "2026-04-11"
+    completed_at: null
+    owner: privacy_ops

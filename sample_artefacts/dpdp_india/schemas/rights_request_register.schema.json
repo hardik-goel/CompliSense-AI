@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["coverage", "requests"],
+  "properties": {
+    "coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+    "requests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["request_id", "request_type", "status", "received_at", "owner"],
+        "properties": {
+          "request_id": { "type": "string" },
+          "request_type": { "type": "string" },
+          "status": { "type": "string" },
+          "received_at": { "type": ["string", "null"] },
+          "completed_at": { "type": ["string", "null"] },
+          "owner": { "type": "string" }
+        }
+      }
+    }
+  }
+}

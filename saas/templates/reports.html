@@ -4,11 +4,114 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reports | CompliSense-AI</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #0f1116; color: #e7eaf0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .shell { max-width: 1160px; margin: 0 auto; padding: 36px 20px 64px; }
+    .report-card { background: #171a22; border: 1px solid #2a2f3a; border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+    .metric { background: #10131a; border: 1px solid #2a2f3a; border-radius: 12px; padding: 12px; text-align: center; }
+    .metric .value { font-size: 1.45rem; font-weight: 700; }
+    .muted { color: #98a2b3; }
+    .badge-status { padding: 0.35rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+    .completed { background: rgba(16,185,129,0.18); color: #34d399; }
+    .running { background: rgba(245,158,11,0.18); color: #fbbf24; }
+    .configured, .downloaded { background: rgba(59,130,246,0.18); color: #60a5fa; }
+    .failed { background: rgba(239,68,68,0.18); color: #f87171; }
+    .finding-table th, .finding-table td { color: #e7eaf0; border-color: #2a2f3a; background: transparent; font-size: 0.9rem; }
+    .finding-table th { color: #98a2b3; }
+    a { text-decoration: none; }
+  </style>
 </head>
 <body>
-  <main style="max-width: 960px; margin: 40px auto; font-family: Arial, sans-serif;">
-    <h1>Compliance Reports</h1>
-    <p>Review completed scans and download generated report artifacts from the dashboard.</p>
+  <main class="shell">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+      <div>
+        <h1 class="h2 mb-1">Compliance Reports</h1>
+        <p class="muted mb-0">Review completed scans, compare outcomes, and drill into rule-level findings.</p>
+      </div>
+      <a href="/dashboard" class="btn btn-outline-light btn-sm">Back to dashboard</a>
+    </div>
+
+    {% if scans %}
+      {% for scan in scans %}
+        {% set summary = scan.results_summary or {} %}
+        {% set passed = summary.get('passed', 0) %}
+        {% set partial = summary.get('partial', 0) %}
+        {% set failed = summary.get('failed', 0) %}
+        <section class="report-card">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+            <div>
+              <h2 class="h4 mb-1">{{ scan.scan_name or scan.id }}</h2>
+              <div class="muted small">Project: {{ scan.project_name }} | Rulepack: {{ scan.rulepack_version or '—' }} | Scan ID: <code>{{ scan.id }}</code></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge-status {{ scan.status }}">{{ scan.status or 'unknown' }}</span>
+              <a href="/scan/{{ scan.id }}" class="btn btn-sm btn-primary">Open detail</a>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-md-3"><div class="metric"><div class="value">{{ scan.results_count or 0 }}</div><div class="muted small">Total rules</div></div></div>
+            <div class="col-6 col-md-3"><div class="metric"><div class="value text-success">{{ passed }}</div><div class="muted small">Passed</div></div></div>
+            <div class="col-6 col-md-3"><div class="metric"><div class="value text-warning">{{ partial }}</div><div class="muted small">Partial / Missing</div></div></div>
+            <div class="col-6 col-md-3"><div class="metric"><div class="value text-danger">{{ failed }}</div><div class="muted small">Failed</div></div></div>
+          </div>
+
+          {% if scan.findings_results %}
+            <div class="table-responsive">
+              <table class="table finding-table align-middle">
+                <thead>
+                  <tr>
+                    <th>Rule</th>
+                    <th>Status</th>
+                    <th>Confidence</th>
+                    <th>Risk</th>
+                    <th>What it means</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in scan.findings_results %}
+                    <tr>
+                      <td>
+                        <div>{{ item.title }}</div>
+                        <div class="muted small">{{ item.rule_id }} | {{ item.clause }}</div>
+                      </td>
+                      <td class="{% if item.status == 'PASS' %}text-success{% elif item.status in ['PARTIAL', 'MISSING'] %}text-warning{% else %}text-danger{% endif %} fw-bold">{{ item.status }}</td>
+                      <td>{{ item.confidence }}%</td>
+                      <td>{{ item.risk }}</td>
+                      <td>
+                        {% if item.evidence and item.evidence.missing_file %}
+                          Missing expected file: {{ item.files_used|join(', ') }}
+                        {% elif item.evidence and item.evidence.missing_fields %}
+                          Missing fields: {{ item.evidence.missing_fields|join(', ') }}
+                        {% elif item.evidence and item.evidence.coverage_score is defined %}
+                          Documentation coverage scored {{ "%.0f"|format(item.evidence.coverage_score * 100) }}%.
+                        {% elif item.evidence and item.evidence.coverage is defined %}
+                          Schema/data coverage reached {{ "%.0f"|format(item.evidence.coverage * 100) }}%.
+                        {% elif item.remediation %}
+                          {{ item.remediation[0] }}
+                        {% else %}
+                          Evidence was sufficient for this rule at scan time.
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="muted mb-0">This scan has summary metrics only. Run a fresh agent sync to store per-rule findings for drill-down.</p>
+          {% endif %}
+        </section>
+      {% endfor %}
+    {% else %}
+      <section class="report-card">
+        <h2 class="h4 mb-2">No reports yet</h2>
+        <p class="muted mb-0">Create a project, configure a scan, run the downloaded agent, and sync the results back to populate this view.</p>
+      </section>
+    {% endif %}
   </main>
 </body>
 </html>

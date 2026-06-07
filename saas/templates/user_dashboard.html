@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CompliSense-AI - User Dashboard</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -60,6 +62,8 @@
         .btn-close { filter: invert(1); }
         .alert { border-radius: 10px; }
         .table-dark { --bs-table-bg: var(--card-bg); --bs-table-border-color: var(--border-color); color: var(--text-primary); }
+        .brand-lockup { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 0.5rem; }
+        .brand-lockup img { height: 32px; width: auto; }
     </style>
 </head>
 <body>
@@ -68,7 +72,9 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1><i class="fas fa-robot me-2"></i>CompliSense-AI</h1>
+                    <div class="brand-lockup">
+                        <img src="/static/logo.svg" alt="CompliSense-AI">
+                    </div>
                     <p class="lead mb-0" id="welcomeMessage">Welcome back!</p>
                     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 mt-1">
                         <small class="opacity-75">
@@ -78,6 +84,14 @@
                             <i class="fas fa-gauge-high me-1"></i>
                             Free scans this month: <span id="freeScansUsed">0</span>/<span id="freeScansLimit">10</span>
                         </small>
+                    </div>
+                    <div class="mt-2" style="max-width: 360px;">
+                        <label for="regulationFilter" class="form-label form-label-sm mb-1 text-light">Regulation View</label>
+                        <select class="form-select form-select-sm" id="regulationFilter" onchange="setRegulationFilter(this.value)">
+                            <option value="ALL">All Programs</option>
+                            <option value="DPDP_INDIA">DPDP India</option>
+                            <option value="EU_AI_ACT">EU AI Act</option>
+                        </select>
                     </div>
                 </div>
                 <div class="col-md-4 text-end">
@@ -253,7 +267,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <h5><i class="fas fa-download me-2 text-primary"></i>Local Compliance Agent</h5>
-                                <p>Download your customized agent to scan AI systems locally for EU AI Act compliance.</p>
+                                <p>Download your customized agent to scan systems locally against the regulatory pack you selected.</p>
 
                                 <div class="mb-3">
                                     <label class="form-label">Select Project:</label>
@@ -344,14 +358,23 @@
                             <textarea class="form-control" name="description" rows="3"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">AI Model Type *</label>
+                            <label class="form-label">System / Processing Type *</label>
                             <select class="form-select" name="model_type" required>
-                                <option value="">-- Select model type --</option>
+                                <option value="">-- Select system type --</option>
                                 <option value="LLM">Large Language Model (LLM)</option>
                                 <option value="Computer Vision">Computer Vision</option>
                                 <option value="Speech Recognition">Speech Recognition</option>
                                 <option value="Recommendation System">Recommendation System</option>
+                                <option value="Data Processing Workflow">Data Processing Workflow</option>
+                                <option value="Consumer Application">Consumer Application</option>
+                                <option value="Enterprise SaaS">Enterprise SaaS</option>
                                 <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Regulatory Program *</label>
+                            <select class="form-select" name="compliance_standard" id="complianceStandardSelect" required>
+                                <option value="">-- Loading programs --</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -385,9 +408,8 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Rulepack Version</label>
-                            <select class="form-select" name="rulepack_version">
-                                <option value="euai_core_v1">EU AI Act Core v1.0</option>
-                                <option value="euai_extended_v1">EU AI Act Extended v1.0</option>
+                            <select class="form-select" name="rulepack_version" id="rulepackVersionSelect">
+                                <option value="">-- Loading rulepacks --</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -441,7 +463,7 @@
     <div class="container mt-4 mb-4">
         <div class="alert alert-secondary small mb-0">
             <strong>Important:</strong> CompliSense-AI is a technical compliance support tool and
-            <strong>does not provide legal advice</strong>. It helps assess alignment with selected provisions of the EU AI Act
+            <strong>does not provide legal advice</strong>. It helps assess alignment with selected provisions of the regulatory pack
             based on the artifacts you supply (risk registers, model cards, dataset documentation, etc.).
         </div>
     </div>
@@ -449,10 +471,31 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const APP_BASE_URL = {{ app_base_url|tojson }};
+        const API_BASE_URL = {{ api_base_url|tojson }};
+
+        function appUrl(path) {
+            return `${APP_BASE_URL}${path}`;
+        }
+
+        function apiUrl(path) {
+            return `${API_BASE_URL}${path}`;
+        }
+
+        function apiFetch(path, options = {}) {
+            return fetch(apiUrl(path), {
+                credentials: 'include',
+                ...options,
+                headers: options.headers || {}
+            });
+        }
+
         let projects = [];
         let scans = [];
+        let rulepacks = [];
         let currentProjectId = null;
         let scansChart = null;
+        let regulationFilter = 'ALL';
 
         // Show alerts
         function showAlert(message, type = 'info') {
@@ -489,7 +532,7 @@
             if (!token) {
                 // Only redirect if we're not already on the home page
                 if (window.location.pathname !== '/') {
-                    window.location.href = '/';
+                    window.location.href = appUrl('/');
                 }
                 authCheckInProgress = false;
                 return false;
@@ -506,6 +549,96 @@
             document.getElementById('userTier').textContent = user.tier || 'free';
         }
 
+        async function loadRulepacks() {
+            const response = await apiFetch('/api/rulepacks');
+            if (!response.ok) {
+                throw new Error('Failed to load rulepacks');
+            }
+            rulepacks = await response.json();
+            populateRulepackOptions();
+            populateCompliancePrograms();
+            populateRegulationFilterOptions();
+        }
+
+        function populateRulepackOptions() {
+            const select = document.getElementById('rulepackVersionSelect');
+            if (!select) return;
+            select.innerHTML = rulepacks.map(rulepack =>
+                `<option value="${rulepack.pack_id}" ${rulepack.is_default ? 'selected' : ''}>${rulepack.label} (${rulepack.market})</option>`
+            ).join('');
+        }
+
+        function populateCompliancePrograms() {
+            const select = document.getElementById('complianceStandardSelect');
+            if (!select) return;
+            const programs = Array.from(new Map(
+                rulepacks.map(rulepack => [
+                    rulepack.default_project_standard,
+                    `${rulepack.regulation} (${rulepack.market})`
+                ])
+            ).entries());
+            select.innerHTML = '<option value="">-- Select program --</option>' +
+                programs.map(([value, label]) => {
+                    const matchesDefault = rulepacks.some(rulepack => rulepack.is_default && rulepack.default_project_standard === value);
+                    return `<option value="${value}" ${matchesDefault ? 'selected' : ''}>${label}</option>`;
+                }).join('');
+        }
+
+        function populateRegulationFilterOptions() {
+            const select = document.getElementById('regulationFilter');
+            if (!select) return;
+            const defaults = ['<option value="ALL">All Programs</option>'];
+            const uniquePrograms = Array.from(new Set(rulepacks.map(r => r.default_project_standard))).filter(Boolean);
+            uniquePrograms.sort();
+            select.innerHTML = defaults.concat(
+                uniquePrograms.map(program => `<option value="${program}">${program}</option>`)
+            ).join('');
+            select.value = regulationFilter;
+        }
+
+        function getRulepackLabel(packId) {
+            const rulepack = rulepacks.find(item => item.pack_id === packId);
+            return rulepack ? rulepack.label : packId;
+        }
+
+        function getRulepackById(packId) {
+            return rulepacks.find(item => item.pack_id === packId);
+        }
+
+        function getScanProgram(scan) {
+            const rp = getRulepackById(scan.rulepack_version);
+            return rp ? rp.default_project_standard : null;
+        }
+
+        function projectMatchesFilter(project) {
+            if (regulationFilter === 'ALL') return true;
+            return (project.compliance_standard || '') === regulationFilter;
+        }
+
+        function scanMatchesFilter(scan) {
+            if (regulationFilter === 'ALL') return true;
+            const program = getScanProgram(scan);
+            return program === regulationFilter;
+        }
+
+        function getFilteredProjects() {
+            return projects.filter(projectMatchesFilter);
+        }
+
+        function getFilteredScans() {
+            return scans.filter(scanMatchesFilter);
+        }
+
+        function setRegulationFilter(value) {
+            regulationFilter = value || 'ALL';
+            currentProjectId = null;
+            renderProjects();
+            renderScans();
+            updateProjectSelect();
+            updateChartProjectDropdown();
+            loadProjectScans('');
+        }
+
         // Load dashboard data - prevent multiple simultaneous calls
         let isLoadingDashboard = false;
         async function loadDashboardData() {
@@ -517,10 +650,11 @@
 
             isLoadingDashboard = true;
             try {
+                await loadRulepacks();
                 const token = getAuthToken();
 
                 // Load stats
-                const statsResponse = await fetch('/api/stats', {
+                const statsResponse = await apiFetch('/api/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -528,7 +662,7 @@
                     if (statsResponse.status === 401 || statsResponse.status === 403) {
                         // Auth error - redirect only if not already on home
                         if (window.location.pathname !== '/') {
-                            window.location.href = '/';
+                            window.location.href = appUrl('/');
                         }
                         return;
                     }
@@ -584,7 +718,7 @@
         async function loadProjects() {
             try {
                 const token = getAuthToken();
-                const response = await fetch('/projects/', {
+                const response = await apiFetch('/projects/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -604,7 +738,7 @@
         async function loadScans() {
             try {
                 const token = getAuthToken();
-                const response = await fetch('/api/scans', {
+                const response = await apiFetch('/api/scans', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -622,11 +756,12 @@
             const container = document.getElementById('auditList');
             try {
                 const token = getAuthToken();
-                const response = await fetch('/api/audit', {
+                const response = await apiFetch('/api/audit', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
                     const logs = await response.json();
+                    window._auditLogs = Array.isArray(logs) ? logs : [];
                     if (Array.isArray(logs) && logs.length === 0) {
                         container.innerHTML = '<div class="text-center py-5"><i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i><p class="text-muted">No audit entries yet. Audit logs appear after scan completions.</p></div>';
                     } else if (Array.isArray(logs)) {
@@ -643,9 +778,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${logs.map(log => `
+                                        ${logs.map((log, idx) => `
                                             <tr>
-                                                <td><code class="small">${(log.scan_id || log.audit_id || '-').toString()}</code></td>
+                                                <td>
+                                                    <a href="#" class="small" onclick='showAuditMetadataByIndex(${idx}); return false;'>
+                                                        <code>${(log.scan_id || log.audit_id || '-').toString()}</code>
+                                                    </a>
+                                                </td>
                                                 <td>${(log.source || '-').toString()}</td>
                                                 <td><span class="badge bg-${log.status === 'completed' ? 'success' : 'secondary'}">${(log.status || '-').toString()}</span></td>
                                                 <td>${log.timestamp ? new Date(log.timestamp).toLocaleString() : '-'}</td>
@@ -669,18 +808,19 @@
         // Render projects
         function renderProjects() {
             const container = document.getElementById('projectsList');
+            const visibleProjects = getFilteredProjects();
 
-            if (projects.length === 0) {
+            if (visibleProjects.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No projects yet. Create your first project to get started!</p>
+                        <p class="text-muted">No projects found for the selected regulation filter.</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = projects.map(project => `
+            container.innerHTML = visibleProjects.map(project => `
                 <div class="card project-card">
                     <div class="card-body">
                         <div class="row align-items-center">
@@ -689,6 +829,7 @@
                                 <p class="card-text text-muted">${project.description || 'No description'}</p>
                                 <div class="d-flex gap-3">
                                     <small><i class="fas fa-robot me-1"></i>${project.model_type}</small>
+                                    <small><i class="fas fa-scale-balanced me-1"></i>${project.compliance_standard || 'GENERAL_COMPLIANCE'}</small>
                                     <small><i class="fas fa-industry me-1"></i>${project.industry || 'Not specified'}</small>
                                     <small><i class="fas fa-search me-1"></i>${project.scan_count} scans</small>
                                 </div>
@@ -713,18 +854,19 @@
         // Render scans
         function renderScans() {
             const container = document.getElementById('scansList');
+            const visibleScans = getFilteredScans();
 
-            if (scans.length === 0) {
+            if (visibleScans.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5">
                         <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No scans yet. Configure a scan for one of your projects.</p>
+                        <p class="text-muted">No scans found for the selected regulation filter.</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = scans.map(scan => `
+            container.innerHTML = visibleScans.map(scan => `
                 <div class="card project-card">
                     <div class="card-body">
                         <div class="row align-items-center">
@@ -732,7 +874,7 @@
                                 <h6 class="card-title">${scan.scan_name}</h6>
                                 <div class="d-flex gap-3">
                                     <small><i class="fas fa-project-diagram me-1"></i>${getProjectName(scan.project_id)}</small>
-                                    <small><i class="fas fa-code-branch me-1"></i>${scan.rulepack_version}</small>
+                                    <small><i class="fas fa-code-branch me-1"></i>${getRulepackLabel(scan.rulepack_version)}</small>
                                     <small class="badge bg-${getStatusColor(scan.status)}">${scan.status}</small>
                                 </div>
                             </div>
@@ -765,14 +907,14 @@
         function updateProjectSelect() {
             const select = document.getElementById('projectSelect');
             select.innerHTML = '<option value="">-- Select a project --</option>' +
-                projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                getFilteredProjects().map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
 
         function updateChartProjectDropdown() {
             const sel = document.getElementById('chartProjectSelect');
             if (!sel) return;
             sel.innerHTML = '<option value="">-- Select project --</option>' +
-                projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                getFilteredProjects().map(p => `<option value="${p.id}">${p.name}</option>`).join('');
             updateChartScanDropdown();
         }
 
@@ -781,7 +923,7 @@
             const scanSel = document.getElementById('chartScanSelect');
             if (!scanSel || !projectSel) return;
             const pid = projectSel.value;
-            const projectScans = pid ? scans.filter(s => s.project_id === pid) : [];
+            const projectScans = pid ? getFilteredScans().filter(s => s.project_id === pid) : [];
             scanSel.innerHTML = '<option value="">-- Select scan --</option>' +
                 projectScans.map(s => `<option value="${s.id}">${s.scan_name || s.id}</option>`).join('');
             updateScanChart();
@@ -815,12 +957,16 @@
                 statusCounts.downloaded
             ];
             const summary = scan.results_summary || {};
+            const results = (scan.findings_json && Array.isArray(scan.findings_json.results)) ? scan.findings_json.results : [];
+            const missingCountFromResults = results.filter(r => r.status === 'MISSING').length;
+            const partialCountFromResults = results.filter(r => r.status === 'PARTIAL').length;
             const passed = summary.passed != null ? summary.passed : 0;
             const failed = summary.failed != null ? summary.failed : 0;
-            const useResults = (passed > 0 || failed > 0);
-            const chartLabels = useResults ? ['Passed', 'Failed'] : labels;
-            const chartData = useResults ? [passed, failed] : data;
-            const colors = useResults ? ['#10b981', '#ef4444'] : ['#4f46e5', '#f59e0b', '#10b981', '#06b6d4'];
+            const missing = missingCountFromResults > 0 ? missingCountFromResults : (summary.missing != null ? summary.missing : partialCountFromResults);
+            const useResults = (passed > 0 || failed > 0 || missing > 0);
+            const chartLabels = useResults ? ['Passed', 'Missing', 'Failed'] : labels;
+            const chartData = useResults ? [passed, missing, failed] : data;
+            const colors = useResults ? ['#10b981', '#f59e0b', '#ef4444'] : ['#4f46e5', '#f59e0b', '#10b981', '#06b6d4'];
             const ctx = canvas.getContext('2d');
             if (scansChart) scansChart.destroy();
             scansChart = new Chart(ctx, {
@@ -840,6 +986,31 @@
             });
         }
 
+        function showAuditMetadata(log) {
+            const scanId = log.scan_id || log.audit_id || '-';
+            const metadata = log.metadata || {};
+            const metadataEl = document.getElementById('auditMetadataJson');
+            const titleEl = document.getElementById('auditMetadataTitle');
+            const openLinkEl = document.getElementById('auditMetadataOpenScan');
+            titleEl.textContent = `Audit metadata for ${scanId}`;
+            metadataEl.textContent = JSON.stringify(metadata, null, 2);
+            if (log.scan_id) {
+                openLinkEl.href = appUrl(`/scan/${log.scan_id}`);
+                openLinkEl.classList.remove('d-none');
+            } else {
+                openLinkEl.classList.add('d-none');
+            }
+            const modal = new bootstrap.Modal(document.getElementById('auditMetadataModal'));
+            modal.show();
+        }
+
+        function showAuditMetadataByIndex(idx) {
+            const logs = Array.isArray(window._auditLogs) ? window._auditLogs : [];
+            const log = logs[idx];
+            if (!log) return;
+            showAuditMetadata(log);
+        }
+
         // Load scans for selected project
         function loadProjectScans(projectId) {
             currentProjectId = projectId;
@@ -854,7 +1025,7 @@
                 return;
             }
 
-            const projectScans = scans.filter(s => s.project_id === projectId);
+            const projectScans = getFilteredScans().filter(s => s.project_id === projectId);
 
             scanSelect.disabled = false;
             scanSelect.innerHTML = '<option value="">-- Select a scan configuration --</option>' +
@@ -898,6 +1069,7 @@
                 name: formData.get('name'),
                 description: formData.get('description'),
                 model_type: formData.get('model_type'),
+                compliance_standard: formData.get('compliance_standard'),
                 industry: formData.get('industry')
             };
 
@@ -909,7 +1081,7 @@
 
             try {
                 const token = getAuthToken();
-                const response = await fetch('/projects/', {
+                const response = await apiFetch('/projects/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -966,7 +1138,7 @@
             try {
                 const token = getAuthToken();
                 const projectId = scanData.project_id;
-                const response = await fetch(`/projects/${projectId}/scans`, {
+                const response = await apiFetch(`/projects/${projectId}/scans`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1016,7 +1188,7 @@
 
             try {
                 const token = getAuthToken();
-                const response = await fetch(`/agent/download/${scanId}/prepare`, {
+                const response = await apiFetch(`/agent/download/${scanId}/prepare`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1060,7 +1232,8 @@
         function logout() {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
-            window.location.href = '/';
+            apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
+            window.location.href = appUrl('/');
         }
 
         // Placeholder functions
@@ -1100,7 +1273,7 @@
             }
             container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm"></div></div>';
             try {
-                const response = await fetch('/api/plans');
+                const response = await apiFetch('/api/plans');
                 const plans = await response.json();
                 window._plansCache = plans;
                 renderPlans(plans);
@@ -1110,7 +1283,7 @@
         }
 
         function prefetchPlans() {
-            fetch('/api/plans').then(r => r.json()).then(d => { window._plansCache = d; }).catch(() => {});
+            apiFetch('/api/plans').then(r => r.json()).then(d => { window._plansCache = d; }).catch(() => {});
         }
 
         // Enable download button when scan is selected
@@ -1154,5 +1327,20 @@
             }, { once: true });
         }
     </script>
+
+    <div class="modal fade" id="auditMetadataModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="auditMetadataTitle">Audit metadata</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <a id="auditMetadataOpenScan" class="btn btn-sm btn-outline-primary mb-3 d-none">Open scan detail</a>
+                    <pre id="auditMetadataJson" class="mb-0" style="white-space: pre-wrap;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
