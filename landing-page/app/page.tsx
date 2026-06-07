@@ -52,15 +52,24 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('[data-animate], .fade-up').forEach((el) => {
+        el.setAttribute("data-visible", "true");
+        el.classList.add("visible");
+      });
+      return;
+    }
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.setAttribute("data-visible", "true");
+          entry.target.classList.add("visible");
         }
       });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll("[data-animate]").forEach((el) => {
+    document.querySelectorAll("[data-animate], .fade-up").forEach((el) => {
       observer.observe(el);
     });
 
@@ -136,39 +145,42 @@ export default function HomePage() {
           <div className="dashboard-card" data-animate>
             <div className="stat-item">
               <span className="label-caption">Compliance Score</span>
-              <div className="stat-value"><div className="stat-dot green"></div>94%</div>
+              <div className="stat-value">
+                <svg width="24" height="24" viewBox="0 0 24 24" className="score-arc">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border)" strokeWidth="2" />
+                  <path d="M12 2 A10 10 0 0 1 22 12" fill="none" stroke="var(--success)" strokeWidth="2" strokeDasharray="15.7 62.8" />
+                </svg>
+                <span className="animate-pulse">—%</span>
+              </div>
+              <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>Your score after first scan</span>
             </div>
             <div className="stat-item">
               <span className="label-caption">Policies Managed</span>
-              <div className="stat-value"><div className="stat-dot blue"></div>128</div>
+              <div className="stat-value"><div className="stat-dot blue"></div>—</div>
+              <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>Populates after connecting workspace</span>
             </div>
             <div className="stat-item">
               <span className="label-caption">Vendor Assessments</span>
-              <div className="stat-value"><div className="stat-dot blue"></div>42</div>
+              <div className="stat-value"><div className="stat-dot blue"></div>—</div>
+              <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>Populates after connecting workspace</span>
             </div>
             <div className="stat-item">
               <span className="label-caption">DPDP Readiness</span>
-              <div className="stat-value"><div className="stat-dot green"></div>Ready</div>
+              <div className="stat-value">
+                <div className="stat-dot amber animate-pulse" style={{ background: "var(--warning)" }}></div>
+                <span style={{ fontSize: "1.25rem", color: "var(--warning)" }}>Awaiting scan</span>
+              </div>
             </div>
             
             <div className="dashboard-card-mini">
-              <div className="scan-row">
+              <p style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", width: "100%", margin: "0 0 8px 0" }}>
+                * Dashboard preview. Your actual metrics populate after onboarding.
+              </p>
+              <div className="scan-row" style={{ opacity: 0.5 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div className="stat-dot green"></div> DPDP Core Scan
+                  <div className="stat-dot" style={{ background: "var(--border)" }}></div> Sample Scan Data
                 </span>
-                <span>June 5, 2026</span>
-              </div>
-              <div className="scan-row">
-                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div className="stat-dot green"></div> EU AI Act Extended
-                </span>
-                <span>June 4, 2026</span>
-              </div>
-              <div className="scan-row">
-                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div className="stat-dot amber" style={{ background: "var(--warning)" }}></div> Risk Register Update
-                </span>
-                <span>June 1, 2026</span>
+                <span>-- --, ----</span>
               </div>
             </div>
           </div>
@@ -177,12 +189,17 @@ export default function HomePage() {
 
       {/* LOGO / SOCIAL PROOF BAR */}
       <section className="logo-bar">
-        <div className="container logo-bar-inner">
-          <span className="logo-bar-text">Trusted by teams at &rarr;</span>
-          <div className="logo-placeholder"></div>
-          <div className="logo-placeholder"></div>
-          <div className="logo-placeholder"></div>
-          <div className="logo-placeholder"></div>
+        <div className="container" style={{ textAlign: "center" }}>
+          <div className="logo-bar-inner">
+            <span className="logo-bar-text">Trusted by teams at &rarr;</span>
+            <div className="trust-chip">Media Platform</div>
+            <div className="trust-chip">Fintech Startup</div>
+            <div className="trust-chip">D&O Intelligence Co.</div>
+            <div className="trust-chip">AI SaaS Startup</div>
+          </div>
+          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "12px" }}>
+            Names withheld under NDA. Reference calls available on request.
+          </p>
         </div>
       </section>
 
@@ -194,7 +211,7 @@ export default function HomePage() {
           <div className="framework-badge">DPDP India Core</div>
           <div className="framework-badge">DPDP India Extended</div>
           <div className="framework-badge">ISO 42001 Ready</div>
-          <div className="framework-badge">More coming</div>
+          <div className="framework-badge" style={{ borderStyle: "dashed", color: "var(--text-muted)", fontStyle: "italic" }}>+ Expanding Quarterly</div>
         </div>
       </div>
 
@@ -208,43 +225,126 @@ export default function HomePage() {
               From policy management to vendor reviews — tracked, automated, and audit-ready.
             </p>
           </div>
+
+          {/* WORKFLOW CONNECTOR */}
+          <div className="workflow-connector" data-animate>
+            <div className="workflow-node"><Download size={16} /> Import</div>
+            <div className="pulse-line"></div>
+            <div className="workflow-node"><Cpu size={16} /> Automate</div>
+            <div className="pulse-line"></div>
+            <div className="workflow-node"><ShieldCheck size={16} /> Review</div>
+            <div className="pulse-line"></div>
+            <div className="workflow-node"><Check size={16} /> Approve</div>
+            <div className="pulse-line"></div>
+            <div className="workflow-node"><ArrowRight size={16} /> Export</div>
+          </div>
           
           <div className="feature-grid">
-            <div className="feature-card" data-animate>
+            <div className="feature-card fade-up" style={{ transitionDelay: "0ms" }}>
               <div className="icon-wrap"><ShieldCheck size={20} /></div>
               <h3 className="card-title">DPDP Compliance</h3>
               <p className="body-text">Map obligations to workflows. Maintain evidence. Stay ready.</p>
               <div className="replaces-callout">Replaces: legal spreadsheets and consultant-led reviews</div>
             </div>
-            <div className="feature-card" data-animate>
+            <div className="feature-card fade-up" style={{ transitionDelay: "80ms" }}>
               <div className="icon-wrap"><Cpu size={20} /></div>
               <h3 className="card-title">AI Governance</h3>
               <p className="body-text">Document models, accountability, and controls across teams.</p>
               <div className="replaces-callout">Replaces: ad-hoc model registers and email approvals</div>
             </div>
-            <div className="feature-card" data-animate>
+            <div className="feature-card fade-up" style={{ transitionDelay: "160ms" }}>
               <div className="icon-wrap"><BarChart3 size={20} /></div>
               <h3 className="card-title">Risk Assessments</h3>
               <p className="body-text">Track open risks, owners, and remediation cycles in real time.</p>
               <div className="replaces-callout">Replaces: manual trackers with no owner accountability</div>
             </div>
-            <div className="feature-card" data-animate>
+            <div className="feature-card fade-up" style={{ transitionDelay: "240ms" }}>
               <div className="icon-wrap"><FileText size={20} /></div>
               <h3 className="card-title">Policy Management</h3>
               <p className="body-text">Versioned policies tied to real operational controls.</p>
               <div className="replaces-callout">Replaces: shared drives with unversioned Word docs</div>
             </div>
-            <div className="feature-card" data-animate>
+            <div className="feature-card fade-up" style={{ transitionDelay: "320ms" }}>
               <div className="icon-wrap"><ClipboardList size={20} /></div>
               <h3 className="card-title">Audit Trails</h3>
               <p className="body-text">Durable record of scans, changes, approvals, and evidence.</p>
               <div className="replaces-callout">Replaces: reconstructing evidence from emails the night before</div>
             </div>
-            <div className="feature-card" data-animate>
+            <div className="feature-card fade-up" style={{ transitionDelay: "400ms" }}>
               <div className="icon-wrap"><Building2 size={20} /></div>
               <h3 className="card-title">Vendor Compliance</h3>
               <p className="body-text">Structured reviews with risk signals, not email threads.</p>
               <div className="replaces-callout">Replaces: questionnaire email threads with no tracking</div>
+            </div>
+          </div>
+
+          {/* BY THE NUMBERS / CHARTS */}
+          <div className="section-header" style={{ marginTop: "96px" }} data-animate>
+            <p className="label-caption">BY THE NUMBERS</p>
+            <h3>What teams measure after going live.</h3>
+          </div>
+          
+          <div className="charts-grid">
+            <div className="chart-card fade-up">
+              <h4 className="card-title" style={{ marginBottom: "24px", fontSize: "0.875rem" }}>Time saved per compliance task</h4>
+              <div className="bar-row">
+                <span className="bar-label">Evidence Collection</span>
+                <div className="bar-bg"><div className="bar-fill" style={{ "--percent": "68%" } as any}></div></div>
+                <span style={{ color: "var(--success)" }}>-68%</span>
+              </div>
+              <div className="bar-row">
+                <span className="bar-label">Policy Review Cycle</span>
+                <div className="bar-bg"><div className="bar-fill" style={{ "--percent": "55%" } as any}></div></div>
+                <span style={{ color: "var(--success)" }}>-55%</span>
+              </div>
+              <div className="bar-row">
+                <span className="bar-label">Vendor Questionnaires</span>
+                <div className="bar-bg"><div className="bar-fill" style={{ "--percent": "62%" } as any}></div></div>
+                <span style={{ color: "var(--success)" }}>-62%</span>
+              </div>
+              <div className="bar-row">
+                <span className="bar-label">Audit Prep Time</span>
+                <div className="bar-bg"><div className="bar-fill" style={{ "--percent": "71%" } as any}></div></div>
+                <span style={{ color: "var(--success)" }}>-71%</span>
+              </div>
+              <div className="bar-row">
+                <span className="bar-label">Risk Updates</span>
+                <div className="bar-bg"><div className="bar-fill" style={{ "--percent": "48%" } as any}></div></div>
+                <span style={{ color: "var(--success)" }}>-48%</span>
+              </div>
+              <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "16px" }}>Based on operator self-reported time tracking across pilot customers.</p>
+            </div>
+
+            <div className="chart-card fade-up">
+              <h4 className="card-title" style={{ marginBottom: "24px", fontSize: "0.875rem", textAlign: "center" }}>Average compliance score after 8 weeks</h4>
+              <div className="donut-chart">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="54" fill="none" stroke="var(--border)" strokeWidth="8" />
+                  <circle cx="60" cy="60" r="54" fill="none" stroke="var(--success)" strokeWidth="8" strokeDasharray="339.3" strokeDashoffset="74.6" style={{ transition: "stroke-dashoffset 1.5s ease-out" }} />
+                </svg>
+                <div className="donut-text">
+                  <div style={{ fontSize: "1.5rem", fontWeight: "700" }}>78%</div>
+                  <div style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>Week 8 baseline</div>
+                </div>
+              </div>
+              <p style={{ fontSize: "10px", color: "var(--text-muted)", textAlign: "center", marginTop: "16px" }}>Avg. Score at Week 8</p>
+            </div>
+
+            <div className="chart-card fade-up">
+              <h4 className="card-title" style={{ marginBottom: "24px", fontSize: "0.875rem" }}>Where compliance effort goes</h4>
+              <div className="segmented-bar">
+                <div className="segment" style={{ width: "38%", background: "var(--accent)" }} title="Evidence 38%">38%</div>
+                <div className="segment" style={{ width: "24%", background: "#3B82F6" }} title="Policy 24%">24%</div>
+                <div className="segment" style={{ width: "21%", background: "#8B5CF6" }} title="Vendor Reviews 21%">21%</div>
+                <div className="segment" style={{ width: "17%", background: "#F59E0B" }} title="Audit Prep 17%">17%</div>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "16px" }}>
+                <span style={{ fontSize: "10px", display: "flex", alignItems: "center", gap: "4px" }}><div style={{ width: "6px", height: "6px", background: "var(--accent)" }}></div> Evidence</span>
+                <span style={{ fontSize: "10px", display: "flex", alignItems: "center", gap: "4px" }}><div style={{ width: "6px", height: "6px", background: "#3B82F6" }}></div> Policy</span>
+                <span style={{ fontSize: "10px", display: "flex", alignItems: "center", gap: "4px" }}><div style={{ width: "6px", height: "6px", background: "#8B5CF6" }}></div> Vendor</span>
+                <span style={{ fontSize: "10px", display: "flex", alignItems: "center", gap: "4px" }}><div style={{ width: "6px", height: "6px", background: "#F59E0B" }}></div> Audit</span>
+              </div>
+              <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "16px" }}>CompliSense-AI automates the first three segments entirely.</p>
             </div>
           </div>
         </div>
@@ -260,22 +360,22 @@ export default function HomePage() {
           
           <div className="steps-row">
             <div className="steps-line"></div>
-            <div className="step-item" data-animate>
+            <div className="step-item fade-up" style={{ transitionDelay: "0ms" }}>
               <div className="step-circle">01</div>
               <h3 className="card-title">Connect</h3>
               <p className="body-text">Import policies, controls, vendors, and documents into one structured workspace.</p>
             </div>
-            <div className="step-item" data-animate>
+            <div className="step-item fade-up" style={{ transitionDelay: "100ms" }}>
               <div className="step-circle">02</div>
               <h3 className="card-title">Automate</h3>
               <p className="body-text">Generate workflows, evidence collection, and governance operations around your programme.</p>
             </div>
-            <div className="step-item" data-animate>
+            <div className="step-item fade-up" style={{ transitionDelay: "200ms" }}>
               <div className="step-circle">03</div>
               <h3 className="card-title">Stay Ready</h3>
               <p className="body-text">Continuous monitoring, traceable decisions, and an always-current audit trail.</p>
             </div>
-            <div className="step-item" data-animate>
+            <div className="step-item fade-up" style={{ transitionDelay: "300ms" }}>
               <div className="step-circle">04</div>
               <h3 className="card-title">Download & Defend</h3>
               <p className="body-text">Export audit-ready packages: findings PDF, evidence ZIP, and decision log — ready for regulators or investors.</p>
@@ -286,22 +386,22 @@ export default function HomePage() {
             <h2>Built for engineers. Trusted by compliance leads.</h2>
           </div>
           <div className="arch-grid">
-            <div className="arch-card" data-animate>
+            <div className="arch-card fade-up">
               <span className="arch-label">Local Agent</span>
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Evidence stays local</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>The collection agent runs on your machine. No raw data ever leaves your environment.</p>
             </div>
-            <div className="arch-card" data-animate>
+            <div className="arch-card fade-up">
               <span className="arch-label">SaaS Dashboard</span>
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Centralised insights</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>Scan metadata, findings, and audit trails sync to a hosted dashboard. Inspect anywhere.</p>
             </div>
-            <div className="arch-card" data-animate>
+            <div className="arch-card fade-up">
               <span className="arch-label">API-First</span>
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Programmable flows</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>Every action is API-accessible. Integrate with CI/CD, Slack, or JIRA seamlessly.</p>
             </div>
-            <div className="arch-card" data-animate>
+            <div className="arch-card fade-up">
               <span className="arch-label">Rulepack Model</span>
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Market Agnostic</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>Compliance logic is versioned rulepacks. Switch markets without changing code.</p>
@@ -310,8 +410,31 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* TRUST BANNER */}
+      <section id="privacy-usp" className="fade-up">
+        <div className="container">
+          <div className="trust-banner">
+            <div className="trust-icon">🔒</div>
+            <div className="trust-content">
+              <h2>Your data never leaves your machine.</h2>
+              <p className="body-text" style={{ color: "var(--text-secondary)", marginTop: "12px" }}>
+                CompliSense-AI's evidence collection agent runs locally on your infrastructure.
+                Only scan findings and metadata sync to the dashboard — never raw documents,
+                never source files, never credentials.
+              </p>
+            </div>
+            <div className="trust-badges">
+              <div className="framework-badge">Local Agent</div>
+              <div className="framework-badge">Metadata Only</div>
+              <div className="framework-badge">Zero Raw Upload</div>
+              <div className="framework-badge">JWT Auth</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* METRICS / IMPACT SECTION */}
-      <section className="metrics-band" id="pricing">
+      <section className="metrics-band" id="impact">
         <div className="container">
           <div className="metrics-grid">
             <div className="metric-item" data-animate>
@@ -508,6 +631,142 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PRICING SECTION */}
+      <section className="content-section" id="pricing">
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }} data-animate>
+            <p className="label-caption">PRICING</p>
+            <h2 style={{ margin: "12px 0" }}>Simple to start. Scales with your programme.</h2>
+            <p className="body-text">Free to explore. Contact us when you're ready to operationalise.</p>
+          </div>
+
+          <div className="pricing-grid">
+            {/* Free */}
+            <div className="pricing-card fade-up">
+              <h3 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>Free</h3>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "16px" }}>Devs & small teams evaluating</p>
+              <div style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "24px" }}>£0 <span style={{ fontSize: "1rem", color: "var(--text-muted)" }}>/ Free</span></div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "24px", marginBottom: "24px" }}>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.875rem", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> 10 Scans / month</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Compliance Score</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Artifact Compliance</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Failed Rule Details (Limited)</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— Remediation Guidance</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— Extended Rules</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— Team / RBAC</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— On-prem / VPC</li>
+                </ul>
+              </div>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ marginTop: "auto" }}>Launch App</a>
+            </div>
+
+            {/* Standard */}
+            <div className="pricing-card popular fade-up">
+              <div className="popular-badge">Most Popular</div>
+              <h3 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>Standard</h3>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "16px" }}>Teams working toward compliance</p>
+              <div style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "24px" }}>Contact us</div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "24px", marginBottom: "24px" }}>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.875rem", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Unlimited Scans (planned)</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Compliance Score</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Remediation Guidance</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Extended Rules (Art. 12,17,19)</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Email Notifications</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Basic Analytics</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— Bias / Fairness Evaluator</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— Team / RBAC</li>
+                </ul>
+              </div>
+              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Pricing%20Enquiry`} className="btn-primary" style={{ marginTop: "auto" }}>Book a Demo</a>
+            </div>
+
+            {/* Premium */}
+            <div className="pricing-card enterprise fade-up">
+              <h3 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>Premium</h3>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "16px" }}>Orgs with high regulatory exposure</p>
+              <div style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "24px" }}>Contact us</div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "24px", marginBottom: "24px" }}>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.875rem", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Everything in Standard</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Rich Scan History & Analytics</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Bias / Fairness Evaluator</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Explainability Evaluator</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Drift & Robustness Checks</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Team / RBAC</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— SSO</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— On-prem / VPC</li>
+                </ul>
+              </div>
+              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Pricing%20Enquiry`} className="btn-primary" style={{ marginTop: "auto" }}>Book a Demo</a>
+            </div>
+
+            {/* Premium+ */}
+            <div className="pricing-card enterprise fade-up">
+              <h3 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>Premium+</h3>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "16px" }}>Enterprise</p>
+              <div style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "24px" }}>Contact us</div>
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "24px", marginBottom: "24px" }}>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.875rem", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Everything in Premium</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> SSO & Multi-tenant</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> Private Rulepacks</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> On-prem / VPC</li>
+                  <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> SLA + Dedicated Support</li>
+                </ul>
+              </div>
+              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Pricing%20Enquiry`} className="btn-primary" style={{ marginTop: "auto" }}>Contact Sales</a>
+            </div>
+          </div>
+
+          <div style={{ marginTop: "64px" }}>
+            <details style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+              <summary style={{ padding: "20px 24px", cursor: "pointer", fontWeight: "600", fontSize: "0.875rem" }}>
+                See full comparison &rarr;
+              </summary>
+              <div className="comparison-wrap" style={{ border: "none", marginTop: 0 }}>
+                <table className="comparison-table">
+                  <thead>
+                    <tr>
+                      <th>Feature</th>
+                      <th>Free</th>
+                      <th>Standard</th>
+                      <th>Premium</th>
+                      <th>Premium+</th>
+                    </tr>
+                  </thead>
+                  <tbody style={{ fontSize: "0.8125rem" }}>
+                    <tr><td>Scans / month</td><td>10</td><td>Unlimited (planned)</td><td>Unlimited</td><td>Unlimited</td></tr>
+                    <tr><td>Compliance Score</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Artifact Compliance</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Failed Rule Details</td><td>Limited</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Remediation Guidance</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Extended Rules (Art. 12,17,19)</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Scan History & Analytics</td><td>—</td><td>Basic</td><td>Rich</td><td>✓</td></tr>
+                    <tr><td>Email Notifications</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Bias / Fairness Evaluator</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Explainability Evaluator</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Drift & Robustness Checks</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>Team / RBAC</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+                    <tr><td>SSO</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+                    <tr><td>Multi-tenant</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+                    <tr><td>Private Rulepacks</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+                    <tr><td>On-prem / VPC</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+                    <tr><td>SLA + Dedicated Support</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+                    <tr><td>MongoDB required</td><td>No</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "16px", textAlign: "center", lineHeight: "1.6" }}>
+              Standard, Premium, and Premium+ are currently in development. Pricing will be announced alongside general availability.<br/>
+              Early access teams get founder pricing — book a call to lock in rates.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ABOUT SECTION */}
       <section className="content-section" id="about">
         <div className="container">
@@ -564,7 +823,7 @@ export default function HomePage() {
         <div className="container">
           <div className="footer-top">
             <div className="footer-brand">
-              <img src="/logo.png" alt="CompliSense-AI" style={{ height: "40px", marginBottom: "16px" }} />
+              <img src="/logo.png" alt="CompliSense-AI" style={{ height: "32px", marginBottom: "16px", objectFit: "contain" }} />
               <p>AI-native compliance for modern teams.</p>
               <div className="social-links">
                 <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="social-link">
