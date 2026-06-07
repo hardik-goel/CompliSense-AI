@@ -38,18 +38,45 @@ const appUrl = "https://app.complisenseai.com";
 const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.complisenseai.com";
 const supportEmail = "support@complisenseai.com";
 const demoMailto = `mailto:${supportEmail}?subject=Book%20a%20Demo%20with%20CompliSense-AI`;
+const calendlyUrl = "https://calendly.com/hardik-goel214/complisense-ai";
 
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
+  const [activeTab, setActiveTab] = useState("DPDP");
+  const [scanState, setScanState] = useState(1); // 1: Scanning, 2: Results
 
   useEffect(() => {
+    const bannerDismissed = sessionStorage.getItem(" CS-Banner-Dismissed");
+    if (bannerDismissed) setShowBanner(false);
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
+      const fab = document.getElementById('floating-cta');
+      if (fab) {
+        if (window.scrollY > 500) {
+          fab.classList.add('visible');
+        } else {
+          fab.classList.remove('visible');
+        }
+      }
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setScanState(prev => (prev === 1 ? 2 : 1));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const dismissBanner = () => {
+    setShowBanner(false);
+    sessionStorage.setItem("CS-Banner-Dismissed", "true");
+  };
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -78,6 +105,15 @@ export default function HomePage() {
 
   return (
     <main className="site-shell">
+      {/* ANNOUNCEMENT BANNER */}
+      {showBanner && (
+        <div className="announcement-banner">
+          ✦ CompliSense-AI now supports DPDP India Extended · EU AI Act alignment added · 
+          <a href="#platform" onClick={() => setShowBanner(false)}>[Read what's new &rarr;]</a>
+          <button className="announcement-close" onClick={dismissBanner}>&times;</button>
+        </div>
+      )}
+
       {/* NAVIGATION */}
       <header className={`site-header ${isScrolled ? "scrolled" : ""}`}>
         <div className="container header-inner">
@@ -115,7 +151,7 @@ export default function HomePage() {
       </div>
 
       {/* HERO SECTION */}
-      <section className="hero-section">
+      <section className="hero-section" id="hero">
         <div className="hero-glow"></div>
         <div className="container hero-content">
           <div className="hero-copy">
@@ -142,47 +178,63 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="dashboard-card" data-animate>
-            <div className="stat-item">
-              <span className="label-caption">Compliance Score</span>
-              <div className="stat-value">
-                <svg width="24" height="24" viewBox="0 0 24 24" className="score-arc">
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border)" strokeWidth="2" />
-                  <path d="M12 2 A10 10 0 0 1 22 12" fill="none" stroke="var(--success)" strokeWidth="2" strokeDasharray="15.7 62.8" />
-                </svg>
-                <span className="animate-pulse">—%</span>
+          <div data-animate>
+            {scanState === 1 ? (
+              <div className="scan-widget">
+                <div className="widget-header">
+                  <span style={{ display: "flex", alignItems: "center" }}>
+                    <div className="status-dot pulse"></div> ● CompliSense-AI
+                  </span>
+                  <span style={{ color: "#22D3EE" }}>━━━━━━━━━━ SCANNING</span>
+                </div>
+                <div className="scan-line visible typewriter">Checking: EU AI Act · Art. 9</div>
+                <div className="scan-line visible" style={{ animationDelay: "0.5s" }}>Checking: DPDP Core obligations</div>
+                <div className="scan-line visible" style={{ animationDelay: "1s" }}>Checking: Vendor questionnaire gap...</div>
+                <div className="progress-container">
+                  <div className="progress-bar-wrap">
+                    <div className="progress-bar-fill" style={{ width: "67%", animation: "none" }}></div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#64748B", fontSize: "10px" }}>
+                    <span>Scan progress</span>
+                    <span>67%</span>
+                  </div>
+                </div>
               </div>
-              <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>Your score after first scan</span>
-            </div>
-            <div className="stat-item">
-              <span className="label-caption">Policies Managed</span>
-              <div className="stat-value"><div className="stat-dot blue"></div>—</div>
-              <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>Populates after connecting workspace</span>
-            </div>
-            <div className="stat-item">
-              <span className="label-caption">Vendor Assessments</span>
-              <div className="stat-value"><div className="stat-dot blue"></div>—</div>
-              <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>Populates after connecting workspace</span>
-            </div>
-            <div className="stat-item">
-              <span className="label-caption">DPDP Readiness</span>
-              <div className="stat-value">
-                <div className="stat-dot amber animate-pulse" style={{ background: "var(--warning)" }}></div>
-                <span style={{ fontSize: "1.25rem", color: "var(--warning)" }}>Awaiting scan</span>
+            ) : (
+              <div className="scan-widget">
+                <div className="widget-header">
+                  <span style={{ display: "flex", alignItems: "center" }}>
+                    <div className="status-dot fixed"></div> ✓ CompliSense-AI
+                  </span>
+                  <span style={{ color: "#22C55E" }}>━━━━━━━━━━ COMPLETE</span>
+                </div>
+                <div className="scan-line visible">
+                  <span>✓ Art. 9 — Transparency docs</span>
+                  <span className="badge-pass">PASS</span>
+                </div>
+                <div className="scan-line visible">
+                  <span>⚠ DPDP Core — DPO assignment</span>
+                  <span className="badge-partial">PARTIAL</span>
+                </div>
+                <div className="scan-line visible">
+                  <span>✗ Vendor questionnaire — 3 gaps</span>
+                  <span className="badge-action">ACTION</span>
+                </div>
+                <div className="progress-container">
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <span>Overall Readiness</span>
+                    <span>78%</span>
+                  </div>
+                  <div className="progress-bar-wrap">
+                    <div className="progress-bar-fill" style={{ width: "78%" }}></div>
+                  </div>
+                  <div style={{ color: "#64748B", fontSize: "10px" }}>Next scan: automated · 7 days</div>
+                </div>
               </div>
-            </div>
-            
-            <div className="dashboard-card-mini">
-              <p style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", width: "100%", margin: "0 0 8px 0" }}>
-                * Dashboard preview. Your actual metrics populate after onboarding.
-              </p>
-              <div className="scan-row" style={{ opacity: 0.5 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div className="stat-dot" style={{ background: "var(--border)" }}></div> Sample Scan Data
-                </span>
-                <span>-- --, ----</span>
-              </div>
-            </div>
+            )}
+            <p style={{ fontSize: "11px", color: "#64748B", textAlign: "center", marginTop: "8px" }}>
+              * Simulated scan output. Your actual results appear after first scan.
+            </p>
           </div>
         </div>
       </section>
@@ -226,6 +278,111 @@ export default function HomePage() {
             </p>
           </div>
 
+          {/* TAB SWITCHER */}
+          <div className="tab-switcher" data-animate style={{ marginTop: "48px" }}>
+            {["DPDP", "AI Governance", "Risk", "Audit", "Vendors"].map(tab => (
+              <button 
+                key={tab} 
+                className={`tab-btn ${activeTab === tab ? "active" : ""}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="tab-panel fade-up" data-animate>
+            <div className="tab-content-left">
+              <ul className="bullet-list">
+                {activeTab === "DPDP" && (
+                  <>
+                    <li><ShieldCheck size={18} /> Map obligations to specific business workflows.</li>
+                    <li><ShieldCheck size={18} /> Automated evidence collection for DPO reviews.</li>
+                    <li><ShieldCheck size={18} /> Real-time readiness score for DPDP sections.</li>
+                  </>
+                )}
+                {activeTab === "AI Governance" && (
+                  <>
+                    <li><Cpu size={18} /> Register and document AI models across teams.</li>
+                    <li><Cpu size={18} /> Apply technical controls based on EU AI Act articles.</li>
+                    <li><Cpu size={18} /> Centralised accountability log for model decisions.</li>
+                  </>
+                )}
+                {activeTab === "Risk" && (
+                  <>
+                    <li><BarChart3 size={18} /> Continuous risk monitoring and scoring.</li>
+                    <li><BarChart3 size={18} /> Assign risk owners and track remediation cycles.</li>
+                    <li><BarChart3 size={18} /> Historical trends for audit committee reporting.</li>
+                  </>
+                )}
+                {activeTab === "Audit" && (
+                  <>
+                    <li><ClipboardList size={18} /> Immutable log of all scans and approvals.</li>
+                    <li><ClipboardList size={18} /> Export audit-ready PDF findings in seconds.</li>
+                    <li><ClipboardList size={18} /> Trace decisions back to raw evidence artefacts.</li>
+                  </>
+                )}
+                {activeTab === "Vendors" && (
+                  <>
+                    <li><Building2 size={18} /> Structured vendor assessment questionnaires.</li>
+                    <li><Building2 size={18} /> Automated risk signalling from vendor responses.</li>
+                    <li><Building2 size={18} /> Maintain a live register of third-party processors.</li>
+                  </>
+                )}
+              </ul>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ marginTop: "32px" }}>Try {activeTab} Module &rarr;</a>
+            </div>
+            <div className="tab-content-right" style={{ display: "flex", justifyContent: "center" }}>
+              {activeTab === "DPDP" && (
+                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
+                  <div style={{ position: "relative", width: "200px" }}>
+                    <div className="pipeline-node" style={{ position: "absolute", left: "0" }}>Map</div>
+                    <div className="pipeline-node" style={{ position: "absolute", left: "70px" }}>Scan</div>
+                    <div className="pipeline-node" style={{ position: "absolute", left: "140px" }}>Done</div>
+                    <div style={{ position: "absolute", top: "12px", left: "30px", width: "120px", height: "1px", background: "var(--border)" }}></div>
+                    <div className="pipeline-dot"></div>
+                  </div>
+                </div>
+              )}
+              {activeTab === "AI Governance" && (
+                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div className="stack-layer" style={{ width: "100px" }}>Model</div>
+                    <div className="stack-layer middle" style={{ width: "120px" }}>Controls</div>
+                    <div className="stack-layer" style={{ width: "100px" }}>Docs</div>
+                  </div>
+                </div>
+              )}
+              {activeTab === "Risk" && (
+                <div className="card-visual" style={{ background: "transparent", height: "120px", alignItems: "flex-end" }}>
+                  <div className="risk-bar" style={{ height: "40%", background: "#EF4444" }}></div>
+                  <div className="risk-bar" style={{ height: "60%", background: "#F59E0B" }}></div>
+                  <div className="risk-bar" style={{ height: "90%", background: "#10B981" }}></div>
+                  <div className="risk-bar" style={{ height: "75%", background: "#3B82F6" }}></div>
+                </div>
+              )}
+              {activeTab === "Audit" && (
+                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <div className="timeline-dot" style={{ opacity: 1, marginBottom: "8px" }}></div>
+                    <div className="timeline-dot" style={{ opacity: 1, marginBottom: "8px", animation: "move-dot 2s infinite", animationDelay: "0.5s" }}></div>
+                    <div className="timeline-dot" style={{ opacity: 1, animation: "move-dot 2s infinite", animationDelay: "1s" }}></div>
+                  </div>
+                </div>
+              )}
+              {activeTab === "Vendors" && (
+                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
+                  <svg width="100" height="100" viewBox="0 0 100 100">
+                    <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="var(--border)" strokeWidth="1" />
+                    <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="var(--accent)" fillOpacity="0.3" stroke="var(--accent)" strokeWidth="2">
+                      <animate attributeName="points" dur="3s" repeatCount="indefinite" values="50,30 70,40 70,60 50,70 30,60 30,40; 50,10 85,30 85,70 50,90 15,70 15,30; 50,30 70,40 70,60 50,70 30,60 30,40" />
+                    </polygon>
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* WORKFLOW CONNECTOR */}
           <div className="workflow-connector" data-animate>
             <div className="workflow-node"><Download size={16} /> Import</div>
@@ -241,40 +398,104 @@ export default function HomePage() {
           
           <div className="feature-grid">
             <div className="feature-card fade-up" style={{ transitionDelay: "0ms" }}>
+              <div className="card-visual">
+                <div style={{ position: "relative", width: "120px" }}>
+                  <div style={{ position: "absolute", top: "6px", left: "0", width: "100%", height: "1px", background: "rgba(255,255,255,0.1)" }}></div>
+                  <div className="pipeline-dot"></div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div className="pipeline-node" style={{ width: "12px", height: "12px", borderRadius: "50%" }}></div>
+                    <div className="pipeline-node" style={{ width: "12px", height: "12px", borderRadius: "50%" }}></div>
+                    <div className="pipeline-node" style={{ width: "12px", height: "12px", borderRadius: "50%" }}></div>
+                  </div>
+                </div>
+              </div>
               <div className="icon-wrap"><ShieldCheck size={20} /></div>
               <h3 className="card-title">DPDP Compliance</h3>
               <p className="body-text">Map obligations to workflows. Maintain evidence. Stay ready.</p>
               <div className="replaces-callout">Replaces: legal spreadsheets and consultant-led reviews</div>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: "#3B82F6", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "12px" }}>
+                Try it in the app &rarr;
+              </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "80ms" }}>
+              <div className="card-visual">
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div className="stack-layer" style={{ width: "60px" }}></div>
+                  <div className="stack-layer middle" style={{ width: "80px" }}></div>
+                  <div className="stack-layer" style={{ width: "60px" }}></div>
+                </div>
+              </div>
               <div className="icon-wrap"><Cpu size={20} /></div>
               <h3 className="card-title">AI Governance</h3>
               <p className="body-text">Document models, accountability, and controls across teams.</p>
               <div className="replaces-callout">Replaces: ad-hoc model registers and email approvals</div>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: "#3B82F6", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "12px" }}>
+                Try it in the app &rarr;
+              </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "160ms" }}>
+              <div className="card-visual" style={{ alignItems: "flex-end", paddingBottom: "10px" }}>
+                <div className="risk-bar" style={{ height: "30%", background: "#EF4444" }}></div>
+                <div className="risk-bar" style={{ height: "50%", background: "#F59E0B" }}></div>
+                <div className="risk-bar" style={{ height: "80%", background: "#10B981" }}></div>
+                <div className="risk-bar" style={{ height: "60%", background: "#3B82F6" }}></div>
+              </div>
               <div className="icon-wrap"><BarChart3 size={20} /></div>
               <h3 className="card-title">Risk Assessments</h3>
               <p className="body-text">Track open risks, owners, and remediation cycles in real time.</p>
               <div className="replaces-callout">Replaces: manual trackers with no owner accountability</div>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: "#3B82F6", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "12px" }}>
+                Try it in the app &rarr;
+              </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "240ms" }}>
+              <div className="card-visual">
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div className="policy-row" style={{ width: "80px" }}></div>
+                  <div className="policy-row" style={{ width: "100px", animationDelay: "1s" }}></div>
+                  <div className="policy-row" style={{ width: "80px", animationDelay: "2s" }}></div>
+                </div>
+              </div>
               <div className="icon-wrap"><FileText size={20} /></div>
               <h3 className="card-title">Policy Management</h3>
               <p className="body-text">Versioned policies tied to real operational controls.</p>
               <div className="replaces-callout">Replaces: shared drives with unversioned Word docs</div>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: "#3B82F6", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "12px" }}>
+                Try it in the app &rarr;
+              </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "320ms" }}>
+              <div className="card-visual">
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div className="timeline-dot" style={{ animation: "move-dot 3s infinite", opacity: 1 }}></div>
+                  <div className="timeline-dot" style={{ animation: "move-dot 3s infinite", animationDelay: "1s", opacity: 1 }}></div>
+                  <div className="timeline-dot" style={{ animation: "move-dot 3s infinite", animationDelay: "2s", opacity: 1 }}></div>
+                </div>
+              </div>
               <div className="icon-wrap"><ClipboardList size={20} /></div>
               <h3 className="card-title">Audit Trails</h3>
               <p className="body-text">Durable record of scans, changes, approvals, and evidence.</p>
               <div className="replaces-callout">Replaces: reconstructing evidence from emails the night before</div>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: "#3B82F6", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "12px" }}>
+                Try it in the app &rarr;
+              </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "400ms" }}>
+              <div className="card-visual">
+                <svg width="40" height="40" viewBox="0 0 100 100">
+                  <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                  <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="var(--accent)" fillOpacity="0.3" stroke="var(--accent)" strokeWidth="2">
+                    <animate attributeName="points" dur="3s" repeatCount="indefinite" values="50,30 70,40 70,60 50,70 30,60 30,40; 50,10 85,30 85,70 50,90 15,70 15,30; 50,30 70,40 70,60 50,70 30,60 30,40" />
+                  </polygon>
+                </svg>
+              </div>
               <div className="icon-wrap"><Building2 size={20} /></div>
               <h3 className="card-title">Vendor Compliance</h3>
               <p className="body-text">Structured reviews with risk signals, not email threads.</p>
               <div className="replaces-callout">Replaces: questionnaire email threads with no tracking</div>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: "#3B82F6", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "12px" }}>
+                Try it in the app &rarr;
+              </a>
             </div>
           </div>
 
@@ -374,12 +595,58 @@ export default function HomePage() {
               <div className="step-circle">03</div>
               <h3 className="card-title">Stay Ready</h3>
               <p className="body-text">Continuous monitoring, traceable decisions, and an always-current audit trail.</p>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#22D3EE", display: "block", marginTop: "8px" }}>
+                &rarr; See your audit trail live
+              </a>
             </div>
             <div className="step-item fade-up" style={{ transitionDelay: "300ms" }}>
               <div className="step-circle">04</div>
               <h3 className="card-title">Download & Defend</h3>
               <p className="body-text">Export audit-ready packages: findings PDF, evidence ZIP, and decision log — ready for regulators or investors.</p>
             </div>
+          </div>
+
+          {/* TECHNICAL FLOW DIAGRAM */}
+          <div className="section-header" style={{ marginTop: "96px" }} data-animate>
+            <p className="label-caption">FOR ENGINEERS</p>
+            <h2 style={{ margin: "12px 0" }}>How the local agent works.</h2>
+            <p className="body-text">Your evidence never leaves your machine — here's exactly why.</p>
+          </div>
+          <div className="tech-flow-grid" data-animate>
+            <div className="tech-card blue">
+              <h4>Your Machine</h4>
+              <p>📂 Docs</p>
+              <p>🗄 Configs</p>
+              <p>📋 Policies</p>
+              <div style={{ marginTop: "16px", color: "var(--success)", fontWeight: "700" }}>[stays here]</div>
+            </div>
+            <div className="tech-arrow">&rarr;</div>
+            <div className="tech-card cyan">
+              <h4>CompliSense Agent</h4>
+              <p>🔍 Scans locally</p>
+              <p>⚙ Applies rulepacks</p>
+              <p>📝 Generates findings</p>
+              <div style={{ marginTop: "16px", color: "var(--success)", fontWeight: "700" }}>[stays here]</div>
+            </div>
+            <div className="tech-arrow">&rarr;</div>
+            <div className="tech-card violet">
+              <h4>Secure API</h4>
+              <p>📤 Sends metadata</p>
+              <p>🔒 JWT auth</p>
+              <p>🌐 TLS only</p>
+              <div style={{ marginTop: "16px", color: "var(--accent)", fontWeight: "700" }}>[metadata only]</div>
+            </div>
+            <div className="tech-arrow">&rarr;</div>
+            <div className="tech-card green">
+              <h4>Dashboard</h4>
+              <p>📊 Shows findings</p>
+              <p>✓ No raw files</p>
+              <p>✓ Audit ready</p>
+              <div style={{ marginTop: "16px", color: "var(--success)", fontWeight: "700" }}>[visible here]</div>
+            </div>
+          </div>
+          <div style={{ textAlign: "center", marginTop: "24px", fontSize: "11px", color: "var(--text-muted)" }}>
+            Raw files: <span style={{ color: "#EF4444" }}>✗ never transmitted</span> &middot; Metadata: <span style={{ color: "var(--success)" }}>✓ encrypted in transit</span> &middot; Credentials: <span style={{ color: "#EF4444" }}>✗ never stored</span>
           </div>
 
           <div className="section-header" style={{ marginTop: "96px" }} data-animate>
@@ -391,17 +658,17 @@ export default function HomePage() {
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Evidence stays local</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>The collection agent runs on your machine. No raw data ever leaves your environment.</p>
             </div>
-            <div className="arch-card fade-up">
+            <div className="arch-card fade-up" style={{ transitionDelay: "100ms" }}>
               <span className="arch-label">SaaS Dashboard</span>
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Centralised insights</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>Scan metadata, findings, and audit trails sync to a hosted dashboard. Inspect anywhere.</p>
             </div>
-            <div className="arch-card fade-up">
+            <div className="arch-card fade-up" style={{ transitionDelay: "200ms" }}>
               <span className="arch-label">API-First</span>
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Programmable flows</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>Every action is API-accessible. Integrate with CI/CD, Slack, or JIRA seamlessly.</p>
             </div>
-            <div className="arch-card fade-up">
+            <div className="arch-card fade-up" style={{ transitionDelay: "300ms" }}>
               <span className="arch-label">Rulepack Model</span>
               <h3 className="card-title" style={{ marginBottom: "8px" }}>Market Agnostic</h3>
               <p className="body-text" style={{ fontSize: "0.85rem" }}>Compliance logic is versioned rulepacks. Switch markets without changing code.</p>
@@ -466,7 +733,7 @@ export default function HomePage() {
           </div>
           
           <div className="testimonials-grid">
-            <div className="testimonial-card" data-animate>
+            <div className="testimonial-card fade-up">
               <div className="stars">
                 <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" />
               </div>
@@ -479,7 +746,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="testimonial-card" data-animate>
+            <div className="testimonial-card fade-up" style={{ transitionDelay: "100ms" }}>
               <div className="stars">
                 <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" />
               </div>
@@ -492,7 +759,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="testimonial-card" data-animate>
+            <div className="testimonial-card fade-up" style={{ transitionDelay: "200ms" }}>
               <div className="stars">
                 <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" />
               </div>
@@ -508,6 +775,19 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* CREDIBILITY BAR */}
+      <div className="container">
+        <div className="credibility-bar" data-animate>
+          <span className="cred-item">🎤 Mentioned at ElasticSearch CXO Fusion</span>
+          <span className="divider">·</span>
+          <a href="https://medium.com/@hardik.goel214" target="_blank" rel="noopener noreferrer" className="cred-item">📰 Featured on Medium</a>
+          <span className="divider">·</span>
+          <a href="https://github.com/hardik-goel/CompliSense-AI" target="_blank" rel="noopener noreferrer" className="cred-item">🐙 Open source on GitHub</a>
+          <span className="divider">·</span>
+          <span className="cred-item">🇮🇳 Built in India</span>
+        </div>
+      </div>
 
       {/* COMPARISON SECTION */}
       <section className="content-section">
@@ -679,7 +959,7 @@ export default function HomePage() {
                   <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— Team / RBAC</li>
                 </ul>
               </div>
-              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Pricing%20Enquiry`} className="btn-primary" style={{ marginTop: "auto" }}>Book a Demo</a>
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ marginTop: "auto" }}>Book a Demo</a>
             </div>
 
             {/* Premium */}
@@ -699,7 +979,7 @@ export default function HomePage() {
                   <li style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)" }}>— On-prem / VPC</li>
                 </ul>
               </div>
-              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Pricing%20Enquiry`} className="btn-primary" style={{ marginTop: "auto" }}>Book a Demo</a>
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ marginTop: "auto" }}>Book a Demo</a>
             </div>
 
             {/* Premium+ */}
@@ -716,7 +996,7 @@ export default function HomePage() {
                   <li style={{ display: "flex", alignItems: "center", gap: "8px" }}><Check size={14} className="status-check" /> SLA + Dedicated Support</li>
                 </ul>
               </div>
-              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Pricing%20Enquiry`} className="btn-primary" style={{ marginTop: "auto" }}>Contact Sales</a>
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ marginTop: "auto" }}>Contact Sales</a>
             </div>
           </div>
 
@@ -767,6 +1047,47 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* JOIN THE EARLY ACCESS PROGRAMME */}
+      <section className="content-section" style={{ background: "rgba(37, 99, 235, 0.05)" }}>
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }} data-animate>
+            <p className="label-caption">EARLY ACCESS</p>
+            <h2 style={{ margin: "12px 0" }}>Be among the first operators to go live.</h2>
+            <p className="body-text">We're onboarding teams in waves. Leave your details and we'll reach out within 48 hours.</p>
+          </div>
+          
+          <div style={{ maxWidth: "640px", margin: "48px auto" }} className="fade-up">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const email = formData.get("email");
+                const company = formData.get("company");
+                window.location.href = `mailto:${supportEmail}?subject=Early Access Request&body=Email: ${email}%0D%0ACompany: ${company}`;
+                alert("Thank you! Opening your email client to send the request.");
+              }}
+              style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}
+            >
+              <input 
+                name="email" 
+                type="email" 
+                placeholder="Work Email" 
+                required 
+                style={{ flex: 1, minWidth: "200px", padding: "12px 16px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--surface)", color: "white" }} 
+              />
+              <input 
+                name="company" 
+                type="text" 
+                placeholder="Company" 
+                required 
+                style={{ flex: 1, minWidth: "200px", padding: "12px 16px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--surface)", color: "white" }} 
+              />
+              <button type="submit" className="btn-primary" style={{ width: "fit-content" }}>Get Early Access &rarr;</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
       {/* ABOUT SECTION */}
       <section className="content-section" id="about">
         <div className="container">
@@ -797,7 +1118,7 @@ export default function HomePage() {
           </div>
 
           <div style={{ textAlign: "center", marginTop: "64px" }} data-animate>
-            <p className="body-text">Want to know more? <a href="#contact" style={{ color: "var(--accent)", fontWeight: "600" }}>Book a 30-minute call &rarr;</a></p>
+            <p className="body-text">Want to know more? <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontWeight: "600" }}>Book a 30-minute call &rarr;</a></p>
           </div>
         </div>
       </section>
@@ -809,7 +1130,15 @@ export default function HomePage() {
             <h2>Ready to centralise your compliance operations?</h2>
             <p>Book a 30-minute demo. See the platform live.</p>
             <div className="cta-actions">
-              <a href={demoMailto} className="btn-primary">Book a Demo <ArrowRight size={16} style={{ marginLeft: "8px" }} /></a>
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Book a 30-min Demo &rarr;
+              </a>
               <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="btn-ghost">
                 <LinkedInIcon size={16} /> <span style={{ marginLeft: "8px" }}>Connect on LinkedIn</span>
               </a>
@@ -818,12 +1147,17 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FLOATING CTA */}
+      <a id="floating-cta" href={appUrl} target="_blank" rel="noopener noreferrer">
+        ⚡ Launch App
+      </a>
+
       {/* FOOTER */}
       <footer className="site-footer">
         <div className="container">
           <div className="footer-top">
             <div className="footer-brand">
-              <img src="/logo.png" alt="CompliSense-AI" style={{ height: "32px", marginBottom: "16px", objectFit: "contain" }} />
+              <img src="/logo.png" alt="CompliSense-AI" style={{ height: "36px", marginBottom: "16px", objectFit: "contain" }} />
               <p>AI-native compliance for modern teams.</p>
               <div className="social-links">
                 <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="social-link">
@@ -838,7 +1172,7 @@ export default function HomePage() {
               <strong>Product</strong>
               <a href="#platform">Platform</a>
               <a href="#solutions">Solutions</a>
-              <a href="#pricing">Pricing</a>
+              <a href="#impact">Impact</a>
               <a href={appUrl} target="_blank" rel="noopener noreferrer">Launch App</a>
             </div>
             <div className="footer-col">
@@ -857,7 +1191,7 @@ export default function HomePage() {
           </div>
           <div className="footer-bottom">
             <span>&copy; 2026 CompliSense-AI &middot; Built in India 🇮🇳</span>
-            <a href={`mailto:${supportEmail}`} style={{ color: "var(--text-muted)", textDecoration: "underline" }}>{supportEmail}</a>
+            <a href={`mailto:${supportEmail}`} style={{ color: "var(--text-muted)", fontSize: "12px", textDecoration: "underline" }}>{supportEmail}</a>
           </div>
         </div>
       </footer>
