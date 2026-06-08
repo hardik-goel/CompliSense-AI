@@ -669,8 +669,14 @@ p.body-text, .faq-item p {
   .tech-flow-grid { justify-content: flex-start; }
 }
 
+@keyframes floatDot {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+  svg animate, .floatDot { animation-play-state: paused !important; }
 }
 
 /* Score Arc */

@@ -63,7 +63,34 @@ export default function HomePage() {
       }
     };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    const runCountup = () => {
+      document.querySelectorAll('.countup').forEach(el => {
+        const target = parseInt((el as HTMLElement).dataset.target || "0");
+        let current = 0;
+        const step = Math.max(1, Math.floor(target / 30));
+        const timer = setInterval(() => {
+          current = Math.min(current + step, target);
+          el.textContent = current.toString();
+          if (current >= target) clearInterval(timer);
+        }, 40);
+      });
+    };
+
+    const countupObserver = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { 
+        runCountup(); 
+        countupObserver.disconnect(); 
+      }
+    }, { threshold: 0.5 });
+    
+    const counterBar = document.querySelector('.countup')?.parentElement?.parentElement?.parentElement;
+    if (counterBar) countupObserver.observe(counterBar);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      countupObserver.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -103,6 +130,24 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const nav = document.querySelector('nav');
+      const mobileBtn = document.querySelector('.mobile-menu-btn');
+      if (nav && !nav.contains(e.target as Node) && mobileBtn && !mobileBtn.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    if (mobileMenuOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [mobileMenuOpen]);
+
   return (
     <main className="site-shell">
       {/* ANNOUNCEMENT BANNER */}
@@ -129,29 +174,132 @@ export default function HomePage() {
           <div className="header-actions">
             <a href="#contact" className="btn-ghost">Contact</a>
             <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">Launch App &rarr;</a>
-            <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
+            <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle navigation menu" aria-expanded={mobileMenuOpen}>
+              {!mobileMenuOpen ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <line x1="3" y1="12" x2="21" y2="12"/>
+                  <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              )}
             </button>
           </div>
+          
+          {/* Mobile menu — only shown on small screens when mobileMenuOpen */}
+          {mobileMenuOpen && (
+            <div
+              className="md:hidden"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                background: '#07111F',
+                borderTop: '1px solid #1B3A5C',
+                borderBottom: '1px solid #1B3A5C',
+                padding: '16px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                zIndex: 999,
+              }}
+            >
+              <a href="#platform" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Platform
+              </a>
+              <a href="#solutions" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Solutions
+              </a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Pricing
+              </a>
+              <a href="/about" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                About
+              </a>
+              <a href="#contact" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Contact
+              </a>
+              <a href="https://app.complisenseai.com"
+                 target="_blank" rel="noopener noreferrer"
+                 onClick={() => setMobileMenuOpen(false)}
+                 style={{
+                   marginTop:'8px', padding:'12px 0', textAlign:'center',
+                   background:'#3B82F6', color:'#fff', borderRadius:'8px',
+                   fontSize:'15px', fontWeight:600, textDecoration:'none'
+                 }}>
+                Launch App &rarr;
+              </a>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* MOBILE MENU */}
-      <div className={`mobile-nav-overlay ${mobileMenuOpen ? "open" : ""}`}>
-        <a href="#platform" onClick={() => setMobileMenuOpen(false)}>Platform</a>
-        <a href="#solutions" onClick={() => setMobileMenuOpen(false)}>Solutions</a>
-        <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
-        <a href="#about" onClick={() => setMobileMenuOpen(false)}>About</a>
-        <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact</a>
-        <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ width: "fit-content" }}>Launch App &rarr;</a>
-      </div>
-
       {/* HERO SECTION */}
       <section className="hero-section" id="hero">
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+          <svg preserveAspectRatio="none" viewBox="0 0 1440 560"
+               style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: "70%", opacity: 0.18 }}
+               xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="waveGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style={{ stopColor: "#3B82F6", stopOpacity: 1 }}/>
+                <stop offset="100%" style={{ stopColor: "#22D3EE", stopOpacity: 1 }}/>
+              </linearGradient>
+              <linearGradient id="waveGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style={{ stopColor: "#8B5CF6", stopOpacity: 1 }}/>
+                <stop offset="100%" style={{ stopColor: "#3B82F6", stopOpacity: 1 }}/>
+              </linearGradient>
+            </defs>
+
+            <path fill="url(#waveGrad1)">
+              <animate attributeName="d"
+                dur="12s" repeatCount="indefinite"
+                values="
+                  M0,320 C240,280 480,360 720,320 C960,280 1200,360 1440,320 L1440,560 L0,560 Z;
+                  M0,300 C240,340 480,260 720,300 C960,340 1200,260 1440,300 L1440,560 L0,560 Z;
+                  M0,320 C240,280 480,360 720,320 C960,280 1200,360 1440,320 L1440,560 L0,560 Z
+                "/>
+            </path>
+
+            <path fill="url(#waveGrad2)" opacity="0.5">
+              <animate attributeName="d"
+                dur="9s" repeatCount="indefinite"
+                values="
+                  M0,380 C360,340 720,420 1080,380 C1260,360 1380,400 1440,380 L1440,560 L0,560 Z;
+                  M0,360 C360,400 720,340 1080,370 C1260,390 1380,350 1440,360 L1440,560 L0,560 Z;
+                  M0,380 C360,340 720,420 1080,380 C1260,360 1380,400 1440,380 L1440,560 L0,560 Z
+                "/>
+            </path>
+
+            <path fill="url(#waveGrad1)" opacity="0.25">
+              <animate attributeName="d"
+                dur="7s" repeatCount="indefinite"
+                values="
+                  M0,420 C180,400 360,440 540,420 C720,400 900,440 1080,420 C1260,400 1380,440 1440,420 L1440,560 L0,560 Z;
+                  M0,440 C180,420 360,460 540,440 C720,420 900,460 1080,440 C1260,420 1380,460 1440,440 L1440,560 L0,560 Z;
+                  M0,420 C180,400 360,440 540,420 C720,400 900,440 1080,420 C1260,400 1380,440 1440,420 L1440,560 L0,560 Z
+                "/>
+            </path>
+          </svg>
+
+          <div style={{ position: "absolute", inset: 0 }}>
+            <span style={{ position: "absolute", width: "3px", height: "3px", borderRadius: "50%", background: "#3B82F6", opacity: 0.4, top: "20%", left: "15%", animation: "floatDot 6s ease-in-out infinite" }}></span>
+            <span style={{ position: "absolute", width: "2px", height: "2px", borderRadius: "50%", background: "#22D3EE", opacity: 0.3, top: "35%", left: "30%", animation: "floatDot 8s ease-in-out infinite 1s" }}></span>
+            <span style={{ position: "absolute", width: "4px", height: "4px", borderRadius: "50%", background: "#8B5CF6", opacity: 0.25, top: "15%", left: "65%", animation: "floatDot 7s ease-in-out infinite 2s" }}></span>
+            <span style={{ position: "absolute", width: "2px", height: "2px", borderRadius: "50%", background: "#3B82F6", opacity: 0.35, top: "50%", left: "80%", animation: "floatDot 9s ease-in-out infinite 0.5s" }}></span>
+            <span style={{ position: "absolute", width: "3px", height: "3px", borderRadius: "50%", background: "#22D3EE", opacity: 0.3, top: "25%", left: "50%", animation: "floatDot 5s ease-in-out infinite 3s" }}></span>
+          </div>
+        </div>
         <div className="hero-glow"></div>
         <div className="container hero-content">
           <div className="hero-copy">
@@ -160,16 +308,55 @@ export default function HomePage() {
               <span>Now supporting DPDP India Extended v1</span>
             </div>
             <h1 className="hero-headline" data-animate>
-              Compliance that <span className="highlight">runs</span> itself.
+              Compliance Intelligence. Delivered.
             </h1>
             <p className="hero-subtext body-text" data-animate>
               DPDP, AI governance, vendor reviews, and audit readiness — automated from one operating layer.
             </p>
-            <div className="hero-actions" data-animate>
-              <a href={demoMailto} className="btn-primary">Book a Demo <ArrowRight size={16} style={{ marginLeft: "8px" }} /></a>
-              <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">Launch App</a>
+            <div className="hero-actions" data-animate style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                📅 Book a Demo
+              </a>
+              <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
+                Launch App &rarr;
+              </a>
+              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Enquiry`} className="btn-ghost" style={{ fontSize: "13px", color: "#64748B", textDecoration: "underline", border: "none", padding: "0" }}>
+                or email us
+              </a>
             </div>
-            <div className="social-proof-bar" data-animate>
+
+            {/* VIDEO EMBED */}
+            <div data-animate style={{
+              margin: '40px auto 0', maxWidth: '800px', width: '100%',
+              borderRadius: '16px', overflow: 'hidden',
+              border: '1px solid #1B3A5C',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute', top: '16px', left: '16px', zIndex: 2,
+                background: 'rgba(7,17,31,0.85)', border: '1px solid #1B3A5C',
+                borderRadius: '6px', padding: '4px 12px',
+                fontSize: '11px', color: '#94A3B8', letterSpacing: '1px'
+              }}>
+                ▶&nbsp; PRODUCT DEMO &nbsp;&middot;&nbsp; 2 MIN
+              </div>
+              <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/PWvqFBSR6h8?rel=0&modestbranding=1&color=white"
+                  title="CompliSense-AI Product Demo"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                  style={{
+                    position: 'absolute', top: 0, left: 0,
+                    width: '100%', height: '100%', border: 'none'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="social-proof-bar" data-animate style={{ marginTop: "48px" }}>
               <p className="social-proof-text">Trusted by founders and compliance leads across India</p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "var(--warning)", fontSize: "14px", marginTop: "-48px", marginBottom: "64px" }}>
                 <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" />
@@ -418,12 +605,37 @@ export default function HomePage() {
               </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "80ms" }}>
-              <div className="card-visual">
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div className="stack-layer" style={{ width: "60px" }}></div>
-                  <div className="stack-layer middle" style={{ width: "80px" }}></div>
-                  <div className="stack-layer" style={{ width: "60px" }}></div>
-                </div>
+              <div style={{ height: "80px", width: "100%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
+                <svg viewBox="0 0 240 80" width="240" height="80" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="80" y1="40" x2="120" y2="20" stroke="#1D4ED8" strokeWidth="1" opacity="0.6"/>
+                  <line x1="80" y1="40" x2="120" y2="40" stroke="#1D4ED8" strokeWidth="1" opacity="0.6"/>
+                  <line x1="80" y1="40" x2="120" y2="60" stroke="#1D4ED8" strokeWidth="1" opacity="0.6"/>
+                  <line x1="120" y1="20" x2="160" y2="40" stroke="#0E7490" strokeWidth="1" opacity="0.6"/>
+                  <line x1="120" y1="40" x2="160" y2="40" stroke="#0E7490" strokeWidth="1" opacity="0.6"/>
+                  <line x1="120" y1="60" x2="160" y2="40" stroke="#0E7490" strokeWidth="1" opacity="0.6"/>
+
+                  <circle cx="80" cy="40" r="14" fill="#0D1A30" stroke="#3B82F6" strokeWidth="2"/>
+                  <text x="80" y="37" textAnchor="middle" fill="#3B82F6" fontSize="7" fontFamily="monospace">AI</text>
+                  <text x="80" y="46" textAnchor="middle" fill="#3B82F6" fontSize="7" fontFamily="monospace">Model</text>
+
+                  <circle cx="120" cy="20" r="10" fill="#0D1A30" stroke="#22D3EE" strokeWidth="1.5"/>
+                  <text x="120" y="24" textAnchor="middle" fill="#22D3EE" fontSize="6.5" fontFamily="monospace">Controls</text>
+
+                  <circle cx="120" cy="40" r="10" fill="#0D1A30" stroke="#22D3EE" strokeWidth="1.5"/>
+                  <text x="120" y="44" textAnchor="middle" fill="#22D3EE" fontSize="6.5" fontFamily="monospace">Owners</text>
+
+                  <circle cx="120" cy="60" r="10" fill="#0D1A30" stroke="#22D3EE" strokeWidth="1.5"/>
+                  <text x="120" y="64" textAnchor="middle" fill="#22D3EE" fontSize="6.5" fontFamily="monospace">Docs</text>
+
+                  <circle cx="160" cy="40" r="12" fill="#0D1A30" stroke="#22C55E" strokeWidth="2"/>
+                  <text x="160" y="37" textAnchor="middle" fill="#22C55E" fontSize="6" fontFamily="monospace">Audit</text>
+                  <text x="160" y="46" textAnchor="middle" fill="#22C55E" fontSize="6" fontFamily="monospace">Ready</text>
+
+                  <circle cx="80" cy="40" r="14" fill="none" stroke="#3B82F6" strokeWidth="1" opacity="0">
+                    <animate attributeName="r" values="14;22;14" dur="2.5s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.6;0;0.6" dur="2.5s" repeatCount="indefinite"/>
+                  </circle>
+                </svg>
               </div>
               <div className="icon-wrap"><Cpu size={20} /></div>
               <h3 className="card-title">AI Governance</h3>
@@ -497,6 +709,23 @@ export default function HomePage() {
                 Try it in the app &rarr;
               </a>
             </div>
+          </div>
+
+          {/* OPEN SOURCE CALLOUT */}
+          <div style={{ marginTop: "32px", padding: "20px 24px", background: "#0A1626", border: "1px solid #1B3A5C", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }} data-animate>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#F1F5F9", marginBottom: "4px" }}>
+                🐙 CompliSense-AI is open source.
+              </p>
+              <p style={{ fontSize: "13px", color: "#64748B" }}>
+                Read the code, inspect the rulepacks, and trust what you're deploying.
+              </p>
+            </div>
+            <a href="https://github.com/hardik-goel/CompliSense-AI"
+               target="_blank" rel="noopener noreferrer"
+               style={{ fontSize: "13px", color: "#3B82F6", border: "1px solid #1B3A5C", padding: "8px 16px", borderRadius: "6px", textDecoration: "none", whiteSpace: "nowrap" }}>
+              View on GitHub &rarr;
+            </a>
           </div>
 
           {/* BY THE NUMBERS / CHARTS */}
@@ -603,6 +832,64 @@ export default function HomePage() {
               <div className="step-circle">04</div>
               <h3 className="card-title">Download & Defend</h3>
               <p className="body-text">Export audit-ready packages: findings PDF, evidence ZIP, and decision log — ready for regulators or investors.</p>
+            </div>
+          </div>
+
+          <div style={{ margin: '48px 0', maxWidth: '960px', marginLeft: 'auto', marginRight: 'auto' }} className="fade-up">
+            <p style={{
+              fontSize: '11px', letterSpacing: '2px', color: '#64748B',
+              textAlign: 'center', marginBottom: '16px',
+            }}>
+              WATCH IT IN ACTION
+            </p>
+
+            <div style={{
+              borderRadius: '16px', overflow: 'hidden',
+              border: '1px solid #1B3A5C',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
+            }}>
+              <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/PWvqFBSR6h8?rel=0&modestbranding=1&color=white"
+                  title="CompliSense-AI — See the platform in action"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                  style={{
+                    position: 'absolute', top: 0, left: 0,
+                    width: '100%', height: '100%', border: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            <p style={{
+              fontSize: '13px', color: '#64748B', textAlign: 'center', marginTop: '12px',
+            }}>
+              A complete walkthrough: connect your workspace, run a scan, review findings,
+              and export your audit package.
+            </p>
+          </div>
+
+          {/* LIVE METRICS COUNTER BAR */}
+          <div style={{ background: "#0A1626", borderTop: "1px solid #1B3A5C", borderBottom: "1px solid #1B3A5C", padding: "20px 0", margin: "64px 0 0 0" }}>
+            <div style={{ maxWidth: "960px", margin: "0 auto", display: "flex", justifyContent: "space-around", flexWrap: "wrap", gap: "16px" }}>
+              <div style={{ textAlign: "center" }}>
+                <p className="countup" data-target="10" style={{ fontSize: "28px", fontWeight: 800, color: "#3B82F6", fontFamily: "monospace" }}>0</p>
+                <p style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>Scans/month &middot; Free tier limit</p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p className="countup" data-target="6" style={{ fontSize: "28px", fontWeight: 800, color: "#22D3EE", fontFamily: "monospace" }}>0</p>
+                <p style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>Compliance modules live</p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p className="countup" data-target="2" style={{ fontSize: "28px", fontWeight: 800, color: "#8B5CF6", fontFamily: "monospace" }}>0</p>
+                <p style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>Regulatory frameworks</p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: "28px", fontWeight: 800, color: "#F59E0B", fontFamily: "monospace" }}>48h</p>
+                <p style={{ fontSize: "11px", color: "#64748B", marginTop: "2px" }}>Demo response SLA</p>
+              </div>
             </div>
           </div>
 
@@ -788,6 +1075,42 @@ export default function HomePage() {
           <span className="cred-item">🇮🇳 Built in India</span>
         </div>
       </div>
+
+      {/* FOUNDER SECTION */}
+      <section id="founder" style={{ padding: "80px 0" }} className="content-section">
+        <div className="container">
+          <p style={{ fontSize: "11px", letterSpacing: "2px", color: "#64748B", textAlign: "center", marginBottom: "8px" }} data-animate>THE TEAM</p>
+          <h2 style={{ textAlign: "center", fontSize: "32px", fontWeight: 800, color: "#F1F5F9", marginBottom: "48px" }} data-animate>
+            Built by people who've been in the compliance room.
+          </h2>
+
+          <div style={{ maxWidth: "640px", margin: "0 auto", background: "#0E1E33", border: "1px solid #1B3A5C", borderRadius: "16px", padding: "36px", display: "flex", gap: "28px", alignItems: "flex-start" }} className="fade-up">
+            <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "linear-gradient(135deg,#1D4ED8,#0E7490)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+              HG
+            </div>
+            <div>
+              <p style={{ fontSize: "18px", fontWeight: 700, color: "#F1F5F9", marginBottom: "2px" }}>Hardik Goel</p>
+              <p style={{ fontSize: "13px", color: "#3B82F6", marginBottom: "16px" }}>Founder &middot; Technical Architect, SDE3 @ Tesco</p>
+              <p style={{ fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "20px" }}>
+                13+ years building data platforms, AI systems, and compliance infrastructure at scale.
+                Formerly at Paytm, Impetus, Cognizant, and Accenture. Published author.
+                Built CompliSense-AI after watching too many teams rebuild compliance evidence from scratch — every single audit cycle.
+              </p>
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                <a href="https://www.linkedin.com/in/hardik-goel-a6334936" target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#3B82F6", textDecoration: "none", border: "1px solid #1B3A5C", padding: "6px 14px", borderRadius: "6px" }}>
+                  LinkedIn &rarr;
+                </a>
+                <a href="https://medium.com/@hardik.goel214" target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#64748B", textDecoration: "none", border: "1px solid #1B3A5C", padding: "6px 14px", borderRadius: "6px" }}>
+                  Medium &rarr;
+                </a>
+                <a href="https://goelh.substack.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#64748B", textDecoration: "none", border: "1px solid #1B3A5C", padding: "6px 14px", borderRadius: "6px" }}>
+                  Substack &rarr;
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* COMPARISON SECTION */}
       <section className="content-section">
@@ -1047,6 +1370,50 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ROADMAP TRANSPARENCY STRIP */}
+      <section style={{ padding: "48px 0", borderTop: "1px solid #1B3A5C" }} className="content-section">
+        <div className="container">
+          <p style={{ fontSize: "11px", letterSpacing: "2px", color: "#64748B", textAlign: "center", marginBottom: "8px" }} data-animate>ROADMAP</p>
+          <h3 style={{ fontSize: "22px", fontWeight: 700, color: "#F1F5F9", textAlign: "center", marginBottom: "32px" }} data-animate>
+            What's coming next.
+          </h3>
+
+          <div style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }} className="fade-up">
+            <div style={{ padding: "20px", background: "#0E1E33", border: "1px solid #1B3A5C", borderRadius: "10px", borderLeft: "3px solid #22C55E" }}>
+              <p style={{ fontSize: "10px", color: "#22C55E", letterSpacing: "1px", marginBottom: "6px" }}>LIVE NOW</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#F1F5F9", marginBottom: "4px" }}>Free Tier — Full EU AI Act & DPDP Core</p>
+              <p style={{ fontSize: "12px", color: "#64748B" }}>10 scans/month. No credit card. Start today.</p>
+            </div>
+
+            <div style={{ padding: "20px", background: "#0E1E33", border: "1px solid #1B3A5C", borderRadius: "10px", borderLeft: "3px solid #3B82F6" }}>
+              <p style={{ fontSize: "10px", color: "#3B82F6", letterSpacing: "1px", marginBottom: "6px" }}>IN DEVELOPMENT</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#F1F5F9", marginBottom: "4px" }}>Standard Tier — Remediation + History</p>
+              <p style={{ fontSize: "12px", color: "#64748B" }}>Step-by-step fixes + scan history. Coming Q3 2026.</p>
+            </div>
+
+            <div style={{ padding: "20px", background: "#0E1E33", border: "1px solid #1B3A5C", borderRadius: "10px", borderLeft: "3px solid #8B5CF6" }}>
+              <p style={{ fontSize: "10px", color: "#8B5CF6", letterSpacing: "1px", marginBottom: "6px" }}>PLANNED</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#F1F5F9", marginBottom: "4px" }}>Premium — Bias, Drift & Team RBAC</p>
+              <p style={{ fontSize: "12px", color: "#64748B" }}>Advanced evaluators for high-risk AI systems.</p>
+            </div>
+
+            <div style={{ padding: "20px", background: "#0E1E33", border: "1px solid #1B3A5C", borderRadius: "10px", borderLeft: "3px solid #F59E0B" }}>
+              <p style={{ fontSize: "10px", color: "#F59E0B", letterSpacing: "1px", marginBottom: "6px" }}>ENTERPRISE</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#F1F5F9", marginBottom: "4px" }}>Premium+ — SSO, On-Prem & White-Glove</p>
+              <p style={{ fontSize: "12px", color: "#64748B" }}>Private rulepacks, VPC, dedicated support.</p>
+            </div>
+          </div>
+
+          <p style={{ textAlign: "center", marginTop: "24px" }} data-animate>
+            <a href="https://github.com/hardik-goel/CompliSense-AI"
+               target="_blank" rel="noopener noreferrer"
+               style={{ fontSize: "13px", color: "#3B82F6" }}>
+              Follow development on GitHub &rarr;
+            </a>
+          </p>
+        </div>
+      </section>
+
       {/* JOIN THE EARLY ACCESS PROGRAMME */}
       <section className="content-section" style={{ background: "rgba(37, 99, 235, 0.05)" }}>
         <div className="container">
@@ -1129,18 +1496,21 @@ export default function HomePage() {
           <div className="cta-section" data-animate>
             <h2>Ready to centralise your compliance operations?</h2>
             <p>Book a 30-minute demo. See the platform live.</p>
-            <div className="cta-actions">
-              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-                Book a 30-min Demo &rarr;
-              </a>
-              <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="btn-ghost">
-                <LinkedInIcon size={16} /> <span style={{ marginLeft: "8px" }}>Connect on LinkedIn</span>
+            <div className="cta-actions" style={{ flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+                <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                  📅 Book a 30-min Demo
+                </a>
+                <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="btn-ghost">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: "6px", verticalAlign: "middle" }}>
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                  Connect on LinkedIn
+                </a>
+              </div>
+              <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Enquiry`}
+                 style={{ fontSize: "12px", color: "#64748B", textDecoration: "underline", display: "block", marginTop: "8px", textAlign: "center" }}>
+                or email us directly
               </a>
             </div>
           </div>
@@ -1158,7 +1528,7 @@ export default function HomePage() {
           <div className="footer-top">
             <div className="footer-brand">
               <img src="/logo.png" alt="CompliSense-AI" style={{ height: "36px", marginBottom: "16px", objectFit: "contain" }} />
-              <p>AI-native compliance for modern teams.</p>
+              <p>AI-native compliance for modern teams — built for India's regulatory moment, designed for the operators who can't afford to get it wrong.</p>
               <div className="social-links">
                 <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="social-link">
                   <LinkedInIcon size={20} />
@@ -1173,6 +1543,7 @@ export default function HomePage() {
               <a href="#platform">Platform</a>
               <a href="#solutions">Solutions</a>
               <a href="#impact">Impact</a>
+              <a href="/changelog" style={{ fontSize: "13px", color: "#64748B", textDecoration: "none" }}>Changelog</a>
               <a href={appUrl} target="_blank" rel="noopener noreferrer">Launch App</a>
             </div>
             <div className="footer-col">
