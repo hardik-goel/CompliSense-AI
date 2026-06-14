@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://complisense-ai-backend.onrender.com";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.complisenseai.com";
 
 export default function AboutPage() {
   return (
