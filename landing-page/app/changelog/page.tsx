@@ -104,7 +104,6 @@ export default function ChangelogPage() {
               <li>Local evidence collection agent (Python, runs on-machine)</li>
               <li>Basic dashboard: overall compliance %, artifact coverage, rule breakdown</li>
               <li>Free tier: 10 scans/month, no credit card required</li>
-              <li>Open source under MIT licence</li>
             </ul>
           </div>
 

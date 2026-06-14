@@ -325,37 +325,6 @@ export default function HomePage() {
               </a>
             </div>
 
-            {/* VIDEO EMBED */}
-            <div data-animate style={{
-              margin: '40px auto 0', maxWidth: '800px', width: '100%',
-              borderRadius: '16px', overflow: 'hidden',
-              border: '1px solid #1B3A5C',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
-              position: 'relative'
-            }}>
-              <div style={{
-                position: 'absolute', top: '16px', left: '16px', zIndex: 2,
-                background: 'rgba(7,17,31,0.85)', border: '1px solid #1B3A5C',
-                borderRadius: '6px', padding: '4px 12px',
-                fontSize: '11px', color: '#94A3B8', letterSpacing: '1px'
-              }}>
-                ▶&nbsp; PRODUCT DEMO &nbsp;&middot;&nbsp; 2 MIN
-              </div>
-              <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                <iframe
-                  src="https://www.youtube-nocookie.com/embed/PWvqFBSR6h8?rel=0&modestbranding=1&color=white"
-                  title="CompliSense-AI Product Demo"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                  style={{
-                    position: 'absolute', top: 0, left: 0,
-                    width: '100%', height: '100%', border: 'none'
-                  }}
-                />
-              </div>
-            </div>
-
             <div className="social-proof-bar" data-animate style={{ marginTop: "48px" }}>
               <p className="social-proof-text">Trusted by founders and compliance leads across India</p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "var(--warning)", fontSize: "14px", marginTop: "-48px", marginBottom: "64px" }}>
@@ -711,23 +680,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* OPEN SOURCE CALLOUT */}
-          <div style={{ marginTop: "32px", padding: "20px 24px", background: "#0A1626", border: "1px solid #1B3A5C", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }} data-animate>
-            <div>
-              <p style={{ fontSize: "14px", fontWeight: 600, color: "#F1F5F9", marginBottom: "4px" }}>
-                🐙 CompliSense-AI is open source.
-              </p>
-              <p style={{ fontSize: "13px", color: "#64748B" }}>
-                Read the code, inspect the rulepacks, and trust what you're deploying.
-              </p>
-            </div>
-            <a href="https://github.com/hardik-goel/CompliSense-AI"
-               target="_blank" rel="noopener noreferrer"
-               style={{ fontSize: "13px", color: "#3B82F6", border: "1px solid #1B3A5C", padding: "8px 16px", borderRadius: "6px", textDecoration: "none", whiteSpace: "nowrap" }}>
-              View on GitHub &rarr;
-            </a>
-          </div>
-
           {/* BY THE NUMBERS / CHARTS */}
           <div className="section-header" style={{ marginTop: "96px" }} data-animate>
             <p className="label-caption">BY THE NUMBERS</p>
@@ -1069,8 +1021,6 @@ export default function HomePage() {
           <span className="cred-item">🎤 Mentioned at ElasticSearch CXO Fusion</span>
           <span className="divider">·</span>
           <a href="https://medium.com/@hardik.goel214" target="_blank" rel="noopener noreferrer" className="cred-item">📰 Featured on Medium</a>
-          <span className="divider">·</span>
-          <a href="https://github.com/hardik-goel/CompliSense-AI" target="_blank" rel="noopener noreferrer" className="cred-item">🐙 Open source on GitHub</a>
           <span className="divider">·</span>
           <span className="cred-item">🇮🇳 Built in India</span>
         </div>
