@@ -104,7 +104,6 @@ export default function ChangelogPage() {
               <li>Local evidence collection agent (Python, runs on-machine)</li>
               <li>Basic dashboard: overall compliance %, artifact coverage, rule breakdown</li>
               <li>Free tier: 10 scans/month, no credit card required</li>
-              <li>Open source under MIT licence</li>
             </ul>
           </div>
 
@@ -112,12 +111,11 @@ export default function ChangelogPage() {
 
         <div style={{ marginTop: "48px", padding: "24px", background: "#0E1E33", border: "1px solid #1B3A5C", borderRadius: "12px", textAlign: "center" }}>
           <p style={{ fontSize: "14px", color: "#94A3B8", marginBottom: "16px" }}>
-            Want to follow development in real time?
+            Want product updates as they ship?
           </p>
-          <a href="https://github.com/hardik-goel/CompliSense-AI"
-             target="_blank" rel="noopener noreferrer"
+          <a href="mailto:support@complisenseai.com?subject=Product%20updates"
              style={{ fontSize: "13px", color: "#3B82F6", border: "1px solid #1B3A5C", padding: "8px 20px", borderRadius: "6px", textDecoration: "none", marginRight: "12px", display: "inline-block", marginBottom: "8px" }}>
-            ⭐ Star on GitHub
+            ✉️ Get product updates
           </a>
           <a href="https://calendly.com/hardik-goel214/complisense-ai"
              target="_blank" rel="noopener noreferrer"

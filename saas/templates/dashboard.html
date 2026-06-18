@@ -58,6 +58,8 @@
         .brand-lockup { display: inline-flex; align-items: center; gap: 12px; }
         .brand-lockup img { height: 40px; width: auto; object-fit: contain; }
     </style>
+    <!-- shared app theme — keep last so it overrides inline styles + Bootstrap -->
+    <link rel="stylesheet" href="/static/theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -525,5 +527,7 @@
             checkExistingAuth();
         });
     </script>
+    <!-- app UI enhancements: card spotlight (+ Chart.js theming where present) -->
+    <script src="/static/app-enhance.js"></script>
 </body>
 </html>
