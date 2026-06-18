@@ -129,6 +129,45 @@ make smoke-cli-compiled
 `make smoke-cli-all` validates all four packs through `python -m agent.cli`.
 `make smoke-cli-compiled` validates the frozen binary itself.
 
+## Run The Landing Page Locally
+
+The marketing site lives in `landing-page/` (Next.js 14). To run it on `localhost:3000`:
+
+```bash
+cd landing-page
+npm install   # first time only
+npm run dev
+```
+
+Then open `http://localhost:3000`. The dev server hot-reloads on save.
+
+Other scripts:
+
+```bash
+npm run build   # production build
+npm run start   # serve the production build
+```
+
+### Routes
+
+| Route        | Purpose                                              | Visibility |
+|--------------|------------------------------------------------------|------------|
+| `/`          | Main marketing landing page                          | Public     |
+| `/showcase`  | Product showcase / visual tour                       | Public     |
+| `/changelog` | Release notes and what's new                         | Public     |
+| `/about`     | About page                                           | Public     |
+| `/contact`   | Contact form                                         | Public     |
+| `/demo`      | Interactive product demo                             | **Gated** — token-protected, not linked from nav or sitemap |
+
+`/demo` is not exposed in the nav or sitemap **and** is token-gated by `landing-page/middleware.ts`:
+
+- Share the link as `https://complisenseai.com/demo?key=<DEMO_ACCESS_TOKEN>` (e.g. after a Calendly booking).
+- The first valid visit sets an httpOnly cookie (30-day) and strips `?key` from the URL.
+- Visitors without a valid key or cookie are redirected to the home page.
+- The token is read server-side from the `DEMO_ACCESS_TOKEN` env var and is never shipped to the browser bundle. Set it in your host (Vercel) env; locally it falls back to `complisense-demo`, so the dev link is `http://localhost:3000/demo?key=complisense-demo`.
+
+This is a lightweight gate (shared secret), not per-user auth. Rotate the token by changing `DEMO_ACCESS_TOKEN` — existing cookies stop matching immediately.
+
 ## Run The SaaS Locally
 
 This runs the FastAPI dashboard on `localhost:8000`.
