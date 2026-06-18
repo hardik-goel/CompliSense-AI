@@ -2,6 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import ProductShowcase from "./components/ProductShowcase";
+import DataFlowDiagram from "./components/DataFlowDiagram";
+import ChaosToOrder from "./components/ChaosToOrder";
+import { AiGovernanceViz, RiskViz, PolicyViz, AuditViz, VendorViz, DpdpViz } from "./components/FeatureVisuals";
+
+// WebGL hero centerpiece — client-only, lazy-loaded so it never blocks first paint
+const ParticleSphere = dynamic(() => import("./components/ParticleSphere"), { ssr: false });
 import { 
   ShieldCheck, 
   Cpu, 
@@ -18,19 +26,15 @@ import {
   Terminal,
   Server,
   Code2,
-  Package
+  Package,
+  ChevronDown,
+  Table
 } from "lucide-react";
 
 // Inline Social Icons
 const LinkedInIcon = ({ size = 20 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>
-  </svg>
-);
-
-const GitHubIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>
   </svg>
 );
 
@@ -134,6 +138,57 @@ export default function HomePage() {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Cursor-following spotlight on cards
+  useEffect(() => {
+    const sel = ".feature-card, .arch-card, .chart-card, .security-item, .testimonial-card, .pricing-card, .tech-card";
+    const onMove = (e: MouseEvent) => {
+      const card = (e.target as HTMLElement)?.closest(sel) as HTMLElement | null;
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+      card.style.setProperty("--my", `${e.clientY - rect.top}px`);
+    };
+    document.addEventListener("mousemove", onMove);
+    return () => document.removeEventListener("mousemove", onMove);
+  }, []);
+
+  // 3D parallax tilt on feature cards (mouse-driven rotateX/rotateY)
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.feature-card'));
+    const MAX = 7; // degrees
+    let raf = 0;
+    const cleanups: Array<() => void> = [];
+
+    cards.forEach((card) => {
+      const onMove = (e: MouseEvent) => {
+        const rect = card.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          card.style.setProperty('--rx', `${(px * MAX).toFixed(2)}deg`);
+          card.style.setProperty('--ry', `${(-py * MAX).toFixed(2)}deg`);
+        });
+      };
+      const onLeave = () => {
+        card.style.setProperty('--rx', '0deg');
+        card.style.setProperty('--ry', '0deg');
+      };
+      card.addEventListener('mousemove', onMove);
+      card.addEventListener('mouseleave', onLeave);
+      cleanups.push(() => {
+        card.removeEventListener('mousemove', onMove);
+        card.removeEventListener('mouseleave', onLeave);
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      cleanups.forEach((fn) => fn());
+    };
   }, []);
 
   useEffect(() => {
@@ -246,6 +301,11 @@ export default function HomePage() {
 
       {/* HERO SECTION */}
       <section className="hero-section" id="hero">
+        <div className="aurora" aria-hidden="true">
+          <span className="a1"></span>
+          <span className="a2"></span>
+          <span className="a3"></span>
+        </div>
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
           <svg preserveAspectRatio="none" viewBox="0 0 1440 560"
                style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: "70%", opacity: 0.18 }}
@@ -300,6 +360,9 @@ export default function HomePage() {
             <span style={{ position: "absolute", width: "3px", height: "3px", borderRadius: "50%", background: "#22D3EE", opacity: 0.3, top: "25%", left: "50%", animation: "floatDot 5s ease-in-out infinite 3s" }}></span>
           </div>
         </div>
+        <div className="hero-particles" aria-hidden="true">
+          <ParticleSphere />
+        </div>
         <div className="hero-glow"></div>
         <div className="container hero-content">
           <div className="hero-copy">
@@ -325,41 +388,12 @@ export default function HomePage() {
               </a>
             </div>
 
-            {/* VIDEO EMBED */}
-            <div data-animate style={{
-              margin: '40px auto 0', maxWidth: '800px', width: '100%',
-              borderRadius: '16px', overflow: 'hidden',
-              border: '1px solid #1B3A5C',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
-              position: 'relative'
-            }}>
-              <div style={{
-                position: 'absolute', top: '16px', left: '16px', zIndex: 2,
-                background: 'rgba(7,17,31,0.85)', border: '1px solid #1B3A5C',
-                borderRadius: '6px', padding: '4px 12px',
-                fontSize: '11px', color: '#94A3B8', letterSpacing: '1px'
-              }}>
-                ▶&nbsp; PRODUCT DEMO &nbsp;&middot;&nbsp; 2 MIN
-              </div>
-              <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                <iframe
-                  src="https://www.youtube-nocookie.com/embed/PWvqFBSR6h8?rel=0&modestbranding=1&color=white"
-                  title="CompliSense-AI Product Demo"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                  style={{
-                    position: 'absolute', top: 0, left: 0,
-                    width: '100%', height: '100%', border: 'none'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="social-proof-bar" data-animate style={{ marginTop: "48px" }}>
+            <div className="social-proof-bar" data-animate style={{ marginTop: "40px" }}>
               <p className="social-proof-text">Trusted by founders and compliance leads across India</p>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "var(--warning)", fontSize: "14px", marginTop: "-48px", marginBottom: "64px" }}>
-                <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "var(--warning)", fontSize: "14px", flexWrap: "wrap" }}>
+                <span style={{ display: "inline-flex", gap: "2px" }}>
+                  <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" />
+                </span>
                 <span style={{ color: "var(--text-secondary)", marginLeft: "4px" }}>"Within weeks we had a centralised workspace..." — Founder, Multi-City Media Platform</span>
               </div>
             </div>
@@ -442,15 +476,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FRAMEWORK BADGES */}
+      {/* FRAMEWORK BADGES — scrolling marquee */}
       <div className="container">
-        <div className="framework-strip" data-animate>
-          <span className="label-caption" style={{ marginRight: "12px" }}>Supported Frameworks:</span>
-          <div className="framework-badge">EU AI Act</div>
-          <div className="framework-badge">DPDP India Core</div>
-          <div className="framework-badge">DPDP India Extended</div>
-          <div className="framework-badge">ISO 42001 Ready</div>
-          <div className="framework-badge" style={{ borderStyle: "dashed", color: "var(--text-muted)", fontStyle: "italic" }}>+ Expanding Quarterly</div>
+        <div className="framework-strip" data-animate style={{ flexDirection: "column", alignItems: "stretch", gap: "16px" }}>
+          <span className="label-caption" style={{ textAlign: "center" }}>Supported Frameworks</span>
+          <div className="marquee">
+            <div className="marquee-track">
+              {[...Array(2)].map((_, dup) => (
+                <span key={dup} style={{ display: "flex", gap: "14px" }} aria-hidden={dup === 1}>
+                  <div className="framework-badge">EU AI Act</div>
+                  <div className="framework-badge">DPDP India Core</div>
+                  <div className="framework-badge">DPDP India Extended</div>
+                  <div className="framework-badge">ISO 42001 Ready</div>
+                  <div className="framework-badge">EU AI Act · Art. 9</div>
+                  <div className="framework-badge">Vendor Risk</div>
+                  <div className="framework-badge">Audit Trails</div>
+                  <div className="framework-badge" style={{ borderStyle: "dashed", color: "var(--text-muted)", fontStyle: "italic" }}>+ Expanding Quarterly</div>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -519,59 +564,67 @@ export default function HomePage() {
               </ul>
               <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ marginTop: "32px" }}>Try {activeTab} Module &rarr;</a>
             </div>
-            <div className="tab-content-right" style={{ display: "flex", justifyContent: "center" }}>
-              {activeTab === "DPDP" && (
-                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
-                  <div style={{ position: "relative", width: "200px" }}>
-                    <div className="pipeline-node" style={{ position: "absolute", left: "0" }}>Map</div>
-                    <div className="pipeline-node" style={{ position: "absolute", left: "70px" }}>Scan</div>
-                    <div className="pipeline-node" style={{ position: "absolute", left: "140px" }}>Done</div>
-                    <div style={{ position: "absolute", top: "12px", left: "30px", width: "120px", height: "1px", background: "var(--border)" }}></div>
-                    <div className="pipeline-dot"></div>
-                  </div>
-                </div>
-              )}
-              {activeTab === "AI Governance" && (
-                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div className="stack-layer" style={{ width: "100px" }}>Model</div>
-                    <div className="stack-layer middle" style={{ width: "120px" }}>Controls</div>
-                    <div className="stack-layer" style={{ width: "100px" }}>Docs</div>
-                  </div>
-                </div>
-              )}
-              {activeTab === "Risk" && (
-                <div className="card-visual" style={{ background: "transparent", height: "120px", alignItems: "flex-end" }}>
-                  <div className="risk-bar" style={{ height: "40%", background: "#EF4444" }}></div>
-                  <div className="risk-bar" style={{ height: "60%", background: "#F59E0B" }}></div>
-                  <div className="risk-bar" style={{ height: "90%", background: "#10B981" }}></div>
-                  <div className="risk-bar" style={{ height: "75%", background: "#3B82F6" }}></div>
-                </div>
-              )}
-              {activeTab === "Audit" && (
-                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <div className="timeline-dot" style={{ opacity: 1, marginBottom: "8px" }}></div>
-                    <div className="timeline-dot" style={{ opacity: 1, marginBottom: "8px", animation: "move-dot 2s infinite", animationDelay: "0.5s" }}></div>
-                    <div className="timeline-dot" style={{ opacity: 1, animation: "move-dot 2s infinite", animationDelay: "1s" }}></div>
-                  </div>
-                </div>
-              )}
-              {activeTab === "Vendors" && (
-                <div className="card-visual" style={{ background: "transparent", height: "120px" }}>
-                  <svg width="100" height="100" viewBox="0 0 100 100">
-                    <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="var(--border)" strokeWidth="1" />
-                    <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="var(--accent)" fillOpacity="0.3" stroke="var(--accent)" strokeWidth="2">
-                      <animate attributeName="points" dur="3s" repeatCount="indefinite" values="50,30 70,40 70,60 50,70 30,60 30,40; 50,10 85,30 85,70 50,90 15,70 15,30; 50,30 70,40 70,60 50,70 30,60 30,40" />
-                    </polygon>
-                  </svg>
-                </div>
-              )}
+            <div className="tab-content-right tab-viz">
+              {activeTab === "DPDP" && <DpdpViz />}
+              {activeTab === "AI Governance" && <AiGovernanceViz />}
+              {activeTab === "Risk" && <RiskViz />}
+              {activeTab === "Audit" && <AuditViz />}
+              {activeTab === "Vendors" && <VendorViz />}
             </div>
           </div>
 
-          {/* WORKFLOW CONNECTOR */}
-          <div className="workflow-connector" data-animate>
+          {/* FLOWY PIPELINE RIVER */}
+          <div className="flow-river" data-animate>
+            <svg className="flow-river-svg" viewBox="0 0 1000 170" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3B82F6" />
+                  <stop offset="50%" stopColor="#22D3EE" />
+                  <stop offset="100%" stopColor="#8B5CF6" />
+                </linearGradient>
+              </defs>
+
+              {/* base + glowing flow path */}
+              <path id="riverPath" className="flow-path-base"
+                d="M60,85 C 240,15 360,155 500,85 S 760,15 940,85" />
+              <path className="flow-path-glow"
+                d="M60,85 C 240,15 360,155 500,85 S 760,15 940,85">
+                <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3s" repeatCount="indefinite" />
+              </path>
+
+              {/* traveling particles */}
+              {[0, 1, 2, 3].map((i) => (
+                <circle key={i} className="flow-particle" r="4.5" fill="#22D3EE">
+                  <animateMotion dur="4s" begin={`${i * 1}s`} repeatCount="indefinite" rotate="auto">
+                    <mpath href="#riverPath" />
+                  </animateMotion>
+                </circle>
+              ))}
+
+              {/* nodes */}
+              {[
+                { x: 60, label: "Import", sub: "Docs & policies" },
+                { x: 280, label: "Automate", sub: "Rulepacks run" },
+                { x: 500, label: "Review", sub: "Scored findings" },
+                { x: 720, label: "Approve", sub: "Owners sign off" },
+                { x: 940, label: "Export", sub: "Audit package" },
+              ].map((n, i) => (
+                <g key={n.label}>
+                  <circle className="flow-node-pulse" cx={n.x} cy="85" r="16">
+                    <animate attributeName="r" values="16;28;16" dur="2.6s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.7;0;0.7" dur="2.6s" begin={`${i * 0.4}s`} repeatCount="indefinite" />
+                  </circle>
+                  <circle className="flow-node-ring" cx={n.x} cy="85" r="15" />
+                  <circle className="flow-node-core" cx={n.x} cy="85" r="6" />
+                  <text className="flow-label" x={n.x} y="130">{n.label}</text>
+                  <text className="flow-sub" x={n.x} y="148">{n.sub}</text>
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          {/* simple connector — shown on small screens where the river is hidden */}
+          <div className="workflow-connector flow-fallback" data-animate style={{ marginTop: "16px" }}>
             <div className="workflow-node"><Download size={16} /> Import</div>
             <div className="pulse-line"></div>
             <div className="workflow-node"><Cpu size={16} /> Automate</div>
@@ -605,38 +658,7 @@ export default function HomePage() {
               </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "80ms" }}>
-              <div style={{ height: "80px", width: "100%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
-                <svg viewBox="0 0 240 80" width="240" height="80" xmlns="http://www.w3.org/2000/svg">
-                  <line x1="80" y1="40" x2="120" y2="20" stroke="#1D4ED8" strokeWidth="1" opacity="0.6"/>
-                  <line x1="80" y1="40" x2="120" y2="40" stroke="#1D4ED8" strokeWidth="1" opacity="0.6"/>
-                  <line x1="80" y1="40" x2="120" y2="60" stroke="#1D4ED8" strokeWidth="1" opacity="0.6"/>
-                  <line x1="120" y1="20" x2="160" y2="40" stroke="#0E7490" strokeWidth="1" opacity="0.6"/>
-                  <line x1="120" y1="40" x2="160" y2="40" stroke="#0E7490" strokeWidth="1" opacity="0.6"/>
-                  <line x1="120" y1="60" x2="160" y2="40" stroke="#0E7490" strokeWidth="1" opacity="0.6"/>
-
-                  <circle cx="80" cy="40" r="14" fill="#0D1A30" stroke="#3B82F6" strokeWidth="2"/>
-                  <text x="80" y="37" textAnchor="middle" fill="#3B82F6" fontSize="7" fontFamily="monospace">AI</text>
-                  <text x="80" y="46" textAnchor="middle" fill="#3B82F6" fontSize="7" fontFamily="monospace">Model</text>
-
-                  <circle cx="120" cy="20" r="10" fill="#0D1A30" stroke="#22D3EE" strokeWidth="1.5"/>
-                  <text x="120" y="24" textAnchor="middle" fill="#22D3EE" fontSize="6.5" fontFamily="monospace">Controls</text>
-
-                  <circle cx="120" cy="40" r="10" fill="#0D1A30" stroke="#22D3EE" strokeWidth="1.5"/>
-                  <text x="120" y="44" textAnchor="middle" fill="#22D3EE" fontSize="6.5" fontFamily="monospace">Owners</text>
-
-                  <circle cx="120" cy="60" r="10" fill="#0D1A30" stroke="#22D3EE" strokeWidth="1.5"/>
-                  <text x="120" y="64" textAnchor="middle" fill="#22D3EE" fontSize="6.5" fontFamily="monospace">Docs</text>
-
-                  <circle cx="160" cy="40" r="12" fill="#0D1A30" stroke="#22C55E" strokeWidth="2"/>
-                  <text x="160" y="37" textAnchor="middle" fill="#22C55E" fontSize="6" fontFamily="monospace">Audit</text>
-                  <text x="160" y="46" textAnchor="middle" fill="#22C55E" fontSize="6" fontFamily="monospace">Ready</text>
-
-                  <circle cx="80" cy="40" r="14" fill="none" stroke="#3B82F6" strokeWidth="1" opacity="0">
-                    <animate attributeName="r" values="14;22;14" dur="2.5s" repeatCount="indefinite"/>
-                    <animate attributeName="opacity" values="0.6;0;0.6" dur="2.5s" repeatCount="indefinite"/>
-                  </circle>
-                </svg>
-              </div>
+              <div className="card-visual"><AiGovernanceViz /></div>
               <div className="icon-wrap"><Cpu size={20} /></div>
               <h3 className="card-title">AI Governance</h3>
               <p className="body-text">Document models, accountability, and controls across teams.</p>
@@ -646,12 +668,7 @@ export default function HomePage() {
               </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "160ms" }}>
-              <div className="card-visual" style={{ alignItems: "flex-end", paddingBottom: "10px" }}>
-                <div className="risk-bar" style={{ height: "30%", background: "#EF4444" }}></div>
-                <div className="risk-bar" style={{ height: "50%", background: "#F59E0B" }}></div>
-                <div className="risk-bar" style={{ height: "80%", background: "#10B981" }}></div>
-                <div className="risk-bar" style={{ height: "60%", background: "#3B82F6" }}></div>
-              </div>
+              <div className="card-visual"><RiskViz /></div>
               <div className="icon-wrap"><BarChart3 size={20} /></div>
               <h3 className="card-title">Risk Assessments</h3>
               <p className="body-text">Track open risks, owners, and remediation cycles in real time.</p>
@@ -661,13 +678,7 @@ export default function HomePage() {
               </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "240ms" }}>
-              <div className="card-visual">
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div className="policy-row" style={{ width: "80px" }}></div>
-                  <div className="policy-row" style={{ width: "100px", animationDelay: "1s" }}></div>
-                  <div className="policy-row" style={{ width: "80px", animationDelay: "2s" }}></div>
-                </div>
-              </div>
+              <div className="card-visual"><PolicyViz /></div>
               <div className="icon-wrap"><FileText size={20} /></div>
               <h3 className="card-title">Policy Management</h3>
               <p className="body-text">Versioned policies tied to real operational controls.</p>
@@ -677,13 +688,7 @@ export default function HomePage() {
               </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "320ms" }}>
-              <div className="card-visual">
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div className="timeline-dot" style={{ animation: "move-dot 3s infinite", opacity: 1 }}></div>
-                  <div className="timeline-dot" style={{ animation: "move-dot 3s infinite", animationDelay: "1s", opacity: 1 }}></div>
-                  <div className="timeline-dot" style={{ animation: "move-dot 3s infinite", animationDelay: "2s", opacity: 1 }}></div>
-                </div>
-              </div>
+              <div className="card-visual"><AuditViz /></div>
               <div className="icon-wrap"><ClipboardList size={20} /></div>
               <h3 className="card-title">Audit Trails</h3>
               <p className="body-text">Durable record of scans, changes, approvals, and evidence.</p>
@@ -693,14 +698,7 @@ export default function HomePage() {
               </a>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: "400ms" }}>
-              <div className="card-visual">
-                <svg width="40" height="40" viewBox="0 0 100 100">
-                  <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-                  <polygon points="50,30 70,40 70,60 50,70 30,60 30,40" fill="var(--accent)" fillOpacity="0.3" stroke="var(--accent)" strokeWidth="2">
-                    <animate attributeName="points" dur="3s" repeatCount="indefinite" values="50,30 70,40 70,60 50,70 30,60 30,40; 50,10 85,30 85,70 50,90 15,70 15,30; 50,30 70,40 70,60 50,70 30,60 30,40" />
-                  </polygon>
-                </svg>
-              </div>
+              <div className="card-visual"><VendorViz /></div>
               <div className="icon-wrap"><Building2 size={20} /></div>
               <h3 className="card-title">Vendor Compliance</h3>
               <p className="body-text">Structured reviews with risk signals, not email threads.</p>
@@ -709,23 +707,6 @@ export default function HomePage() {
                 Try it in the app &rarr;
               </a>
             </div>
-          </div>
-
-          {/* OPEN SOURCE CALLOUT */}
-          <div style={{ marginTop: "32px", padding: "20px 24px", background: "#0A1626", border: "1px solid #1B3A5C", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }} data-animate>
-            <div>
-              <p style={{ fontSize: "14px", fontWeight: 600, color: "#F1F5F9", marginBottom: "4px" }}>
-                🐙 CompliSense-AI is open source.
-              </p>
-              <p style={{ fontSize: "13px", color: "#64748B" }}>
-                Read the code, inspect the rulepacks, and trust what you're deploying.
-              </p>
-            </div>
-            <a href="https://github.com/hardik-goel/CompliSense-AI"
-               target="_blank" rel="noopener noreferrer"
-               style={{ fontSize: "13px", color: "#3B82F6", border: "1px solid #1B3A5C", padding: "8px 16px", borderRadius: "6px", textDecoration: "none", whiteSpace: "nowrap" }}>
-              View on GitHub &rarr;
-            </a>
           </div>
 
           {/* BY THE NUMBERS / CHARTS */}
@@ -835,40 +816,12 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div style={{ margin: '48px 0', maxWidth: '960px', marginLeft: 'auto', marginRight: 'auto' }} className="fade-up">
-            <p style={{
-              fontSize: '11px', letterSpacing: '2px', color: '#64748B',
-              textAlign: 'center', marginBottom: '16px',
-            }}>
-              WATCH IT IN ACTION
+          {/* PRODUCT SHOWCASE — self-running, in-page product tour */}
+          <div className="showcase-wrap fade-up" data-animate>
+            <p className="label-caption" style={{ textAlign: "center", marginBottom: "20px" }}>
+              SEE IT WORK
             </p>
-
-            <div style={{
-              borderRadius: '16px', overflow: 'hidden',
-              border: '1px solid #1B3A5C',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
-            }}>
-              <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                <iframe
-                  src="https://www.youtube-nocookie.com/embed/PWvqFBSR6h8?rel=0&modestbranding=1&color=white"
-                  title="CompliSense-AI — See the platform in action"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                  style={{
-                    position: 'absolute', top: 0, left: 0,
-                    width: '100%', height: '100%', border: 'none',
-                  }}
-                />
-              </div>
-            </div>
-
-            <p style={{
-              fontSize: '13px', color: '#64748B', textAlign: 'center', marginTop: '12px',
-            }}>
-              A complete walkthrough: connect your workspace, run a scan, review findings,
-              and export your audit package.
-            </p>
+            <ProductShowcase />
           </div>
 
           {/* LIVE METRICS COUNTER BAR */}
@@ -899,42 +852,7 @@ export default function HomePage() {
             <h2 style={{ margin: "12px 0" }}>How the local agent works.</h2>
             <p className="body-text">Your evidence never leaves your machine — here's exactly why.</p>
           </div>
-          <div className="tech-flow-grid" data-animate>
-            <div className="tech-card blue">
-              <h4>Your Machine</h4>
-              <p>📂 Docs</p>
-              <p>🗄 Configs</p>
-              <p>📋 Policies</p>
-              <div style={{ marginTop: "16px", color: "var(--success)", fontWeight: "700" }}>[stays here]</div>
-            </div>
-            <div className="tech-arrow">&rarr;</div>
-            <div className="tech-card cyan">
-              <h4>CompliSense Agent</h4>
-              <p>🔍 Scans locally</p>
-              <p>⚙ Applies rulepacks</p>
-              <p>📝 Generates findings</p>
-              <div style={{ marginTop: "16px", color: "var(--success)", fontWeight: "700" }}>[stays here]</div>
-            </div>
-            <div className="tech-arrow">&rarr;</div>
-            <div className="tech-card violet">
-              <h4>Secure API</h4>
-              <p>📤 Sends metadata</p>
-              <p>🔒 JWT auth</p>
-              <p>🌐 TLS only</p>
-              <div style={{ marginTop: "16px", color: "var(--accent)", fontWeight: "700" }}>[metadata only]</div>
-            </div>
-            <div className="tech-arrow">&rarr;</div>
-            <div className="tech-card green">
-              <h4>Dashboard</h4>
-              <p>📊 Shows findings</p>
-              <p>✓ No raw files</p>
-              <p>✓ Audit ready</p>
-              <div style={{ marginTop: "16px", color: "var(--success)", fontWeight: "700" }}>[visible here]</div>
-            </div>
-          </div>
-          <div style={{ textAlign: "center", marginTop: "24px", fontSize: "11px", color: "var(--text-muted)" }}>
-            Raw files: <span style={{ color: "#EF4444" }}>✗ never transmitted</span> &middot; Metadata: <span style={{ color: "var(--success)" }}>✓ encrypted in transit</span> &middot; Credentials: <span style={{ color: "#EF4444" }}>✗ never stored</span>
-          </div>
+          <DataFlowDiagram />
 
           <div className="section-header" style={{ marginTop: "96px" }} data-animate>
             <h2>Built for engineers. Trusted by compliance leads.</h2>
@@ -1066,51 +984,13 @@ export default function HomePage() {
       {/* CREDIBILITY BAR */}
       <div className="container">
         <div className="credibility-bar" data-animate>
-          <span className="cred-item">🎤 Mentioned at ElasticSearch CXO Fusion</span>
+          <span className="cred-item">🔒 Evidence stays on your machine</span>
           <span className="divider">·</span>
-          <a href="https://medium.com/@hardik.goel214" target="_blank" rel="noopener noreferrer" className="cred-item">📰 Featured on Medium</a>
-          <span className="divider">·</span>
-          <a href="https://github.com/hardik-goel/CompliSense-AI" target="_blank" rel="noopener noreferrer" className="cred-item">🐙 Open source on GitHub</a>
+          <span className="cred-item">⚡ Audit-ready in under 8 weeks</span>
           <span className="divider">·</span>
           <span className="cred-item">🇮🇳 Built in India</span>
         </div>
       </div>
-
-      {/* FOUNDER SECTION */}
-      <section id="founder" style={{ padding: "80px 0" }} className="content-section">
-        <div className="container">
-          <p style={{ fontSize: "11px", letterSpacing: "2px", color: "#64748B", textAlign: "center", marginBottom: "8px" }} data-animate>THE TEAM</p>
-          <h2 style={{ textAlign: "center", fontSize: "32px", fontWeight: 800, color: "#F1F5F9", marginBottom: "48px" }} data-animate>
-            Built by people who've been in the compliance room.
-          </h2>
-
-          <div style={{ maxWidth: "640px", margin: "0 auto", background: "#0E1E33", border: "1px solid #1B3A5C", borderRadius: "16px", padding: "36px", display: "flex", gap: "28px", alignItems: "flex-start" }} className="fade-up">
-            <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "linear-gradient(135deg,#1D4ED8,#0E7490)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-              HG
-            </div>
-            <div>
-              <p style={{ fontSize: "18px", fontWeight: 700, color: "#F1F5F9", marginBottom: "2px" }}>Hardik Goel</p>
-              <p style={{ fontSize: "13px", color: "#3B82F6", marginBottom: "16px" }}>Founder &middot; Technical Architect, SDE3 @ Tesco</p>
-              <p style={{ fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "20px" }}>
-                13+ years building data platforms, AI systems, and compliance infrastructure at scale.
-                Formerly at Paytm, Impetus, Cognizant, and Accenture. Published author.
-                Built CompliSense-AI after watching too many teams rebuild compliance evidence from scratch — every single audit cycle.
-              </p>
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <a href="https://www.linkedin.com/in/hardik-goel-a6334936" target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#3B82F6", textDecoration: "none", border: "1px solid #1B3A5C", padding: "6px 14px", borderRadius: "6px" }}>
-                  LinkedIn &rarr;
-                </a>
-                <a href="https://medium.com/@hardik.goel214" target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#64748B", textDecoration: "none", border: "1px solid #1B3A5C", padding: "6px 14px", borderRadius: "6px" }}>
-                  Medium &rarr;
-                </a>
-                <a href="https://goelh.substack.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#64748B", textDecoration: "none", border: "1px solid #1B3A5C", padding: "6px 14px", borderRadius: "6px" }}>
-                  Substack &rarr;
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* COMPARISON SECTION */}
       <section className="content-section">
@@ -1119,7 +999,7 @@ export default function HomePage() {
             <h2>You already have spreadsheets.<br/>Here's what you're missing.</h2>
           </div>
           
-          <div className="comparison-wrap" data-animate>
+          <div className="comparison-wrap is-vs" data-animate>
             <table className="comparison-table">
               <thead>
                 <tr>
@@ -1324,11 +1204,16 @@ export default function HomePage() {
           </div>
 
           <div style={{ marginTop: "64px" }}>
-            <details style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
-              <summary style={{ padding: "20px 24px", cursor: "pointer", fontWeight: "600", fontSize: "0.875rem" }}>
-                See full comparison &rarr;
+            <details className="full-compare">
+              <summary>
+                <span className="fc-left">
+                  <span className="fc-icon"><Table size={16} /></span>
+                  See the full feature comparison
+                  <span className="fc-tiers">Free · Standard · Premium · Premium+</span>
+                </span>
+                <span className="fc-chevron"><ChevronDown size={18} /></span>
               </summary>
-              <div className="comparison-wrap" style={{ border: "none", marginTop: 0 }}>
+              <div className="comparison-wrap is-matrix" style={{ border: "none", marginTop: 0 }}>
                 <table className="comparison-table">
                   <thead>
                     <tr>
@@ -1405,10 +1290,9 @@ export default function HomePage() {
           </div>
 
           <p style={{ textAlign: "center", marginTop: "24px" }} data-animate>
-            <a href="https://github.com/hardik-goel/CompliSense-AI"
-               target="_blank" rel="noopener noreferrer"
+            <a href={calendlyUrl} target="_blank" rel="noopener noreferrer"
                style={{ fontSize: "13px", color: "#3B82F6" }}>
-              Follow development on GitHub &rarr;
+              Get early access to what's next &rarr;
             </a>
           </p>
         </div>
@@ -1466,7 +1350,9 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="feature-grid">
+          <ChaosToOrder />
+
+          <div className="feature-grid" style={{ marginTop: "48px" }}>
             <div className="feature-card" data-animate>
               <div className="icon-wrap"><ShieldCheck size={20} /></div>
               <h3 className="card-title">India-First</h3>
@@ -1530,11 +1416,13 @@ export default function HomePage() {
               <img src="/logo.png" alt="CompliSense-AI" style={{ height: "36px", marginBottom: "16px", objectFit: "contain" }} />
               <p>AI-native compliance for modern teams — built for India's regulatory moment, designed for the operators who can't afford to get it wrong.</p>
               <div className="social-links">
-                <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="social-link">
+                <a href="https://www.linkedin.com/company/complisense-ai" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="CompliSense-AI on LinkedIn">
                   <LinkedInIcon size={20} />
                 </a>
-                <a href="https://github.com/hardik-goel/CompliSense-AI" target="_blank" rel="noopener noreferrer" className="social-link">
-                  <GitHubIcon size={20} />
+                <a href={`mailto:${supportEmail}`} className="social-link" aria-label="Email CompliSense-AI">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
                 </a>
               </div>
             </div>

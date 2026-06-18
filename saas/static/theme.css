@@ -1,0 +1,358 @@
+/* ============================================================
+   CompliSense-AI — shared app theme
+   Syncs the SaaS dashboard with the marketing site's design system.
+   Loaded LAST in <head> so it overrides each template's inline :root
+   and Bootstrap 5.1.3 defaults. Pure re-skin — no markup changes needed.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* 1 — re-map every template's custom properties to the landing palette */
+:root {
+  --bg: #05080F;
+  --bg-dark: #05080F;
+  --surface: #0D1525;
+  --card-bg: #0D1525;
+  --card-hover: #111D35;
+  --surface-elevated: #111D35;
+  --border-color: #1E2D4A;
+  --border-bright: #2A4080;
+
+  --accent: #2563EB;
+  --accent-hover: #3B82F6;
+  --accent-dim: rgba(37, 99, 235, 0.15);
+  --cyan: #22D3EE;
+  --violet: #8B5CF6;
+
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #94A3B8;
+
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+
+  --header-bg: linear-gradient(135deg, #0D1525 0%, #05080F 100%);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: #1E2D4A;
+
+  /* override Bootstrap 5 theme vars where they apply */
+  --bs-body-bg: #05080F;
+  --bs-body-color: #F1F5F9;
+  --bs-border-color: #1E2D4A;
+  --bs-primary: #2563EB;
+  --bs-primary-rgb: 37, 99, 235;
+  --bs-link-color: #3B82F6;
+  --bs-link-hover-color: #60A5FA;
+  --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* 2 — base */
+body {
+  background: var(--bg) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+a { color: var(--accent-hover); }
+a:hover { color: #60A5FA; }
+
+/* 3 — ambient aurora behind everything (the marketing-site signature) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(620px circle at 12% -5%, rgba(37, 99, 235, 0.18), transparent 60%),
+    radial-gradient(560px circle at 92% 0%, rgba(34, 211, 238, 0.12), transparent 55%),
+    radial-gradient(680px circle at 70% 110%, rgba(139, 92, 246, 0.12), transparent 60%);
+  animation: csAurora 24s ease-in-out infinite alternate;
+}
+@keyframes csAurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(0, -22px, 0) scale(1.08); }
+}
+
+/* 4 — Bootstrap component re-skin */
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.38);
+}
+.btn-success { background: var(--success); border-color: var(--success); }
+.btn-danger { background: var(--danger); border-color: var(--danger); }
+.btn-warning { background: var(--warning); border-color: var(--warning); color: #05080F; }
+.btn-outline-primary { color: var(--accent-hover); border-color: var(--border-bright); }
+.btn-outline-primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-secondary, .btn-outline-secondary {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+.btn-secondary:hover, .btn-outline-secondary:hover {
+  background: var(--surface-elevated);
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+}
+.btn { border-radius: 9px; font-weight: 500; transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
+
+/* cards / surfaces */
+.card, .modal-content, .list-group-item, .dropdown-menu, .accordion-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+.card {
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-bright);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+.card-header, .modal-header, .modal-footer { background: transparent; border-color: var(--border-color); }
+.card-footer { background: transparent; border-color: var(--border-color); }
+
+/* tables */
+.table { color: var(--text-primary); border-color: var(--border-color); --bs-table-bg: transparent; }
+.table > :not(caption) > * > * { background: transparent; color: var(--text-primary); border-bottom-color: var(--border-color); }
+.table thead th { color: var(--text-secondary); border-bottom: 1px solid var(--border-bright); font-weight: 600; }
+.table-hover > tbody > tr:hover > * { background: rgba(255, 255, 255, 0.03); color: var(--text-primary); }
+
+/* forms */
+.form-control, .form-select, .input-group-text {
+  background: #0A1626;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 9px;
+}
+.form-control:focus, .form-select:focus {
+  background: #0A1626;
+  border-color: var(--accent);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+.form-control::placeholder { color: var(--text-muted); }
+.form-label, .form-check-label { color: var(--text-secondary); }
+
+/* nav / navbar / tabs */
+.navbar { background: rgba(5, 8, 15, 0.85) !important; backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); }
+.navbar-brand, .navbar-nav .nav-link { color: var(--text-primary); }
+.navbar-nav .nav-link:hover { color: var(--accent-hover); }
+.nav-tabs { border-bottom-color: var(--border-color); }
+.nav-tabs .nav-link { color: var(--text-secondary); border: none; border-radius: 8px 8px 0 0; }
+.nav-tabs .nav-link:hover { color: var(--text-primary); border-color: transparent; }
+.nav-tabs .nav-link.active {
+  color: #fff;
+  background: transparent;
+  border-bottom: 2px solid var(--accent);
+}
+.nav-pills .nav-link { color: var(--text-secondary); border-radius: 100px; }
+.nav-pills .nav-link.active { background: var(--accent); color: #fff; }
+
+/* badges, pills, progress */
+.badge.bg-primary, .badge.text-bg-primary { background: var(--accent) !important; }
+.badge.bg-success, .badge.text-bg-success { background: var(--success) !important; }
+.badge.bg-warning, .badge.text-bg-warning { background: var(--warning) !important; color: #05080F !important; }
+.badge.bg-danger, .badge.text-bg-danger { background: var(--danger) !important; }
+.progress { background: var(--border-color); border-radius: 100px; height: 9px; overflow: hidden; }
+.progress-bar { background: linear-gradient(90deg, var(--accent), var(--cyan)); }
+
+/* alerts */
+.alert-primary { background: rgba(37, 99, 235, 0.12); border-color: rgba(37, 99, 235, 0.3); color: #BFDBFE; }
+.alert-success { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); color: #A7F3D0; }
+.alert-warning { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); color: #FDE68A; }
+.alert-danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: #FECACA; }
+
+/* dropdown items */
+.dropdown-item { color: var(--text-secondary); }
+.dropdown-item:hover { background: var(--surface-elevated); color: var(--text-primary); }
+
+/* re-map Bootstrap light utilities to the dark theme (some pages use bg-light/bg-white) */
+.bg-light { background-color: var(--surface) !important; color: var(--text-primary) !important; }
+.bg-white { background-color: var(--card-bg) !important; }
+.text-dark { color: var(--text-primary) !important; }
+.text-muted { color: var(--text-muted) !important; }
+.border { border-color: var(--border-color) !important; }
+.text-primary { color: var(--accent-hover) !important; }
+
+/* 5 — utility wow helpers (opt-in via class) */
+.cs-gradient-text {
+  background: linear-gradient(90deg, #3B82F6, #22D3EE 60%, #8B5CF6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.cs-glass {
+  background: rgba(13, 21, 37, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+}
+
+/* dark, slim scrollbars to match the theme */
+* { scrollbar-width: thin; scrollbar-color: #1E2D4A transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: #1E2D4A; border-radius: 100px; border: 2px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: #2A4080; background-clip: content-box; }
+
+/* gentle entrance for primary content blocks */
+.card, .stat-card, .table { animation: csRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes csRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+  .card, .stat-card, .table, .btn { animation: none !important; transition: none !important; }
+}
+
+/* 6 — card cursor spotlight (coordinates set by app-enhance.js) */
+.card, .report-card, .metric, .card-out, .feature-card { position: relative; isolation: isolate; }
+.card::before, .report-card::before, .metric::before, .card-out::before, .feature-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), rgba(59, 130, 246, 0.16), transparent 45%);
+}
+.card:hover::before, .report-card:hover::before, .metric:hover::before,
+.card-out:hover::before, .feature-card:hover::before { opacity: 1; }
+
+/* 7 — dashboard header: branded gradient + glow (no overflow clip — header holds a dropdown) */
+.dashboard-header {
+  position: relative;
+  background: linear-gradient(135deg, #0D1525 0%, #05080F 72%) !important;
+  border-bottom: 1px solid var(--border-bright) !important;
+}
+.dashboard-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(720px circle at 82% -40%, rgba(37, 99, 235, 0.18), transparent 60%);
+}
+.dashboard-header > .container { position: relative; z-index: 1; }
+
+/* 8 — stat cards: bolder numbers + glowing icons */
+.stat-card .card-body h3 {
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.stat-card i.fa-2x { filter: drop-shadow(0 4px 12px rgba(37, 99, 235, 0.35)); }
+
+/* 9 — page-specific re-skin for templates that hardcode colors */
+/* reports.html */
+.report-card { background: var(--card-bg) !important; border-color: var(--border-color) !important; border-radius: 14px !important; }
+.metric { background: #0A1626 !important; border-color: var(--border-color) !important; border-radius: 12px !important; }
+.metric .value { color: var(--text-primary); }
+.muted { color: var(--text-muted) !important; }
+.finding-table th, .finding-table td { border-color: var(--border-color) !important; }
+.finding-table th { color: var(--text-muted) !important; }
+/* scan_output.html — re-map the off-palette card gradient */
+.card-out { background: linear-gradient(160deg, #0D1525 0%, #111D35 100%) !important; border-color: var(--border-color) !important; border-radius: 14px; }
+.card-out:hover { border-color: var(--border-bright) !important; }
+/* dashboard.html — feature tiles */
+.feature-card { border-radius: 14px; transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s ease, background 0.25s ease; }
+.feature-card:hover { background: var(--surface-elevated) !important; border-color: var(--border-bright) !important; transform: translateY(-4px); }
+
+/* 10 — scan_output.html: header, summary boxes, status pills, finding rows */
+.scan-header {
+  position: relative;
+  background: linear-gradient(135deg, #0D1525 0%, #05080F 72%) !important;
+  border-bottom: 1px solid var(--border-bright) !important;
+}
+.scan-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(680px circle at 80% -40%, rgba(37, 99, 235, 0.16), transparent 60%);
+}
+.scan-header > .container { position: relative; z-index: 1; }
+
+.stat-box { transition: transform 0.2s ease, border-color 0.2s ease; }
+.stat-box:hover { transform: translateY(-3px); border-color: var(--border-bright); }
+.stat-box .value { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; }
+.stat-box.passed { border-top: 2px solid var(--success); }
+.stat-box.failed { border-top: 2px solid var(--danger); }
+.stat-box.total { border-top: 2px solid var(--accent); }
+
+/* status pills — add a tinted border + uppercase for crisper severity read */
+.badge-status { border: 1px solid transparent; text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.7rem; }
+.badge-status.completed { border-color: rgba(16, 185, 129, 0.4); }
+.badge-status.running { border-color: rgba(245, 158, 11, 0.4); }
+.badge-status.failed { border-color: rgba(239, 68, 68, 0.4); }
+.badge-status.downloaded { border-color: rgba(37, 99, 235, 0.4); }
+
+/* finding rows: color the left edge by status (no markup change, via :has) */
+.rule-row { transition: background 0.15s ease; border-left: 3px solid transparent; }
+.rule-row:hover { background: rgba(255, 255, 255, 0.025); }
+.rule-row:has(.badge-status.completed) { border-left-color: var(--success); }
+.rule-row:has(.badge-status.running) { border-left-color: var(--warning); }
+.rule-row:has(.badge-status.failed) { border-left-color: var(--danger); }
+
+/* 11 — skeleton loaders (shown while data fetches; auto-replaced by page JS) */
+.cs-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+.cs-skel-row { height: 66px; margin-bottom: 12px; }
+.cs-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: csShimmer 1.4s infinite;
+}
+@keyframes csShimmer { 100% { transform: translateX(100%); } }
+
+/* 12 — about.html / experience_*.html consistency */
+.header-dark {
+  position: relative;
+  background: linear-gradient(135deg, #0D1525 0%, #05080F 72%) !important;
+  border-bottom: 1px solid var(--border-bright) !important;
+}
+.app-topbar {
+  background: rgba(5, 8, 15, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 14px 0;
+  margin-bottom: 36px;
+}
+.app-topbar .brand-lockup img { height: 38px; width: auto; object-fit: contain; }
+
+@media (prefers-reduced-motion: reduce) { .cs-skel::after { animation: none; } }
+
+/* 13 — brand logo: larger + drop the PNG's black backplate on dark headers.
+   `lighten` makes the logo's black background blend into the dark header,
+   leaving just the mark + wordmark. */
+.brand-lockup img {
+  height: 54px;
+  width: auto;
+  object-fit: contain;
+  mix-blend-mode: lighten;
+}
+.dashboard-header .brand-lockup img { height: 68px; }   /* hero header on the landing/dashboard */
