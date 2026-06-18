@@ -342,6 +342,17 @@ body::before {
   padding: 14px 0;
   margin-bottom: 36px;
 }
-.app-topbar .brand-lockup img { height: 36px; width: auto; object-fit: contain; }
+.app-topbar .brand-lockup img { height: 38px; width: auto; object-fit: contain; }
 
 @media (prefers-reduced-motion: reduce) { .cs-skel::after { animation: none; } }
+
+/* 13 — brand logo: larger + drop the PNG's black backplate on dark headers.
+   `lighten` makes the logo's black background blend into the dark header,
+   leaving just the mark + wordmark. */
+.brand-lockup img {
+  height: 54px;
+  width: auto;
+  object-fit: contain;
+  mix-blend-mode: lighten;
+}
+.dashboard-header .brand-lockup img { height: 68px; }   /* hero header on the landing/dashboard */
