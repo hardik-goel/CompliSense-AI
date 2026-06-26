@@ -67,6 +67,9 @@ app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(distribution_router)
 
+from saas.app.readiness import router as readiness_router  # noqa: E402
+app.include_router(readiness_router)
+
 
 @app.on_event("startup")
 async def startup_event():

@@ -114,7 +114,13 @@ cited rules. Build the spine before the product on top of it.
 
 ### PHASES 1–8 — product capabilities (per CLAUDE.md, unchanged order)
 
-- [ ] **Phase 1** Tier-0 Guided Manifest + public DPDP Readiness Score (no-login)
+- [x] **Phase 1** Tier-0 Guided Manifest + public DPDP Readiness Score (no-login)
+  - [x] 1.1 Manifest model + questionnaire (`compliance/manifest.py`) → applicability profile
+  - [x] 1.2 Readiness scoring engine (`compliance/readiness.py`) — unknown ≠ ready
+  - [x] 1.3 Public no-login API (`saas/app/readiness.py`) — anonymous teaser vs signed-in full
+  - [x] 1.4 Public web page (`landing-page/app/readiness/`) — questionnaire → score → signup gate
+  - [x] 1.5 Persistence + auth gating — consented signed-in storage; anonymous ephemeral
+  - [x] 1.6 First-party analytics (`saas/app/analytics.py`) + DATA_HANDLING.md update
 - [ ] **Phase 2** Continuous monitoring, scan history & drift detection
 - [ ] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
 - [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
@@ -181,6 +187,28 @@ cited rules. Build the spine before the product on top of it.
     badge with ⚠ for non-primary) and NOT_APPLICABLE rows; surfaces `invalid_fields`.
   - Tests: 66 pass (added cross_document + evaluator-substance tests). Full suite GREEN
     (no `--ignore` needed anymore).
+- 2026-06-27 — **Phase 1 follow-ups (user-requested).**
+  - Admin-gated `GET /api/v1/readiness/analytics/summary`: now requires `X-Admin-Api-Token`
+    (new `require_admin` dep in `saas/app/readiness.py`), not just any signed-in user.
+    Tests added (reject missing/bad token, accept valid).
+  - Discoverability: added `/readiness` to the landing nav (desktop `site-nav` + mobile
+    menu) so the public tool isn't an orphan page. `landing/.env.example` documents
+    `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_APP_BASE_URL`. Landing typechecks clean.
+  - (The "untracked files" note was a `git add` reminder for staging — no code change.)
+- 2026-06-27 — **PHASE 1 COMPLETE.** Tier-0 Guided Manifest + public DPDP Readiness Score.
+  1.1 `compliance/manifest.py` (questionnaire + Manifest + `manifest_to_profile` →
+  applicability gate; Third-Schedule trigger logic). 1.2 `compliance/readiness.py`
+  (score_manifest reuses v2 packs + gating; unknown counts as gap, never silently ready;
+  each gap carries citation + readiness framing). 1.3 `saas/app/readiness.py` public router
+  (`/api/v1/readiness/questionnaire`, `/score`) — anonymous = score + top-3 teaser +
+  ephemeral; signed-in = full report. 1.4 `landing-page/app/readiness/` (client tool →
+  score → signup gate; "answers not stored" notice; typechecks clean). 1.5 persistence
+  (`readiness_assessments`, consent-gated, anonymous never stored) + list/get endpoints.
+  1.6 `saas/app/analytics.py` first-party non-PII funnel (`readiness_completed`, `signup`)
+  + admin summary; DATA_HANDLING.md §3 updated to built reality. Tests: +26 (manifest 7,
+  readiness 6, readiness_api 10, analytics 3). Full suite: **92 passed, 0 failed.**
+  NOTE: marketing site change only visible after `npm run build` / Vercel redeploy. New
+  page reads `NEXT_PUBLIC_API_BASE_URL` (defaults to prod backend).
 - 2026-06-26 — **PHASE 0 COMPLETE.** New tests: 35 pass (schema/applicability/readiness/
   substance). Full suite: 53 pass, 2 fail + 1 collection error — ALL THREE PRE-EXISTING on
   the clean base (test_cli `cli.cli` attr, test_render `render_pdf()` signature,
