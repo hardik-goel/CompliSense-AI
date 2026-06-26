@@ -185,6 +185,7 @@
       <th>Status</th>
       <th>Confidence</th>
       <th>Risk</th>
+      <th>Citation &amp; readiness</th>
       <th>Evidence & Remediation</th>
     </tr>
   </thead>
@@ -198,11 +199,25 @@
       <td>{{ item.clause }}</td>
       <td>{{ item.severity }}</td>
       <td class="{{ item.status }}">{{ item.status }}</td>
-      <td>{{ item.confidence }}%</td>
+      <td>{% if item.confidence is not none %}{{ item.confidence }}%{% else %}&mdash;{% endif %}</td>
       <td class="{{ item.risk }}">{{ item.risk }}</td>
+      <td class="small">
+        {% if item.act_citation %}<div>{{ item.act_citation }}</div>{% endif %}
+        {% if item.rule_citation %}<div>{{ item.rule_citation }}</div>{% endif %}
+        {% if item.status == "NOT_APPLICABLE" %}
+          <div><em>Not applicable: {{ item.applicability_reason }}</em></div>
+        {% elif item.legal_status == "in_force" %}
+          <div>Enforceable now.</div>
+        {% elif item.enforcement_date %}
+          <div>Prepare by {{ item.enforcement_date }}{% if item.date_status == "provisional_pending_amendment" %} (provisional &mdash; date may move){% endif %} &mdash; not a present-day violation.</div>
+        {% endif %}
+        {% if item.verification %}<div>Verification: {{ item.verification }}{% if item.verification != "primary_source_verified" %} &#9888;{% endif %}</div>{% endif %}
+      </td>
       <td>
         {% if item.evidence.missing_file %}
           Missing file: {{ item.files_used|join(", ") }}
+        {% elif item.evidence.invalid_fields %}
+          Invalid values: {{ item.evidence.invalid_fields|join(", ") }}
         {% elif item.evidence.missing_fields %}
           Missing fields: {{ item.evidence.missing_fields|join(", ") }}
         {% elif item.evidence.coverage_score is defined %}

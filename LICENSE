@@ -1,0 +1,23 @@
+CompliSense-AI — Proprietary License
+Copyright (c) 2026 CompliSense (Hardik Goel). All rights reserved.
+
+This repository and its contents (the "Software") are proprietary and confidential.
+No license, right, or permission is granted to any person to use, copy, modify, merge,
+publish, distribute, sublicense, or sell any part of the Software, except under a
+separate written agreement with the copyright holder.
+
+Unauthorized use, reproduction, or distribution of the Software, in whole or in part, is
+strictly prohibited.
+
+NOTE ON THE OPEN-SOURCE COMPANION: the separate `complykit` project (the free tier — a
+stateless CLI, the rulepack format, and the DPDP starter pack) is licensed independently
+under Apache License 2.0. This proprietary license applies ONLY to this CompliSense-AI
+repository and does not extend to `complykit`.
+
+NO WARRANTY / NOT LEGAL ADVICE: The Software provides compliance-readiness assessment and
+tooling, not legal advice, and does not constitute a legal determination of compliance.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
+CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
+SOFTWARE OR ITS USE.

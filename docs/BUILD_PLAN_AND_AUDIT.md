@@ -1,0 +1,188 @@
+# CompliSense-AI — Build Plan & Audit Checkpoint
+
+> **Purpose:** single source of truth for the end-to-end build across all CLAUDE.md
+> prompts (Phases 1–8 + the four grounding/liability/legal-correctness appendices).
+> Doubles as a resume checkpoint. Update the status boxes as work lands.
+>
+> **Created:** 2026-06-26 · **Branch at creation:** Tier-0-Guided-Manifest
+> **Discipline:** one feature at a time — propose → confirm → build → report → STOP →
+> user tests + branches → next. Nothing deleted without explicit user approval.
+
+---
+
+## A. END-TO-END AUDIT FINDINGS (2026-06-26, read-only, nothing changed)
+
+Audited by 4 parallel read-only agents across: root `.md` docs, compliance engine +
+rulepacks, legal-grounding/safety docs, backend + landing page. Mapped to the four
+appendices: Grounding (primary sources), Liability/Disclaimer/Accuracy-Safety,
+Legal-Correctness Mechanics (Addendum), and the "scan end-to-end" instruction.
+
+### HIGH — legal/liability exposure
+
+- [ ] **H1** `agent/scoring/overall.py:8` — `verdict_from_score()` returns
+  "PARTIALLY COMPLIANT" (compliance-determination language). Must be readiness
+  language. *(Liability §1)*
+- [ ] **H2** `rulepacks/*.yaml` (ALL) — no `applicability` block on any rule. Engine
+  flags non-SDF startups for SDF-only duties (DPIA/audit/DPO). False-flags the ICP.
+  *(Addendum §2)*
+- [ ] **H3** `rulepacks/*.yaml` (ALL) — no dual-layer citations
+  (`act_citation`+`rule_citation`), no `source_url`, `status`, `enforcement_date`,
+  `date_status`, `verification`. Bare "Section 5"/"Art.9" only. *(Grounding §1,
+  Addendum §1)*
+- [ ] **H4** `LEGAL_REVIEW_NEEDED.md` — MISSING. Mandated living checklist +
+  per-pack reviewer sign-off absent. No auditable "reviewed by counsel" state.
+  *(Grounding §E, Liability §8)*
+- [ ] **H5** `euai_core_v1.yaml` (updated 2025-08-24, ~306 days stale) — pre-dates
+  Digital Omnibus (7 May 2026). Risk: hardcodes EU high-risk 2 Aug 2026 instead of
+  `provisional_pending_amendment` ~Dec 2027. *(Addendum §3)*
+- [ ] **H6** `agent/evaluators/file_presence.py`, `keyword_check.py`,
+  `schema_validate.py` — gameable: pass on file existence / keyword-anywhere /
+  field-presence. No value validation (email format, ISO date, threshold ranges).
+  Verifies presence not substance. *(matches engine-gaps memory)*
+- [ ] **H7** `saas/app/config.py:51` — hardcoded default
+  `admin_api_token = "dev-admin-token"`; weak fallback guards
+  `POST /api/v1/upload-scan`.
+
+### MEDIUM
+
+- [ ] **M1** Missing docs: `docs/SOURCES.md`, `docs/SOURCES_ACT.md`,
+  `docs/DATA_HANDLING.md`, `docs/TERMS_NOTES.md`, `SECURITY.md`, root `LICENSE`.
+  *(Grounding §A/§E, Liability §5/§7)*
+- [ ] **M2** `docs/` untracked in git. `LEGAL_REFERENCE_DPDP_EUAI.md` (good,
+  primary-sourced, EU date correct) lacks `version` + `last_verified`, no VC history.
+- [ ] **M3** rulepacks pre-date `LEGAL_REFERENCE_DPDP_EUAI.md` by 29–306 days. 9
+  Part-A.3 corrections (Rule 6 (a)–(g) not "7+MFA"; breach two-track clock; retention
+  two-tier floor; SDF gating) NOT applied to packs.
+- [ ] **M4** EU coverage ~10–13% (euai_core = 10 rules / 9 articles). Missing: Art 5
+  prohibited practices, Art 6/Annex III high-risk classification, Art 50 transparency,
+  role-gating (provider/deployer/importer/GPAI). *(Addendum §5)*
+- [ ] **M5** `saas/app/distribution.py:263` — "without storing your data" but
+  `findings_json` + `results_summary` stored in Mongo. Defensible (no raw artefacts)
+  but undocumented → needs `DATA_HANDLING.md`.
+- [ ] **M6** `landing-page/app/page.tsx:1075` — "ensure compliance" → readiness.
+  Disclaimer buried in `/terms`, not on main site.
+- [ ] **M7** `AGENT_ZIP_USAGE.md:136` — contradicts 3 docs: claims scanner scans
+  model binaries (.pkl/.onnx/.pt); others say docs-only.
+- [ ] **M8** Findings carry no `enforcement_date` in UI. DPDP phased to ~May 2027
+  shown as urgent fails → false "violation today" impression. *(Liability §2)*
+
+### LOW — doc hygiene (NO deletions without user ok)
+
+- [ ] **L1** Duplicate root `.md`: `ARCHITECTURE_DECISION` vs `ARCHITECTURE_CLARIFICATION`;
+  `PHASE_STATUS` vs `ALL_FIXES_AND_STATUS`; 4× FIXES files. See
+  `REDUNDANT_FILES_TO_REMOVE.md` (not acted on).
+- [ ] **L2** `ANALYSIS_AND_ROADMAP.md:290` growth projections undated, no baseline.
+- [ ] **L3** `COMPLETE_IMPLEMENTATION_SUMMARY.md:49` points to legacy `scanner_enhanced.py`.
+- [ ] **L4** Landing testimonials = generic placeholders ("Media Platform"/"Fintech");
+  confirm intent (not fake logos).
+
+### CLEAN (verified OK)
+
+JWT auth (no leaked secrets / no tokens in logs) · raw artefact content NOT uploaded ·
+no fake customer logos/traction · public readiness tool correctly absent (it is Phase 1) ·
+`LEGAL_REFERENCE_DPDP_EUAI.md` EU date + DPDP dual-cite logic correct **in the reference**
+(just not propagated to packs).
+
+---
+
+## B. RECOMMENDED BUILD ORDER
+
+### PHASE 0 — Foundation (correctness scaffolding; the appendices). Build FIRST.
+
+Rationale: Phase 1 captures applicability facts and consumes applicability-gated,
+cited rules. Build the spine before the product on top of it.
+
+- [x] **0.1 Rulepack schema v2** — add `applicability` block, dual citations
+  (`act_citation`/`rule_citation` + `source_url`), `status`, `enforcement_date`,
+  `date_status`, `verification`, `current_as_of`, per-pack `reviewer`/`review_status`
+  + "pending professional legal review" note. JSON-schema validator. Stay
+  complykit-format-compatible. *(closes H3, parts of H2/H4/M2)*
+- [x] **0.2 Engine applicability gating** — scanner resolves each rule's
+  `applicability` against an entity profile; non-applicable → `not_applicable`, never
+  `fail`. *(closes H2)*
+- [x] **0.3 Propagate legal corrections** — apply the 9 Part-A.3 fixes to DPDP packs;
+  set EU high-risk to `provisional_pending_amendment` ~Dec 2027; refresh euai packs.
+  *(closes H5, M3; starts M4)*
+- [x] **0.4 Grounding + safety docs** — `SOURCES.md`, `SOURCES_ACT.md` (STOP for
+  review per grounding rule), `LEGAL_REVIEW_NEEDED.md`, `DATA_HANDLING.md`,
+  `TERMS_NOTES.md`, `SECURITY.md`, `LICENSE`; commit `docs/`. *(closes H4, M1, M5)*
+- [x] **0.5 Honesty quick-wins** — readiness verdict language; surface
+  `status`/`enforcement_date` in output; landing disclaimer + "ensure readiness";
+  admin-token hardening. *(closes H1, H7, M6, M8)*
+- [x] **0.6 Engine substance hardening** — value validation (email/date/threshold
+  formats, semantic context) to reduce gameability. *(closes H6)*
+
+### PHASES 1–8 — product capabilities (per CLAUDE.md, unchanged order)
+
+- [ ] **Phase 1** Tier-0 Guided Manifest + public DPDP Readiness Score (no-login)
+- [ ] **Phase 2** Continuous monitoring, scan history & drift detection
+- [ ] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
+- [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
+- [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
+- [ ] **Phase 6** MCP server for CompliSense
+- [ ] **Phase 7** LLM Remediation Copilot (local/consent data path)
+- [ ] **Phase 8** Regulator-ready evidence exports + multi-team roles
+
+---
+
+## C. PROGRESS LOG (append one line per completed feature)
+
+- 2026-06-26 — End-to-end audit complete; this plan written. No code changed.
+- 2026-06-26 — **0.1 done.** Added `compliance/rulepack_schema.py` (v2 validator), wired
+  validation into `agent/rules/loader.py` (non-fatal warn; `strict`/`RULEPACK_STRICT`),
+  populated all 4 packs with applicability + dual citations + status/enforcement/date_status/
+  verification + pack-level review metadata. Tests: `tests/test_rulepack_schema.py` (14 pass).
+  EU packs set to `provisional_pending_amendment` ~2027-12-02 (Omnibus), not 2 Aug 2026.
+  NOTE: euai_core and euai_extended are byte-identical content — flagged for 0.3 dedup.
+- 2026-06-26 — **0.2 done.** Added `compliance/applicability.py` (resolve_applicability +
+  default_profile). Wired into `agent/scanner.py`: `run_scan(..., entity_profile=None)` —
+  non-applicable rules → `NOT_APPLICABLE` status + `not_applicable` count, evaluator skipped.
+  Result dicts now pass through citations/legal_status/enforcement_date/date_status/
+  verification. Profile None = gating inactive (backward compatible). Tests:
+  `tests/test_applicability.py` (9). Suite: 23 pass.
+- 2026-06-26 — **0.3 done.** EU date corrections already applied in 0.1. Resolved the
+  euai_core==euai_extended duplication: extended is now a true superset — added 4 LIVE-now
+  EU rules (Art 5 prohibited, Art 4 literacy, Art 50 transparency, Arts 53-55 GPAI),
+  role-gated + correctly dated (in_force vs phased). Pack rule counts: dpdp_core 7,
+  dpdp_extended 13, euai_core 10, euai_extended 14.
+- 2026-06-26 — **0.4 done.** Created `LEGAL_REVIEW_NEEDED.md` (generated from packs;
+  per-rule review checklist + non-primary flags), `docs/SOURCES.md`, `docs/SOURCES_ACT.md`
+  (DRAFT, Act pending primary-text verification), `docs/DATA_HANDLING.md`,
+  `docs/TERMS_NOTES.md`, `SECURITY.md`, root `LICENSE` (proprietary; complykit stays
+  Apache-2.0). Added `version`/`last_verified` to LEGAL_REFERENCE.
+- 2026-06-26 — **0.5 done.** `agent/scoring/overall.py`: verdict now readiness language
+  ("PARTIALLY READY — GAPS IDENTIFIED", never "COMPLIANT") + `readiness_framing()` helper.
+  `saas/app/config.py`: weak default secrets (admin token, jwt) now WARN in dev, RAISE in
+  production (H7); render.yaml already provisions both. Landing: "ensure compliance" →
+  readiness; added "not legal advice" footer disclaimer. Tests: `test_readiness_language.py`.
+- 2026-06-26 — **0.6 done.** `agent/evaluators/file_presence.py`: present-but-empty /
+  placeholder values ("TODO"/"changeme"/blank) now count as MISSING; optional typed
+  `field_validations` (email/iso_date/url/min_length) — wired `grievance_contact: email`
+  into DPDP notice rules. Scanner surfaces `invalid_fields`. Tests:
+  `test_substance_hardening.py`. End-to-end sample scan: 5 PASS + SDF/Children correctly
+  NOT_APPLICABLE for a default startup.
+- 2026-06-26 — **POST-PHASE-0 CLEANUP (user-requested).**
+  - Fixed the 3 pre-existing test failures at root cause: `render_pdf` now accepts the
+    legacy 2-arg form + synthesizes safe assessment defaults + `ChainableUndefined` so
+    optional/NA fields render blank (also fixed the genuinely broken `api_handlers.py`
+    2-arg caller); `test_cli` rewritten against the real `agent.cli` click group;
+    `test_scanner_enhanced` mock made realistic (`exists: True`).
+  - Gameability gap 3: `schema_validate` no longer returns blanket coverage=1.0 — measures
+    substantive field population. Gap 5: `techdoc_coverage` scales the explicit-doc score
+    by how populated the doc is (empty `{}` model card no longer earns full credit).
+  - Gap 4: added `compliance/cross_document.py` — advisory, opt-in cross-document
+    consistency checks (never affects pass/fail). Wired into `run_scan(consistency_checks=)`.
+  - EU coverage (M4): added high-risk classification (Art 6/Annex III), conformity + CE
+    marking (Arts 43/47-48), EU-database registration (Art 49), post-market monitoring
+    (Arts 72-73). Pack counts now: dpdp_core 7, dpdp_extended 13, euai_core 14,
+    euai_extended 18.
+  - Report UI: audit PDF template now shows a "Citation &amp; readiness" column (act+rule
+    citations, "prepare by {date}" vs "enforceable now", provisional flag, verification
+    badge with ⚠ for non-primary) and NOT_APPLICABLE rows; surfaces `invalid_fields`.
+  - Tests: 66 pass (added cross_document + evaluator-substance tests). Full suite GREEN
+    (no `--ignore` needed anymore).
+- 2026-06-26 — **PHASE 0 COMPLETE.** New tests: 35 pass (schema/applicability/readiness/
+  substance). Full suite: 53 pass, 2 fail + 1 collection error — ALL THREE PRE-EXISTING on
+  the clean base (test_cli `cli.cli` attr, test_render `render_pdf()` signature,
+  test_scanner_enhanced threshold). Phase 0 added zero new failures. Pre-existing failures
+  left untouched (not in Phase-0 scope; flagged here for a future cleanup pass).
