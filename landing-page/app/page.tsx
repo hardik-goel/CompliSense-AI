@@ -1072,7 +1072,7 @@ export default function HomePage() {
             <div className="security-item" data-animate>
               <div className="icon-box"><Building2 size={24} /></div>
               <strong className="author-name">India-hosted roadmap</strong>
-              <p className="body-text" style={{ fontSize: "0.85rem" }}>Data residency options planned for 2026 to ensure compliance.</p>
+              <p className="body-text" style={{ fontSize: "0.85rem" }}>Data residency options planned for 2026 to support your readiness posture.</p>
             </div>
           </div>
         </div>
@@ -1452,6 +1452,11 @@ export default function HomePage() {
             <span>&copy; 2026 CompliSense-AI &middot; Built in India 🇮🇳</span>
             <a href={`mailto:${supportEmail}`} style={{ color: "var(--text-muted)", fontSize: "12px", textDecoration: "underline" }}>{supportEmail}</a>
           </div>
+          <p className="body-text" style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "12px", textAlign: "center", lineHeight: 1.5 }}>
+            CompliSense-AI provides compliance-<strong>readiness</strong> assessment and tooling, not legal advice.
+            Results are informational, may not reflect the latest legal position, and do not constitute a legal
+            determination of compliance. Consult a qualified data-protection practitioner before relying on these results.
+          </p>
         </div>
       </footer>
     </main>

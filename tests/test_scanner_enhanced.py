@@ -162,8 +162,9 @@ def test_run_scan_with_thresholds(tmp_path):
 def test_run_scan_with_missing_fields_threshold(tmp_path):
     """Test scan with missing_fields threshold."""
     def mock_evaluator(root, inputs):
-        return {"missing_fields": 1}
-    
+        # Realistic file_presence shape: the file exists but one required field is missing.
+        return {"exists": True, "missing_fields": 1}
+
     with patch('agent.scanner._run_evaluator', return_value=mock_evaluator(tmp_path, {})):
         rules = [{
             "id": "R1",

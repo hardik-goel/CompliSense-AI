@@ -78,3 +78,38 @@ class Settings:
 
 
 settings = Settings()
+
+
+# ── Security hardening: never allow weak default secrets in production ───────────
+# (Audit finding H7.) In development these defaults stay for convenience but are warned
+# about; in production a weak/unset secret is a hard startup failure, not a silent fallback.
+import logging as _logging
+
+_WEAK_SECRETS = {
+    "admin_api_token": "dev-admin-token",
+    "jwt_secret": "change-me-in-production",
+}
+
+
+def _validate_secrets(s: Settings) -> None:
+    _log = _logging.getLogger("complisense.config")
+    weak = [name for name, bad in _WEAK_SECRETS.items() if getattr(s, name) == bad]
+    if not weak:
+        return
+    if s.is_production:
+        raise RuntimeError(
+            "Refusing to start in production with weak/default secrets: "
+            + ", ".join(weak)
+            + ". Set strong values via environment variables "
+            + ", ".join(n.upper() for n in weak)
+            + "."
+        )
+    _log.warning(
+        "Using insecure default secret(s) %s — acceptable only in development. "
+        "Set %s before any production deployment.",
+        ", ".join(weak),
+        ", ".join(n.upper() for n in weak),
+    )
+
+
+_validate_secrets(settings)

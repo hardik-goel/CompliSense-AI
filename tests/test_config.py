@@ -4,6 +4,9 @@ import importlib
 def test_production_defaults_to_complisense_domains(monkeypatch):
     monkeypatch.delenv("CORS_ORIGINS", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "production")
+    # Production now requires strong secrets (config hardening H7); supply them.
+    monkeypatch.setenv("JWT_SECRET", "test-strong-jwt-secret")
+    monkeypatch.setenv("ADMIN_API_TOKEN", "test-strong-admin-token")
 
     config_module = importlib.import_module("saas.app.config")
     config_module = importlib.reload(config_module)
@@ -18,6 +21,8 @@ def test_production_defaults_to_complisense_domains(monkeypatch):
 
 def test_domain_defaults(monkeypatch):
     monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("JWT_SECRET", "test-strong-jwt-secret")
+    monkeypatch.setenv("ADMIN_API_TOKEN", "test-strong-admin-token")
     monkeypatch.delenv("APP_BASE_URL", raising=False)
     monkeypatch.delenv("API_BASE_URL", raising=False)
     monkeypatch.delenv("MARKETING_SITE_URL", raising=False)
