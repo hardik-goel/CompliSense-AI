@@ -42,13 +42,20 @@
 - **Retention:** for signed-in users, retained as scan history (Phase 2). Provide deletion
   on account request.
 
-### 3. Public web Readiness tool (Phase 1 — PLANNED, not yet implemented)
-- **Anonymous visitors:** questionnaire answers must be ephemeral (in-memory / session,
-  not persisted) OR persisted only with explicit, specific consent. No silent storage.
-- **Signed-in users:** completed assessments persisted to their account.
-- **Analytics:** only privacy-respecting funnel events (completions, signups) — no raw
-  answer payloads tied to identifiable visitors without consent.
-- This section MUST be completed and verified when Phase 1 ships.
+### 3. Public web Readiness tool (Phase 1 — IMPLEMENTED)
+Endpoints: `GET/POST /api/v1/readiness/*` (`saas/app/readiness.py`); UI:
+`landing-page/app/readiness/`.
+- **Anonymous visitors:** questionnaire answers are processed in-request to compute the
+  score + top-3 teaser and are **NOT persisted** (ephemeral). The `score` endpoint writes
+  nothing to the database for anonymous users. The UI states this on the form.
+- **Signed-in users:** the full report is returned, and the assessment is persisted to the
+  user's account **only if they pass `consent_to_store: true`** (collection
+  `readiness_assessments`: user_id, timestamp, answers, score, summary). Without consent,
+  nothing is stored. Retrievable/deletable per account.
+- **Analytics:** first-party only (`saas/app/analytics.py`, collection `analytics_events`).
+  Records non-PII funnel events (`readiness_completed`, `signup`) with safe properties
+  (score bucket, authenticated flag, pack id) — a blocklist strips email/answers/name/ip.
+  No third-party tracker; consistent with the privacy promise.
 
 ### 4. LLM-assisted features (Phase 7 — PLANNED)
 - No user artefacts/personal data may be sent to a third-party model without **explicit,

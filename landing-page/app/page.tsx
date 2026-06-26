@@ -225,6 +225,7 @@ export default function HomePage() {
             <a href="#solutions">Solutions</a>
             <a href="#pricing">Pricing</a>
             <a href="#about">About</a>
+            <Link href="/readiness">DPDP Score</Link>
           </nav>
           <div className="header-actions">
             <a href="#contact" className="btn-ghost">Contact</a>
@@ -279,6 +280,10 @@ export default function HomePage() {
               <a href="/about" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
                 About
+              </a>
+              <a href="/readiness" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                DPDP Readiness Score
               </a>
               <a href="#contact" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>

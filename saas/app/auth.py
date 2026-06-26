@@ -198,6 +198,13 @@ async def register(user_data: UserRegister, response: Response):
     _set_auth_cookie(response, token)
     logger.info("Registered user email=%s", email)
 
+    # First-party funnel event (non-PII: no email stored in the event).
+    try:
+        from saas.app.analytics import record_event
+        record_event("signup", {"source": "register"})
+    except Exception:
+        pass
+
     return {
         "access_token": token,
         "token_type": "bearer",
