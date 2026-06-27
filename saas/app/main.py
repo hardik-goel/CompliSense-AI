@@ -76,6 +76,9 @@ app.include_router(monitoring_router)
 from saas.app.connectors_api import router as connectors_router  # noqa: E402
 app.include_router(connectors_router)
 
+from saas.app.project_readiness import router as project_readiness_router  # noqa: E402
+app.include_router(project_readiness_router)
+
 
 @app.on_event("startup")
 async def startup_event():

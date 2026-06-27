@@ -156,6 +156,9 @@ cited rules. Build the spine before the product on top of it.
     filtered + never stored), consent-gated persist of signals/suggestions, audit, apply→manifest
   - [x] 3.3 UI (`connectors.html` + `/projects/{id}/connectors`): provider picker +
     least-privilege handout + credential form + suggestion review→confirm + history
+  - [x] 3.4 Readiness wire (`project_readiness.py` + `GET /projects/{id}/readiness`):
+    discovered_manifest overlays self-declared answers → applicability-gated readiness;
+    connector-corroborated rules tagged. Closes the connector→manifest→readiness loop.
 - [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
 - [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
 - [ ] **Phase 6** MCP server for CompliSense
@@ -166,6 +169,14 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 3.4 readiness wire done.** Closed the connector→manifest→readiness
+  loop. `saas/app/project_readiness.py` + `GET /projects/{id}/readiness?pack_id=`: merges
+  self-declared `manifest_answers` with connector-confirmed `discovered_manifest` (discovery
+  wins as live evidence), builds a Manifest (`build_manifest`), scores via `score_manifest`
+  (applicability-gated, DPDP packs only), and tags ready/gap rules a connector corroborated
+  (`evidence_source: connector`) + returns the derived applicability profile. UI: "Compute
+  readiness" panel in `connectors.html`. Tests: +5 (`test_project_readiness.py`). Full suite:
+  **159 passed, 0 failed.**
 - 2026-06-27 — **Phase 3.2 + 3.3 done — PHASE 3 COMPLETE.** 3.2 `saas/app/connectors_api.py`:
   `GET /api/v1/connectors` (catalog: providers + requirements + per-provider least-privilege
   policy), `POST /projects/{id}/connectors/{provider}/discover` (creds FILTERED to the exact

@@ -68,6 +68,14 @@
     </section>
 
     <section class="card-pane">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Project readiness <span class="muted small">— scored from your manifest + confirmed discovery</span></h2>
+        <button id="readiness-btn" class="btn btn-outline-light btn-sm">Compute</button>
+      </div>
+      <div id="readiness"><p class="muted mb-0">Run discovery and apply suggestions, then compute readiness to see the effect.</p></div>
+    </section>
+
+    <section class="card-pane">
       <h2 class="h5 mb-3">Past discoveries</h2>
       <div id="history"><p class="muted mb-0">Loading…</p></div>
     </section>
@@ -167,6 +175,21 @@
             <td class="muted small">${(d.applied_fields || []).join(", ") || "—"}</td></tr>`).join("")}</tbody></table>`
         : `<p class="muted mb-0">No saved discoveries yet.</p>`;
     }
+
+    document.getElementById("readiness-btn").addEventListener("click", async () => {
+      const el = document.getElementById("readiness");
+      el.innerHTML = `<p class="muted mb-0">scoring…</p>`;
+      const res = await fetch(`/projects/${PID}/readiness`);
+      const r = await res.json();
+      if (!res.ok) { el.innerHTML = `<p class="muted mb-0">✗ ${esc(r.detail || res.status)}</p>`; return; }
+      const backed = (r.ready || []).concat(r.gaps || []).filter(i => i.evidence_source === "connector");
+      el.innerHTML = `<div class="d-flex gap-4 flex-wrap mb-2">
+          <div><span class="h3">${r.readiness_score}%</span> <span class="muted small">readiness</span></div>
+          <div class="muted small align-self-center">ready ${r.summary.ready} · gaps ${r.summary.gaps} · N/A ${r.summary.not_applicable}</div>
+        </div>
+        <div class="muted small">Confirmed from connectors: ${(r.evidence.discovered_fields || []).map(esc).join(", ") || "none yet"}.
+          ${backed.length ? `<span class="act-confirm">${backed.length} rule(s) corroborated by discovery.</span>` : ""}</div>`;
+    });
 
     loadCatalog();
     loadHistory();
