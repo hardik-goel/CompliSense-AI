@@ -79,6 +79,9 @@ app.include_router(connectors_router)
 from saas.app.project_readiness import router as project_readiness_router  # noqa: E402
 app.include_router(project_readiness_router)
 
+from saas.app.pii_api import router as pii_router  # noqa: E402
+app.include_router(pii_router)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -112,6 +115,7 @@ def _is_html_app_path(path: str) -> bool:
         or path.startswith("/experience/")
         or (path.startswith("/projects/") and path.endswith("/monitoring"))
         or (path.startswith("/projects/") and path.endswith("/connectors"))
+        or (path.startswith("/projects/") and path.endswith("/pii"))
     )
 
 
@@ -240,6 +244,21 @@ async def project_connectors_page(project_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Project not found")
     return templates.TemplateResponse(
         "connectors.html",
+        _template_context(request, user=user, project_id=project_id,
+                          project_name=project.get("name", "Project")),
+    )
+
+
+@app.get("/projects/{project_id}/pii", response_class=HTMLResponse)
+async def project_pii_page(project_id: str, request: Request):
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    project = projects_collection().find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return templates.TemplateResponse(
+        "pii.html",
         _template_context(request, user=user, project_id=project_id,
                           project_name=project.get("name", "Project")),
     )
