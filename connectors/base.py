@@ -64,6 +64,31 @@ def utc_now_iso(now: Optional[dt.datetime] = None) -> str:
     return (now or dt.datetime.utcnow()).isoformat()
 
 
+def bearer_http_get(token: str, extra_headers: Optional[Dict[str, str]] = None):
+    """Build a read-only ``http_get(url, params=None) -> dict`` using a bearer token.
+
+    Used as the DEFAULT transport for the REST-based connectors (GCP/Azure/GitHub) so
+    they make real, authenticated GET calls in production. Tests inject their own
+    ``http_get`` instead, so neither the SDK nor the network is touched under test.
+    ``requests`` is imported lazily — importing a connector never requires it.
+    """
+
+    def _get(url: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        try:
+            import requests  # lazy: optional at import time
+        except ImportError as exc:  # pragma: no cover
+            raise ConnectorError("requests is required for live discovery") from exc
+        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        if extra_headers:
+            headers.update(extra_headers)
+        resp = requests.get(url, headers=headers, params=params, timeout=20)
+        if resp.status_code >= 400:
+            raise ConnectorError(f"GET {url} -> HTTP {resp.status_code}")
+        return resp.json() if resp.content else {}
+
+    return _get
+
+
 class Connector(ABC):
     """Abstract read-only connector.
 

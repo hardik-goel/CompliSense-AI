@@ -13,6 +13,10 @@ Guardrails (inherited from the product, do not relax):
   - Readiness framing, full audit trail.
 """
 
-from connectors.base import Connector, ConnectorError, DiscoveredSignal
+from connectors.base import Connector, ConnectorError, DiscoveredSignal, Suggestion
+from connectors.registry import available_providers, get_connector
 
-__all__ = ["Connector", "ConnectorError", "DiscoveredSignal"]
+__all__ = [
+    "Connector", "ConnectorError", "DiscoveredSignal", "Suggestion",
+    "available_providers", "get_connector",
+]
