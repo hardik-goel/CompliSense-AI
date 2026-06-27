@@ -43,6 +43,8 @@ def ensure_indexes() -> None:
     monitor_alerts = get_collection("monitor_alerts")
     connector_discoveries = get_collection("connector_discoveries")
     pii_inferences = get_collection("pii_inferences")
+    regulatory_snapshots = get_collection("regulatory_snapshots")
+    regulatory_changes = get_collection("regulatory_changes")
     audit_logs = get_collection("audit_logs")
 
     users.create_index([("email", ASCENDING)], unique=True, name="uniq_user_email")
@@ -69,11 +71,15 @@ def ensure_indexes() -> None:
     pii_inferences.create_index([("inference_id", ASCENDING)], unique=True, name="uniq_inference_id")
     pii_inferences.create_index([("project_id", ASCENDING), ("created_at", DESCENDING)], name="pii_by_project")
 
+    regulatory_snapshots.create_index([("url", ASCENDING), ("fetched_at", DESCENDING)], name="snapshots_by_url")
+    regulatory_changes.create_index([("change_id", ASCENDING)], unique=True, name="uniq_change_id")
+    regulatory_changes.create_index([("status", ASCENDING), ("detected_at", DESCENDING)], name="changes_by_status")
+
     audit_logs.create_index([("audit_id", ASCENDING)], unique=True, name="uniq_audit_id")
     audit_logs.create_index([("timestamp", DESCENDING)], name="audit_by_time")
     audit_logs.create_index([("user_id", ASCENDING), ("timestamp", DESCENDING)], name="audit_by_user")
 
-    logger.info("MongoDB indexes ensured for users, projects, scans, scan_runs, monitor_alerts, connector_discoveries, pii_inferences, and audit_logs")
+    logger.info("MongoDB indexes ensured for users, projects, scans, scan_runs, monitor_alerts, connector_discoveries, pii_inferences, regulatory_snapshots/changes, and audit_logs")
 
 
 def ping_database() -> None:

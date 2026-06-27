@@ -82,6 +82,9 @@ app.include_router(project_readiness_router)
 from saas.app.pii_api import router as pii_router  # noqa: E402
 app.include_router(pii_router)
 
+from saas.app.regwatch_api import router as regwatch_router  # noqa: E402
+app.include_router(regwatch_router)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -111,6 +114,7 @@ def _is_html_app_path(path: str) -> bool:
         or path.startswith("/dashboard")
         or path.startswith("/about")
         or path.startswith("/reports")
+        or path.startswith("/regwatch")
         or path.startswith("/scan/")
         or path.startswith("/experience/")
         or (path.startswith("/projects/") and path.endswith("/monitoring"))
@@ -202,6 +206,14 @@ async def eu_ai_experience(request: Request):
 @app.get("/experience/dpdp-india", response_class=HTMLResponse)
 async def dpdp_experience(request: Request):
     return templates.TemplateResponse("experience_dpdp.html", _template_context(request))
+
+
+@app.get("/regwatch", response_class=HTMLResponse)
+async def regwatch_page(request: Request):
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    return templates.TemplateResponse("regwatch.html", _template_context(request, user=user))
 
 
 @app.get("/reports", response_class=HTMLResponse)
