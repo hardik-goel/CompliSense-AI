@@ -59,3 +59,26 @@ services:
         sync: false
       - key: LOG_LEVEL
         value: INFO
+
+  # Phase 5.4: regulatory-change watcher. Fetches the legal sources our rulepacks cite and
+  # raises a human-gated review item on any change. Detection only — never edits rulepacks.
+  - type: cron
+    name: complisense-regwatch-sweep
+    env: python
+    plan: free
+    schedule: "0 5 * * 1"  # weekly, Monday 05:00 UTC
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m saas.app.regwatch_cron
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB
+        value: complisense
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_API_TOKEN
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO

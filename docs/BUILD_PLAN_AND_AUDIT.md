@@ -168,7 +168,13 @@ cited rules. Build the spine before the product on top of it.
     field names/sources → infer → review→confirm into `discovered_manifest`; consent-gated + audit.
   - [x] 4.4 Feed into readiness — children_data ⇒ `processes_children_data` suggestion flips the
     applicability profile; all applied facts scored via the 3.4 readiness wire.
-- [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
+- [x] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
+  - [x] 5.1 Regwatch core (`compliance/regwatch.py`): watch-source derivation from rulepack
+    `source_url`s, whitespace-normalized content hashing, baseline/change detection.
+  - [x] 5.2/5.3 API (`saas/app/regwatch_api.py`): `run_watch_sweep` (snapshot + raise pending
+    change on diff; best-effort per source), sources/changes list, admin-gated run + human
+    review (approve/dismiss, audited) — NEVER edits rulepacks.
+  - [x] 5.4 Cron (`regwatch_cron.py` + render weekly cron) + admin UI (`regwatch.html` + `/regwatch`).
 - [ ] **Phase 6** MCP server for CompliSense
 - [ ] **Phase 7** LLM Remediation Copilot (local/consent data path)
 - [ ] **Phase 8** Regulator-ready evidence exports + multi-team roles
@@ -177,6 +183,19 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 5 done — COMPLETE (regulatory-change watcher, human-gated).** Monitors
+  the LAW, not the customer; detection only, never auto-edits a rulepack or rescores. 5.1
+  `compliance/regwatch.py` (pure): `collect_watch_sources` (dedupe rulepack `source_url`s →
+  rule/pack map), `normalize_text`+`content_hash` (whitespace-insensitive so reformatting ≠
+  legal change), `detect_change` (baseline vs changed). 5.2/5.3 `saas/app/regwatch_api.py`:
+  `run_watch_sweep(fetcher,now)` — fetch each source (injectable; default requests),
+  snapshot to `regulatory_snapshots`, raise a PENDING `regulatory_changes` on diff (deduped
+  while pending; per-source fetch errors recorded, never fatal); `GET /sources`, `GET /changes`
+  (signed-in); admin-gated (`require_admin`) `POST /run` + `POST /changes/{id}/review`
+  (approve/dismiss + note, audited; approve returns rules_to_review, edits nothing). 5.4
+  `saas/app/regwatch_cron.py` + Render weekly cron (Mon 05:00 UTC); admin UI `regwatch.html`
+  + `/regwatch` (token field, run sweep, approve/dismiss). Indexes added. Tests: +13
+  (`test_regwatch.py` 4, `test_regwatch_api.py` 9). Full suite: **198 passed, 0 failed.**
 - 2026-06-27 — **Phase 4.2 + 4.3 + 4.4 done — PHASE 4 COMPLETE.** 4.2 `compliance/dataflow.py`
   (`DataSource`, `infer_data_flows` — per-source PII via infer_pii, category→sources map,
   cross-border flag when PII in a non-India region [`is_india_region`, provider-agnostic],
