@@ -175,7 +175,13 @@ cited rules. Build the spine before the product on top of it.
     change on diff; best-effort per source), sources/changes list, admin-gated run + human
     review (approve/dismiss, audited) — NEVER edits rulepacks.
   - [x] 5.4 Cron (`regwatch_cron.py` + render weekly cron) + admin UI (`regwatch.html` + `/regwatch`).
-- [ ] **Phase 6** MCP server for CompliSense
+- [x] **Phase 6** MCP server for CompliSense
+  - [x] 6.1 Pure tool registry (`mcp_server/tools.py`) — 8 read-only tools over the existing
+    engine (rulepacks/rules+citations, questionnaire, score_readiness, infer_pii,
+    infer_data_flows, list_connectors, connector_policy). DB-free, SDK-free, tested directly.
+  - [x] 6.2 MCP stdio transport (`mcp_server/server.py`) — wraps the registry via the `mcp`
+    SDK (lazy import); `python -m mcp_server.server`.
+  - [x] 6.3 Docs + Claude Desktop config (`mcp_server/README.md`) + `mcp` in requirements.
 - [ ] **Phase 7** LLM Remediation Copilot (local/consent data path)
 - [ ] **Phase 8** Regulator-ready evidence exports + multi-team roles
 
@@ -183,6 +189,16 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 6 done — COMPLETE (MCP server).** New top-level `mcp_server/` package,
+  DB-free + standalone so MCP clients (Claude Desktop) get the grounded read-only engine. 6.1
+  `tools.py` pure registry: 8 tools — list_rulepacks, list_rules (dual citations + framing),
+  get_questionnaire, score_readiness (DPDP, applicability-gated), infer_pii / infer_data_flows
+  (NAMES only), list_connectors, connector_policy. `list_tools()`/`call_tool(name,args)`
+  dispatch (KeyError unknown tool, ValueError bad args). 6.2 `server.py` stdio transport wraps
+  the registry via the `mcp` SDK, imported LAZILY in `main()` so the package imports without
+  the SDK. 6.3 `mcp_server/README.md` (tool table + Claude Desktop config) + `mcp==1.2.0` added
+  to requirements. Tests: +14 (`test_mcp_tools.py`, pure, incl. import-without-SDK). Full
+  suite: **212 passed, 0 failed.**
 - 2026-06-27 — **Phase 5 done — COMPLETE (regulatory-change watcher, human-gated).** Monitors
   the LAW, not the customer; detection only, never auto-edits a rulepack or rescores. 5.1
   `compliance/regwatch.py` (pure): `collect_watch_sources` (dedupe rulepack `source_url`s →
