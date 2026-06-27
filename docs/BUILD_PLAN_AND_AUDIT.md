@@ -148,12 +148,14 @@ cited rules. Build the spine before the product on top of it.
   - [x] 2.2 Drift core (`compliance/drift.py`) + `/projects/{id}/monitoring/{history,drift,summary}`
   - [x] 2.3 Dashboard posture-over-time / trend UI (`monitoring.html` + `/projects/{id}/monitoring`)
   - [x] 2.4 Schedule + regression/overdue alerts + cron sweep (`monitoring_cron.py`, render cron)
-- [~] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
+- [x] **Phase 3** Tier-1 Connector Discovery (AWS/GCP/Azure/GitHub, read-only least-privilege)
   - [x] 3.1 Connector framework + signal model + **4 read-only connectors** (AWS via STS
     assume-role/boto3; GCP, Azure, GitHub via bearer-token REST) + registry +
     least-privilege policy per provider + provider-agnostic signal→manifest-suggestion mapper
-  - [ ] 3.2 API endpoints (run discovery, return suggestions, consent-gated persist + audit) + STS wiring
-  - [ ] 3.3 UI: connect-AWS flow + least-privilege/CloudFormation handout + suggestion review→confirm
+  - [x] 3.2 API endpoints (`saas/app/connectors_api.py`): catalog, run discovery (creds
+    filtered + never stored), consent-gated persist of signals/suggestions, audit, apply→manifest
+  - [x] 3.3 UI (`connectors.html` + `/projects/{id}/connectors`): provider picker +
+    least-privilege handout + credential form + suggestion review→confirm + history
 - [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
 - [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
 - [ ] **Phase 6** MCP server for CompliSense
@@ -164,6 +166,19 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 3.2 + 3.3 done — PHASE 3 COMPLETE.** 3.2 `saas/app/connectors_api.py`:
+  `GET /api/v1/connectors` (catalog: providers + requirements + per-provider least-privilege
+  policy), `POST /projects/{id}/connectors/{provider}/discover` (creds FILTERED to the exact
+  accepted kwargs — blocks client_factory/http_get injection — used once then dropped;
+  signals+suggestions returned; persisted to `connector_discoveries` ONLY with
+  `consent_to_store`; never stores creds; ConnectorError→400, SDK/net→502; audit logged),
+  list/get discoveries, `POST .../apply` (confirm accepted suggestions → merged into
+  project `discovered_manifest`, human-in-the-loop, audited). Indexes + router + page route
+  wired. 3.3 `saas/templates/connectors.html` + `/projects/{id}/connectors`: provider picker,
+  least-privilege handout, credential form (creds-never-stored warning), run discovery,
+  suggestion review→confirm checkboxes, raw signals, past-discoveries table; cross-linked
+  from monitoring + reports. Tests: +11 (`test_connectors_api.py`, fake connector/collections,
+  no SDK/net). Full suite: **154 passed, 0 failed.**
 - 2026-06-27 — **Phase 2.3 + 2.4 done — PHASE 2 COMPLETE.** 2.3 trend UI:
   `saas/templates/monitoring.html` (Chart.js posture-over-time + drift tables +
   alerts + schedule selector; client-fetches the monitoring JSON API), page route

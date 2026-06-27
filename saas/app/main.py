@@ -73,6 +73,9 @@ app.include_router(readiness_router)
 from saas.app.monitoring import router as monitoring_router  # noqa: E402
 app.include_router(monitoring_router)
 
+from saas.app.connectors_api import router as connectors_router  # noqa: E402
+app.include_router(connectors_router)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -105,6 +108,7 @@ def _is_html_app_path(path: str) -> bool:
         or path.startswith("/scan/")
         or path.startswith("/experience/")
         or (path.startswith("/projects/") and path.endswith("/monitoring"))
+        or (path.startswith("/projects/") and path.endswith("/connectors"))
     )
 
 
@@ -218,6 +222,21 @@ async def project_monitoring_page(project_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Project not found")
     return templates.TemplateResponse(
         "monitoring.html",
+        _template_context(request, user=user, project_id=project_id,
+                          project_name=project.get("name", "Project")),
+    )
+
+
+@app.get("/projects/{project_id}/connectors", response_class=HTMLResponse)
+async def project_connectors_page(project_id: str, request: Request):
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    project = projects_collection().find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return templates.TemplateResponse(
+        "connectors.html",
         _template_context(request, user=user, project_id=project_id,
                           project_name=project.get("name", "Project")),
     )

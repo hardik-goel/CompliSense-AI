@@ -41,6 +41,7 @@ def ensure_indexes() -> None:
     scans = get_collection("scans")
     scan_runs = get_collection("scan_runs")
     monitor_alerts = get_collection("monitor_alerts")
+    connector_discoveries = get_collection("connector_discoveries")
     audit_logs = get_collection("audit_logs")
 
     users.create_index([("email", ASCENDING)], unique=True, name="uniq_user_email")
@@ -61,11 +62,14 @@ def ensure_indexes() -> None:
     monitor_alerts.create_index([("project_id", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)], name="alerts_by_project")
     monitor_alerts.create_index([("dedupe_key", ASCENDING), ("status", ASCENDING)], name="alerts_dedupe")
 
+    connector_discoveries.create_index([("discovery_id", ASCENDING)], unique=True, name="uniq_discovery_id")
+    connector_discoveries.create_index([("project_id", ASCENDING), ("created_at", DESCENDING)], name="discoveries_by_project")
+
     audit_logs.create_index([("audit_id", ASCENDING)], unique=True, name="uniq_audit_id")
     audit_logs.create_index([("timestamp", DESCENDING)], name="audit_by_time")
     audit_logs.create_index([("user_id", ASCENDING), ("timestamp", DESCENDING)], name="audit_by_user")
 
-    logger.info("MongoDB indexes ensured for users, projects, scans, scan_runs, monitor_alerts, and audit_logs")
+    logger.info("MongoDB indexes ensured for users, projects, scans, scan_runs, monitor_alerts, connector_discoveries, and audit_logs")
 
 
 def ping_database() -> None:

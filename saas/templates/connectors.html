@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connectors | CompliSense-AI</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #0f1116; color: #e7eaf0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .shell { max-width: 1080px; margin: 0 auto; padding: 36px 20px 64px; }
+    .card-pane { background: #171a22; border: 1px solid #2a2f3a; border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+    .muted { color: #98a2b3; }
+    .form-control, .form-select { background: #10131a; color: #e7eaf0; border-color: #2a2f3a; }
+    .form-control:focus, .form-select:focus { background: #10131a; color: #e7eaf0; border-color: #6d7eea; box-shadow: none; }
+    pre.policy { background: #0c0e13; border: 1px solid #2a2f3a; border-radius: 10px; padding: 12px; color: #cbd5e1; font-size: .8rem; max-height: 240px; overflow: auto; }
+    table.tbl th, table.tbl td { color: #e7eaf0; border-color: #2a2f3a; background: transparent; font-size: .88rem; }
+    table.tbl th { color: #98a2b3; }
+    .conf-high { color: #34d399; } .conf-medium { color: #fbbf24; } .conf-low { color: #98a2b3; }
+    .act-confirm { color: #34d399; } .act-review { color: #fbbf24; }
+    .warn { background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.4); border-radius: 10px; padding: 10px 12px; color: #fbbf24; font-size: .85rem; }
+    a { text-decoration: none; }
+  </style>
+  <link rel="stylesheet" href="/static/theme.css">
+</head>
+<body data-project-id="{{ project_id }}">
+  <main class="shell">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+      <div>
+        <h1 class="h2 mb-1">Connectors — read-only discovery</h1>
+        <p class="muted mb-0">{{ project_name }} — connect a cloud/SCM account read-only to corroborate your manifest. Suggestions only; you confirm.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/projects/{{ project_id }}/monitoring" class="btn btn-outline-light btn-sm">Monitoring</a>
+        <a href="/dashboard" class="btn btn-outline-light btn-sm">Dashboard</a>
+      </div>
+    </div>
+
+    <section class="card-pane">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="muted small" for="provider">Provider</label>
+          <select id="provider" class="form-select"></select>
+        </div>
+        <div class="col-md-8" id="creds"></div>
+      </div>
+      <div class="warn mt-3 mb-3">Credentials are used only for this read-only scan and are <strong>never stored</strong>. Grant the least-privilege access shown below.</div>
+      <details class="mb-3">
+        <summary class="muted small" style="cursor:pointer">Least-privilege access to grant</summary>
+        <pre class="policy" id="policy">—</pre>
+      </details>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="consent">
+        <label class="form-check-label muted small" for="consent">Save this discovery (signals + suggestions, no credentials) so I can apply suggestions and keep a record.</label>
+      </div>
+      <button id="run" class="btn btn-primary">Run discovery</button>
+      <span id="run-status" class="muted small ms-2"></span>
+    </section>
+
+    <section class="card-pane" id="results-pane" style="display:none">
+      <h2 class="h5 mb-3">Suggestions <span class="muted small">— accept the ones that match reality</span></h2>
+      <div id="suggestions"></div>
+      <button id="apply" class="btn btn-success mt-3" disabled>Apply selected to manifest</button>
+      <span id="apply-status" class="muted small ms-2"></span>
+      <h3 class="h6 mt-4 mb-2 muted">Raw signals</h3>
+      <div id="signals"></div>
+    </section>
+
+    <section class="card-pane">
+      <h2 class="h5 mb-3">Past discoveries</h2>
+      <div id="history"><p class="muted mb-0">Loading…</p></div>
+    </section>
+  </main>
+
+  <script>
+    const PID = document.body.dataset.projectId;
+    let CATALOG = {}, LAST = null;
+    const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+    const fieldName = req => req.split(" (")[0];
+    const isOptional = req => req.includes("(optional)");
+
+    async function loadCatalog() {
+      const data = await fetch("/api/v1/connectors").then(r => r.json());
+      data.providers.forEach(p => CATALOG[p.provider] = p);
+      const sel = document.getElementById("provider");
+      sel.innerHTML = data.providers.map(p => `<option value="${p.provider}">${p.provider.toUpperCase()}</option>`).join("");
+      sel.addEventListener("change", renderProvider);
+      renderProvider();
+    }
+
+    function renderProvider() {
+      const p = CATALOG[document.getElementById("provider").value];
+      document.getElementById("creds").innerHTML = p.requirements.map(req => {
+        const name = fieldName(req);
+        return `<div class="mb-2"><label class="muted small">${esc(req)}</label>
+          <input class="form-control form-control-sm" data-cred="${esc(name)}" data-opt="${isOptional(req)}"
+            type="${name.includes('token') || name.includes('secret') ? 'password' : 'text'}"></div>`;
+      }).join("");
+      document.getElementById("policy").textContent = JSON.stringify(p.least_privilege_policy, null, 2);
+    }
+
+    function collectCreds() {
+      const creds = {};
+      document.querySelectorAll("[data-cred]").forEach(i => { if (i.value.trim()) creds[i.dataset.cred] = i.value.trim(); });
+      return creds;
+    }
+
+    document.getElementById("run").addEventListener("click", async () => {
+      const provider = document.getElementById("provider").value;
+      const status = document.getElementById("run-status");
+      status.textContent = "running read-only discovery…";
+      try {
+        const res = await fetch(`/projects/${PID}/connectors/${provider}/discover`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credentials: collectCreds(), consent_to_store: document.getElementById("consent").checked })
+        });
+        const data = await res.json();
+        if (!res.ok) { status.textContent = "✗ " + (data.detail || res.status); return; }
+        status.textContent = data.stored ? "✓ done (saved)" : "✓ done (not saved)";
+        LAST = data;
+        renderResults(data);
+        loadHistory();
+      } catch (e) { status.textContent = "✗ " + e; }
+    });
+
+    function renderResults(data) {
+      document.getElementById("results-pane").style.display = "block";
+      document.getElementById("suggestions").innerHTML = data.suggestions.length
+        ? `<table class="table tbl"><thead><tr><th></th><th>Manifest field</th><th>Suggested</th><th>Confidence</th><th>Why</th></tr></thead><tbody>${
+          data.suggestions.map(s => `<tr>
+            <td><input type="checkbox" class="sug" data-field="${esc(s.manifest_field)}" ${s.action === "confirm" ? "checked" : ""}></td>
+            <td><code>${esc(s.manifest_field)}</code></td>
+            <td>${esc(JSON.stringify(s.suggested_value))}</td>
+            <td class="conf-${s.confidence}">${s.confidence} · <span class="act-${s.action}">${s.action}</span></td>
+            <td class="muted small">${esc(s.rationale)}</td></tr>`).join("")}</tbody></table>`
+        : `<p class="muted mb-0">No suggestions from this scan.</p>`;
+      document.getElementById("signals").innerHTML = `<table class="table tbl"><tbody>${
+        data.signals.map(s => `<tr><td><code>${esc(s.key)}</code></td><td>${esc(JSON.stringify(s.value))}</td>
+          <td class="conf-${s.confidence} small">${s.confidence}</td><td class="muted small">${esc(s.evidence)}</td></tr>`).join("")}</tbody></table>`;
+      const apply = document.getElementById("apply");
+      apply.disabled = !(data.stored && data.suggestions.length);
+      apply.title = data.stored ? "" : "Tick 'Save this discovery' before running to enable Apply.";
+    }
+
+    document.getElementById("apply").addEventListener("click", async () => {
+      const fields = [...document.querySelectorAll(".sug:checked")].map(c => c.dataset.field);
+      const status = document.getElementById("apply-status");
+      if (!fields.length) { status.textContent = "select at least one"; return; }
+      status.textContent = "applying…";
+      const res = await fetch(`/projects/${PID}/connectors/discoveries/${LAST.discovery_id}/apply`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accepted_fields: fields })
+      });
+      const data = await res.json();
+      status.textContent = res.ok ? `✓ applied: ${data.applied.join(", ")}` : "✗ " + (data.detail || res.status);
+      if (res.ok) loadHistory();
+    });
+
+    async function loadHistory() {
+      const el = document.getElementById("history");
+      const data = await fetch(`/projects/${PID}/connectors/discoveries`).then(r => r.json());
+      el.innerHTML = data.discoveries.length
+        ? `<table class="table tbl"><thead><tr><th>When</th><th>Provider</th><th>Signals</th><th>Suggestions</th><th>Applied</th></tr></thead><tbody>${
+          data.discoveries.map(d => `<tr><td>${new Date(d.created_at).toLocaleString()}</td>
+            <td>${d.provider.toUpperCase()}</td><td>${d.signal_count}</td><td>${d.suggestion_count}</td>
+            <td class="muted small">${(d.applied_fields || []).join(", ") || "—"}</td></tr>`).join("")}</tbody></table>`
+        : `<p class="muted mb-0">No saved discoveries yet.</p>`;
+    }
+
+    loadCatalog();
+    loadHistory();
+  </script>
+  <script src="/static/app-enhance.js"></script>
+</body>
+</html>
