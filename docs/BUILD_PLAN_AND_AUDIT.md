@@ -149,7 +149,11 @@ cited rules. Build the spine before the product on top of it.
   - [x] 2.2 Drift core (`compliance/drift.py`) + `/projects/{id}/monitoring/{history,drift,summary}`
   - [ ] 2.3 Dashboard posture-over-time / trend UI
   - [ ] 2.4 Scheduled re-scans (cron) + regression alerts
-- [ ] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
+- [~] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
+  - [x] 3.1 Connector framework + signal model + AWS read-only connector (STS assume-role,
+    boto3-optional/injectable) + least-privilege policy + signal→manifest-suggestion mapper
+  - [ ] 3.2 API endpoints (run discovery, return suggestions, consent-gated persist + audit) + STS wiring
+  - [ ] 3.3 UI: connect-AWS flow + least-privilege/CloudFormation handout + suggestion review→confirm
 - [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
 - [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
 - [ ] **Phase 6** MCP server for CompliSense
@@ -160,6 +164,21 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 3.1 done.** Tier-1 connector framework + AWS read-only discovery.
+  Decisions (confirmed with user): access = cross-account **STS AssumeRole**; persist
+  **signals + suggestions only, consent-gated** (never creds/raw payloads/ARNs). New
+  `connectors/` package: `base.py` (`DiscoveredSignal`, `Suggestion`, `Connector` ABC —
+  pure, dep-free), `aws.py` (`AWSConnector`: boto3-OPTIONAL/lazy + injectable
+  `client_factory`; assume-role once, reuse temp creds; 9 read-only probes — CloudTrail,
+  S3 enc/PAB/lifecycle/location, IAM MFA, GuardDuty, Config, KMS, RDS, Backup, region;
+  each probe defensively wrapped → one failure degrades a single signal, not the scan;
+  `least_privilege_policy()` = Get/List/Describe only), `mapping.py`
+  (`signals_to_suggestions` → manifest answer suggestions: storage_locations,
+  has_security_safeguards [confirm when enc+logging+access all present, else review],
+  retention_defined, cross_border_transfer [review]; honest — PII/consent NOT inferred).
+  Suggestions are proposals, never auto-applied. Tests: +8 (`test_connectors_aws.py`,
+  fake client_factory, no boto3/network). Full suite: **120 passed, 0 failed.**
+  NEXT in Phase 3: 3.2 API endpoints + STS wiring, 3.3 UI.
 - 2026-06-27 — **Phase 2.1 + 2.2 backend foundation done.** Continuous monitoring spine.
   `compliance/drift.py` (pure): `rule_states_from_findings` (compact snapshot, no raw
   artefact text), `posture_score` (0-100 over applicable rules; None when none applicable,
