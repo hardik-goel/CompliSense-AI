@@ -50,6 +50,7 @@
             </div>
             <div class="d-flex align-items-center gap-2">
               <span class="badge-status {{ scan.status }}">{{ scan.status or 'unknown' }}</span>
+              <a href="/projects/{{ scan.project_id }}/monitoring" class="btn btn-sm btn-outline-light">Monitoring</a>
               <a href="/scan/{{ scan.id }}" class="btn btn-sm btn-primary">Open detail</a>
             </div>
           </div>
