@@ -182,13 +182,32 @@ cited rules. Build the spine before the product on top of it.
   - [x] 6.2 MCP stdio transport (`mcp_server/server.py`) — wraps the registry via the `mcp`
     SDK (lazy import); `python -m mcp_server.server`.
   - [x] 6.3 Docs + Claude Desktop config (`mcp_server/README.md`) + `mcp` in requirements.
-- [ ] **Phase 7** LLM Remediation Copilot (local/consent data path)
+- [x] **Phase 7** LLM Remediation Copilot (consent data path)
+  - [x] 7.1 Copilot core (`compliance/copilot.py`) — grounded system prompt (answer only from
+    cited rule + user facts; readiness framing; not legal advice; drafts text, never mutates
+    systems), explain/draft, injectable LLM (default = Anthropic `claude-opus-4-8`, adaptive).
+  - [x] 7.2 API (`saas/app/copilot_api.py`) — `POST /projects/{id}/copilot/remediate`,
+    consent-gated, sends only non-PII facts (discovered_manifest) + rule, audited, `data_sent`
+    transparency; LLM failure → 502.
+  - [x] 7.3 UI — per-gap Explain/Draft buttons + consent in the readiness panel (`connectors.html`).
 - [ ] **Phase 8** Regulator-ready evidence exports + multi-team roles
 
 ---
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 7 done — COMPLETE (LLM Remediation Copilot).** Grounded, read-only,
+  consent-gated. 7.1 `compliance/copilot.py`: `SYSTEM_PROMPT` enforces answer-only-from-context
+  + readiness framing + not-legal-advice + may-draft-text-never-mutate-systems + says-so-when-
+  ungrounded; `RemediationCopilot.explain/draft`; `build_context_block` (cited rule + non-PII
+  facts); `default_llm()` = Anthropic SDK `claude-opus-4-8` + adaptive thinking, imported LAZILY
+  so the module/tests need no SDK; handles `stop_reason: refusal`. 7.2 `saas/app/copilot_api.py`:
+  `POST /projects/{id}/copilot/remediate` (mode explain|draft) — **requires consent_to_send**;
+  sends only the rule + project `discovered_manifest` (non-PII), never raw artefacts/values;
+  echoes `data_sent` (fact KEYS + citation) for transparency; audited; LLM/SDK failure → 502;
+  `get_copilot()` factory patched in tests. 7.3 UI: per-gap Explain/Draft buttons + consent box
+  in the readiness panel (`connectors.html`). `anthropic==0.69.0` added to requirements. Tests:
+  +13 (`test_copilot.py` 6, `test_copilot_api.py` 7). Full suite: **225 passed, 0 failed.**
 - 2026-06-27 — **Phase 6 done — COMPLETE (MCP server).** New top-level `mcp_server/` package,
   DB-free + standalone so MCP clients (Claude Desktop) get the grounded read-only engine. 6.1
   `tools.py` pure registry: 8 tools — list_rulepacks, list_rules (dual citations + framing),

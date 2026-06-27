@@ -85,6 +85,9 @@ app.include_router(pii_router)
 from saas.app.regwatch_api import router as regwatch_router  # noqa: E402
 app.include_router(regwatch_router)
 
+from saas.app.copilot_api import router as copilot_router  # noqa: E402
+app.include_router(copilot_router)
+
 
 @app.on_event("startup")
 async def startup_event():
