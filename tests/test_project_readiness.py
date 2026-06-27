@@ -54,6 +54,14 @@ def test_empty_project_is_honest_low(monkeypatch):
     assert report["readiness_score"] >= 0  # unknown counts as gap, never fabricated
 
 
+def test_children_data_flips_applicability_profile(monkeypatch):
+    # PII-derived processes_children_data (4.4 wire) must reach the readiness applicability profile.
+    _patch(monkeypatch, {"id": "p1", "user_id": "u1",
+                         "discovered_manifest": {"processes_children_data": True}})
+    report = _run(PR.project_readiness("p1", current_user=USER))
+    assert report["evidence"]["profile"]["processes_children_data"] is True
+
+
 def test_bad_pack_rejected(monkeypatch):
     from fastapi import HTTPException
     _patch(monkeypatch, {"id": "p1", "user_id": "u1"})

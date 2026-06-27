@@ -159,7 +159,15 @@ cited rules. Build the spine before the product on top of it.
   - [x] 3.4 Readiness wire (`project_readiness.py` + `GET /projects/{id}/readiness`):
     discovered_manifest overlays self-declared answers → applicability-gated readiness;
     connector-corroborated rules tagged. Closes the connector→manifest→readiness loop.
-- [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
+- [x] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
+  - [x] 4.1 PII inference engine (`compliance/pii.py`) — infer categories from field/element
+    NAMES (never values) → `pii_categories` suggestion (human-confirms). Pure, local.
+  - [x] 4.2 Data-flow inference (`compliance/dataflow.py`) — PII category → source/sink +
+    cross-border flags; suggestions for pii_categories/storage_locations/cross_border_transfer.
+  - [x] 4.3 API + UI (`saas/app/pii_api.py` + `pii.html` + `/projects/{id}/pii`) — paste
+    field names/sources → infer → review→confirm into `discovered_manifest`; consent-gated + audit.
+  - [x] 4.4 Feed into readiness — children_data ⇒ `processes_children_data` suggestion flips the
+    applicability profile; all applied facts scored via the 3.4 readiness wire.
 - [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
 - [ ] **Phase 6** MCP server for CompliSense
 - [ ] **Phase 7** LLM Remediation Copilot (local/consent data path)
@@ -169,6 +177,25 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 4.2 + 4.3 + 4.4 done — PHASE 4 COMPLETE.** 4.2 `compliance/dataflow.py`
+  (`DataSource`, `infer_data_flows` — per-source PII via infer_pii, category→sources map,
+  cross-border flag when PII in a non-India region [`is_india_region`, provider-agnostic],
+  suggestions for pii_categories/storage_locations/cross_border_transfer; names-only). 4.3
+  `saas/app/pii_api.py` (`POST /projects/{id}/pii/infer` [sources or field_names shorthand;
+  consent-gated persist to `pii_inferences`; audit], list/get, `POST .../apply` → merge into
+  `discovered_manifest`, union for multi-valued) + `pii.html` + `/projects/{id}/pii` (multi-
+  source field-name entry, names-only warning, data-flow table, suggestion review→confirm,
+  history; linked from connectors). 4.4 children_data ⇒ `processes_children_data` suggestion
+  flips applicability profile, scored via the 3.4 readiness wire. Tests: +18 (test_dataflow 9,
+  test_pii_api 8, +1 readiness; 4.1 test_pii 8 landed earlier). Full suite: **185 passed, 0 failed.**
+- 2026-06-27 — **Phase 4.1 done.** Tier-2 PII inference engine `compliance/pii.py` (pure,
+  local, NAMES-ONLY — never reads values, so the no-store stance holds). `PII_PATTERNS`
+  (category → keyword/confidence dict for the 9 manifest categories), `infer_pii(field_names)`
+  → `PIIFinding`s (camelCase/underscore tokenizer; short keywords match exact-token only to
+  avoid false positives like "pan" in "company"), `pii_to_suggestion` → one human-review
+  `pii_categories` manifest suggestion carrying the matched field NAMES as evidence. Input
+  source (confirmed direction): field/column/element names — foundation that 4.2/4.3 feed.
+  Tests: +8 (`test_pii.py`). Full suite: **167 passed, 0 failed.**
 - 2026-06-27 — **Phase 3.4 readiness wire done.** Closed the connector→manifest→readiness
   loop. `saas/app/project_readiness.py` + `GET /projects/{id}/readiness?pack_id=`: merges
   self-declared `manifest_answers` with connector-confirmed `discovered_manifest` (discovery

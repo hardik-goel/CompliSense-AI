@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PII &amp; Data Flow | CompliSense-AI</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #0f1116; color: #e7eaf0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .shell { max-width: 1080px; margin: 0 auto; padding: 36px 20px 64px; }
+    .card-pane { background: #171a22; border: 1px solid #2a2f3a; border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+    .muted { color: #98a2b3; }
+    .form-control, .form-select { background: #10131a; color: #e7eaf0; border-color: #2a2f3a; }
+    .form-control:focus, .form-select:focus { background: #10131a; color: #e7eaf0; border-color: #6d7eea; box-shadow: none; }
+    table.tbl th, table.tbl td { color: #e7eaf0; border-color: #2a2f3a; background: transparent; font-size: .88rem; }
+    table.tbl th { color: #98a2b3; }
+    .conf-high { color: #34d399; } .conf-medium { color: #fbbf24; } .conf-low { color: #98a2b3; }
+    .act-confirm { color: #34d399; } .act-review { color: #fbbf24; }
+    .warn { background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.4); border-radius: 10px; padding: 10px 12px; color: #fbbf24; font-size: .85rem; }
+    .source-row { border: 1px solid #2a2f3a; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    a { text-decoration: none; }
+  </style>
+  <link rel="stylesheet" href="/static/theme.css">
+</head>
+<body data-project-id="{{ project_id }}">
+  <main class="shell">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+      <div>
+        <h1 class="h2 mb-1">PII &amp; data-flow inference</h1>
+        <p class="muted mb-0">{{ project_name }} — paste the <strong>names</strong> of your data fields (never values). We infer personal-data categories + where they live. You confirm.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/projects/{{ project_id }}/connectors" class="btn btn-outline-light btn-sm">Connectors</a>
+        <a href="/projects/{{ project_id }}/monitoring" class="btn btn-outline-light btn-sm">Monitoring</a>
+      </div>
+    </div>
+
+    <section class="card-pane">
+      <div class="warn mb-3">Enter field/column/JSON-key <strong>names only</strong> — e.g. <code>user_email</code>, <code>pan_number</code>. Never paste real values. Field names are used to infer categories and are only stored if you tick "save".</div>
+      <div id="sources"></div>
+      <button id="add-source" class="btn btn-outline-light btn-sm mb-3">+ Add another data store</button>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="consent">
+        <label class="form-check-label muted small" for="consent">Save this inference (field names + suggestions) so I can apply it and keep a record.</label>
+      </div>
+      <button id="run" class="btn btn-primary">Infer</button>
+      <span id="run-status" class="muted small ms-2"></span>
+    </section>
+
+    <section class="card-pane" id="results-pane" style="display:none">
+      <h2 class="h5 mb-3">Data flow</h2>
+      <div id="flow"></div>
+      <h2 class="h5 mt-4 mb-3">Suggestions <span class="muted small">— accept what matches reality</span></h2>
+      <div id="suggestions"></div>
+      <button id="apply" class="btn btn-success mt-3" disabled>Apply selected to manifest</button>
+      <span id="apply-status" class="muted small ms-2"></span>
+    </section>
+
+    <section class="card-pane">
+      <h2 class="h5 mb-3">Past inferences</h2>
+      <div id="history"><p class="muted mb-0">Loading…</p></div>
+    </section>
+  </main>
+
+  <script>
+    const PID = document.body.dataset.projectId;
+    let LAST = null;
+    const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+    const PROVIDERS = ["", "aws", "gcp", "azure", "render", "on_prem", "third_party_saas", "notebooks", "unsure"];
+
+    function sourceRow(i) {
+      return `<div class="source-row" data-src="${i}">
+        <div class="row g-2 mb-2">
+          <div class="col-md-4"><input class="form-control form-control-sm s-name" placeholder="Data store name (e.g. users_db)"></div>
+          <div class="col-md-4"><select class="form-select form-select-sm s-provider">${PROVIDERS.map(p => `<option value="${p}">${p || "provider (optional)"}</option>`).join("")}</select></div>
+          <div class="col-md-4"><input class="form-control form-control-sm s-region" placeholder="region (e.g. ap-south-1)"></div>
+        </div>
+        <textarea class="form-control form-control-sm s-fields" rows="2" placeholder="field names, comma or newline separated"></textarea>
+      </div>`;
+    }
+
+    function addSource() {
+      document.getElementById("sources").insertAdjacentHTML("beforeend", sourceRow(Date.now()));
+    }
+
+    function collectSources() {
+      return [...document.querySelectorAll(".source-row")].map(row => {
+        const fields = row.querySelector(".s-fields").value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+        return {
+          name: row.querySelector(".s-name").value.trim() || "source",
+          field_names: fields,
+          provider: row.querySelector(".s-provider").value || null,
+          region: row.querySelector(".s-region").value.trim() || null,
+        };
+      }).filter(s => s.field_names.length);
+    }
+
+    document.getElementById("add-source").addEventListener("click", addSource);
+
+    document.getElementById("run").addEventListener("click", async () => {
+      const sources = collectSources();
+      const status = document.getElementById("run-status");
+      if (!sources.length) { status.textContent = "add at least one field name"; return; }
+      status.textContent = "inferring…";
+      const res = await fetch(`/projects/${PID}/pii/infer`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sources, consent_to_store: document.getElementById("consent").checked })
+      });
+      const data = await res.json();
+      if (!res.ok) { status.textContent = "✗ " + (data.detail || res.status); return; }
+      status.textContent = data.stored ? "✓ done (saved)" : "✓ done (not saved)";
+      LAST = data;
+      renderResults(data);
+      loadHistory();
+    });
+
+    function renderResults(data) {
+      document.getElementById("results-pane").style.display = "block";
+      const r = data.report;
+      document.getElementById("flow").innerHTML = `<table class="table tbl"><thead><tr><th>Source</th><th>Region</th><th>Categories found</th></tr></thead><tbody>${
+        r.sources.map(s => `<tr><td>${esc(s.name)}${s.provider ? ` <span class="muted small">(${esc(s.provider)})</span>` : ""}</td>
+          <td class="${s.region && !s.in_india ? "act-review" : "muted"} small">${esc(s.region || "—")}${s.region && !s.in_india ? " ⚠ outside India" : ""}</td>
+          <td>${s.categories.map(c => `<span class="conf-${c.confidence}">${esc(c.category)}</span>`).join(", ") || "<span class='muted small'>none</span>"}</td></tr>`).join("")}</tbody></table>
+        ${r.has_cross_border ? `<div class="warn mt-2">Cross-border: PII found outside India — review transfer obligations.</div>` : ""}`;
+
+      document.getElementById("suggestions").innerHTML = r.suggestions.length
+        ? `<table class="table tbl"><thead><tr><th></th><th>Manifest field</th><th>Suggested</th><th>Confidence</th><th>Why</th></tr></thead><tbody>${
+          r.suggestions.map(s => `<tr>
+            <td><input type="checkbox" class="sug" data-field="${esc(s.manifest_field)}" ${s.action === "confirm" ? "checked" : ""}></td>
+            <td><code>${esc(s.manifest_field)}</code></td>
+            <td>${esc(JSON.stringify(s.suggested_value))}</td>
+            <td class="conf-${s.confidence}">${s.confidence} · <span class="act-${s.action}">${s.action}</span></td>
+            <td class="muted small">${esc(s.rationale)}</td></tr>`).join("")}</tbody></table>`
+        : `<p class="muted mb-0">No personal-data categories inferred from these names.</p>`;
+
+      const apply = document.getElementById("apply");
+      apply.disabled = !(data.stored && r.suggestions.length);
+      apply.title = data.stored ? "" : "Tick 'Save this inference' before running to enable Apply.";
+    }
+
+    document.getElementById("apply").addEventListener("click", async () => {
+      const fields = [...document.querySelectorAll(".sug:checked")].map(c => c.dataset.field);
+      const status = document.getElementById("apply-status");
+      if (!fields.length) { status.textContent = "select at least one"; return; }
+      status.textContent = "applying…";
+      const res = await fetch(`/projects/${PID}/pii/inferences/${LAST.inference_id}/apply`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accepted_fields: fields })
+      });
+      const data = await res.json();
+      status.textContent = res.ok ? `✓ applied: ${data.applied.join(", ")} — readiness updated` : "✗ " + (data.detail || res.status);
+      if (res.ok) loadHistory();
+    });
+
+    async function loadHistory() {
+      const el = document.getElementById("history");
+      const data = await fetch(`/projects/${PID}/pii/inferences`).then(r => r.json());
+      el.innerHTML = data.inferences.length
+        ? `<table class="table tbl"><thead><tr><th>When</th><th>Sources</th><th>Suggestions</th><th>Cross-border</th><th>Applied</th></tr></thead><tbody>${
+          data.inferences.map(d => `<tr><td>${new Date(d.created_at).toLocaleString()}</td>
+            <td>${d.source_count}</td><td>${d.suggestion_count}</td>
+            <td class="${d.has_cross_border ? "act-review" : "muted"} small">${d.has_cross_border ? "yes" : "no"}</td>
+            <td class="muted small">${(d.applied_fields || []).join(", ") || "—"}</td></tr>`).join("")}</tbody></table>`
+        : `<p class="muted mb-0">No saved inferences yet.</p>`;
+    }
+
+    addSource();
+    loadHistory();
+  </script>
+  <script src="/static/app-enhance.js"></script>
+</body>
+</html>
