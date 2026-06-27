@@ -74,6 +74,11 @@
         <button id="readiness-btn" class="btn btn-outline-light btn-sm">Compute</button>
       </div>
       <div id="readiness"><p class="muted mb-0">Run discovery and apply suggestions, then compute readiness to see the effect.</p></div>
+      <div id="gaps" class="mt-3"></div>
+      <div class="form-check mt-2" id="copilot-consent-wrap" style="display:none">
+        <input class="form-check-input" type="checkbox" id="copilot-consent">
+        <label class="form-check-label muted small" for="copilot-consent">Allow sending the cited rule + my confirmed facts (no raw data) to the AI remediation copilot.</label>
+      </div>
     </section>
 
     <section class="card-pane">
@@ -190,7 +195,38 @@
         </div>
         <div class="muted small">Confirmed from connectors: ${(r.evidence.discovered_fields || []).map(esc).join(", ") || "none yet"}.
           ${backed.length ? `<span class="act-confirm">${backed.length} rule(s) corroborated by discovery.</span>` : ""}</div>`;
+      renderGaps(r.gaps || []);
     });
+
+    function renderGaps(gaps) {
+      const el = document.getElementById("gaps");
+      document.getElementById("copilot-consent-wrap").style.display = gaps.length ? "block" : "none";
+      if (!gaps.length) { el.innerHTML = ""; return; }
+      el.innerHTML = `<h3 class="h6 act-review mb-2">Gaps — get grounded remediation help</h3>` +
+        gaps.map(g => `<div class="border-bottom py-2" style="border-color:#2a2f3a!important">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div><strong>${esc(g.title)}</strong> <span class="muted small">${esc(g.rule_id)} · ${esc(g.rule_citation || g.act_citation || "")}</span></div>
+            <div class="text-nowrap">
+              <button class="btn btn-sm btn-outline-light" data-cop="explain" data-rule="${esc(g.rule_id)}">Explain</button>
+              <button class="btn btn-sm btn-outline-light" data-cop="draft" data-rule="${esc(g.rule_id)}">Draft policy</button>
+            </div></div>
+          <div class="copilot-out muted small mt-2" data-out="${esc(g.rule_id)}"></div></div>`).join("");
+      el.querySelectorAll("[data-cop]").forEach(b => b.addEventListener("click", () => copilot(b.dataset.rule, b.dataset.cop)));
+    }
+
+    async function copilot(ruleId, mode) {
+      const out = document.querySelector(`[data-out="${CSS.escape(ruleId)}"]`);
+      if (!document.getElementById("copilot-consent").checked) { out.textContent = "Tick the consent box to use the copilot."; return; }
+      out.textContent = "thinking…";
+      const res = await fetch(`/projects/${PID}/copilot/remediate`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rule_id: ruleId, mode, artifact_type: "privacy policy section", consent_to_send: true })
+      });
+      const d = await res.json();
+      if (!res.ok) { out.textContent = "✗ " + (d.detail || res.status); return; }
+      out.innerHTML = `<div style="white-space:pre-wrap">${esc(d.answer)}</div>
+        <div class="muted small mt-1">${esc(d.disclaimer)}${d.grounded ? "" : " (not grounded)"}</div>`;
+    }
 
     loadCatalog();
     loadHistory();
