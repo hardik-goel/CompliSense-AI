@@ -10,6 +10,29 @@
 
 ---
 
+## ▶ RESUME HERE (checkpoint 2026-06-27, end of day)
+
+**Status:** Phase 0 (Foundation) ✅ + Phase 1 (Tier-0 Manifest + public DPDP Readiness
+Score) ✅ + Phase-1 follow-ups (admin-gate, nav discoverability, env) ✅.
+**Tests:** full suite **92 passed, 0 failed** (run: `3.11_venv/bin/python -m pytest -q`;
+slow ~4min due to weasyprint — use `-o addopts=""` and target files for speed).
+**Branch:** Tier-0-Guided-Manifest. Working tree has uncommitted Phase 0+1 work
+(`git status`); user stages/pushes into `dev` and cuts the next branch.
+
+**NEXT: Phase 2 — Continuous monitoring, scan history & drift detection.** Build plan:
+persist every scan per project with timestamps; history/timeline view; drift = diff new
+scan vs previous (newly passed/failed, regressions) + alert on regressions; scheduled
+re-scans (cron) per project; dashboard posture-over-time / open-gaps / trend. This is the
+core paid differentiator vs the stateless free CLI. Reuse: `scans_collection` already
+exists (`saas/app/projects.py`); v2 result fields (status/enforcement/verification) and
+`NOT_APPLICABLE` are already in scanner output to diff against.
+
+To resume: read this file's Progress Log (section C) bottom-up + memories
+[[complisense-phase1-readiness]], [[complisense-engine-gaps]]. Then propose Phase 2 as
+sub-features (one at a time) and wait for go.
+
+---
+
 ## A. END-TO-END AUDIT FINDINGS (2026-06-26, read-only, nothing changed)
 
 Audited by 4 parallel read-only agents across: root `.md` docs, compliance engine +
@@ -121,7 +144,11 @@ cited rules. Build the spine before the product on top of it.
   - [x] 1.4 Public web page (`landing-page/app/readiness/`) — questionnaire → score → signup gate
   - [x] 1.5 Persistence + auth gating — consented signed-in storage; anonymous ephemeral
   - [x] 1.6 First-party analytics (`saas/app/analytics.py`) + DATA_HANDLING.md update
-- [ ] **Phase 2** Continuous monitoring, scan history & drift detection
+- [~] **Phase 2** Continuous monitoring, scan history & drift detection (backend foundation done)
+  - [x] 2.1 Scan history (no-overwrite) — immutable `scan_runs` per project + posture score
+  - [x] 2.2 Drift core (`compliance/drift.py`) + `/projects/{id}/monitoring/{history,drift,summary}`
+  - [ ] 2.3 Dashboard posture-over-time / trend UI
+  - [ ] 2.4 Scheduled re-scans (cron) + regression alerts
 - [ ] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
 - [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
 - [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
@@ -133,6 +160,18 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 2.1 + 2.2 backend foundation done.** Continuous monitoring spine.
+  `compliance/drift.py` (pure): `rule_states_from_findings` (compact snapshot, no raw
+  artefact text), `posture_score` (0-100 over applicable rules; None when none applicable,
+  no fake 0), `compute_drift` (regressions/improvements/added/removed/NA-transitions +
+  score_delta; PARTIAL ranks between FAIL/MISSING and PASS; NA flips never count as
+  drift). `saas/app/monitoring.py`: `record_scan_run` appends an immutable `scan_runs`
+  history doc on completion + read API `/projects/{id}/monitoring/{history,drift,summary}`.
+  Hooked into BOTH completion paths in `distribution.py` (`/agent/results`,
+  `/api/v1/upload-scan`) — best-effort, never breaks upload. `scan_runs` indexes added
+  (database.py); router wired in main.py. History is additive (no overwrite) so re-running
+  a scan_id preserves the timeline. Tests: +18 (`test_drift.py` 10, `test_monitoring_api.py`
+  8). Full suite: **112 passed, 0 failed.** NEXT in Phase 2: 2.3 trend UI, 2.4 cron+alerts.
 - 2026-06-26 — End-to-end audit complete; this plan written. No code changed.
 - 2026-06-26 — **0.1 done.** Added `compliance/rulepack_schema.py` (v2 validator), wired
   validation into `agent/rules/loader.py` (non-fatal warn; `strict`/`RULEPACK_STRICT`),
