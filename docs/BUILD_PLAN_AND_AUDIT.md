@@ -12,24 +12,23 @@
 
 ## ▶ RESUME HERE (checkpoint 2026-06-27, end of day)
 
-**Status:** Phase 0 (Foundation) ✅ + Phase 1 (Tier-0 Manifest + public DPDP Readiness
-Score) ✅ + Phase-1 follow-ups (admin-gate, nav discoverability, env) ✅.
-**Tests:** full suite **92 passed, 0 failed** (run: `3.11_venv/bin/python -m pytest -q`;
-slow ~4min due to weasyprint — use `-o addopts=""` and target files for speed).
-**Branch:** Tier-0-Guided-Manifest. Working tree has uncommitted Phase 0+1 work
-(`git status`); user stages/pushes into `dev` and cuts the next branch.
+**Status:** Phase 0 ✅ + Phase 1 ✅ + **Phase 2 (continuous monitoring) ✅** + Phase 3.1
+(Tier-1 connector framework + AWS read-only discovery) ✅.
+**Tests:** full suite **124 passed, 0 failed** on `Phase-2` (run: `3.11_venv/bin/python -m
+pytest -q`; slow ~4min due to weasyprint — use `-o addopts=""` + target files for speed).
+**Branches:** Phase 2 lives on `Phase-2` (PR → `dev` to be raised); `Phase-3` is branched
+off Phase-2 and holds 3.1. Phase 2 (2.3/2.4) added on `Phase-2`, then merged forward into
+`Phase-3`.
 
-**NEXT: Phase 2 — Continuous monitoring, scan history & drift detection.** Build plan:
-persist every scan per project with timestamps; history/timeline view; drift = diff new
-scan vs previous (newly passed/failed, regressions) + alert on regressions; scheduled
-re-scans (cron) per project; dashboard posture-over-time / open-gaps / trend. This is the
-core paid differentiator vs the stateless free CLI. Reuse: `scans_collection` already
-exists (`saas/app/projects.py`); v2 result fields (status/enforcement/verification) and
-`NOT_APPLICABLE` are already in scanner output to diff against.
+**NEXT: Phase 3 — Tier-1 Connector Discovery.** 3.1 done (`connectors/` pkg). Remaining:
+3.2 discovery API endpoints (run discovery via STS assume-role, return + consent-gated
+persist signals/suggestions, audit trail), 3.3 UI (connect-AWS flow + least-privilege /
+CloudFormation handout + suggestion review→confirm into manifest). Roadmap beyond AWS:
+same `connectors.base.Connector` interface for GCP / Azure / GitHub, etc.
 
 To resume: read this file's Progress Log (section C) bottom-up + memories
-[[complisense-phase1-readiness]], [[complisense-engine-gaps]]. Then propose Phase 2 as
-sub-features (one at a time) and wait for go.
+[[complisense-phase1-readiness]], [[complisense-engine-gaps]]. Propose Phase 3 sub-features
+one at a time and wait for go.
 
 ---
 
@@ -144,12 +143,22 @@ cited rules. Build the spine before the product on top of it.
   - [x] 1.4 Public web page (`landing-page/app/readiness/`) — questionnaire → score → signup gate
   - [x] 1.5 Persistence + auth gating — consented signed-in storage; anonymous ephemeral
   - [x] 1.6 First-party analytics (`saas/app/analytics.py`) + DATA_HANDLING.md update
-- [~] **Phase 2** Continuous monitoring, scan history & drift detection (backend foundation done)
+- [x] **Phase 2** Continuous monitoring, scan history & drift detection
   - [x] 2.1 Scan history (no-overwrite) — immutable `scan_runs` per project + posture score
   - [x] 2.2 Drift core (`compliance/drift.py`) + `/projects/{id}/monitoring/{history,drift,summary}`
-  - [ ] 2.3 Dashboard posture-over-time / trend UI
-  - [ ] 2.4 Scheduled re-scans (cron) + regression alerts
-- [ ] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
+  - [x] 2.3 Dashboard posture-over-time / trend UI (`monitoring.html` + `/projects/{id}/monitoring`)
+  - [x] 2.4 Schedule + regression/overdue alerts + cron sweep (`monitoring_cron.py`, render cron)
+- [x] **Phase 3** Tier-1 Connector Discovery (AWS/GCP/Azure/GitHub, read-only least-privilege)
+  - [x] 3.1 Connector framework + signal model + **4 read-only connectors** (AWS via STS
+    assume-role/boto3; GCP, Azure, GitHub via bearer-token REST) + registry +
+    least-privilege policy per provider + provider-agnostic signal→manifest-suggestion mapper
+  - [x] 3.2 API endpoints (`saas/app/connectors_api.py`): catalog, run discovery (creds
+    filtered + never stored), consent-gated persist of signals/suggestions, audit, apply→manifest
+  - [x] 3.3 UI (`connectors.html` + `/projects/{id}/connectors`): provider picker +
+    least-privilege handout + credential form + suggestion review→confirm + history
+  - [x] 3.4 Readiness wire (`project_readiness.py` + `GET /projects/{id}/readiness`):
+    discovered_manifest overlays self-declared answers → applicability-gated readiness;
+    connector-corroborated rules tagged. Closes the connector→manifest→readiness loop.
 - [ ] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
 - [ ] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
 - [ ] **Phase 6** MCP server for CompliSense
@@ -160,6 +169,61 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 3.4 readiness wire done.** Closed the connector→manifest→readiness
+  loop. `saas/app/project_readiness.py` + `GET /projects/{id}/readiness?pack_id=`: merges
+  self-declared `manifest_answers` with connector-confirmed `discovered_manifest` (discovery
+  wins as live evidence), builds a Manifest (`build_manifest`), scores via `score_manifest`
+  (applicability-gated, DPDP packs only), and tags ready/gap rules a connector corroborated
+  (`evidence_source: connector`) + returns the derived applicability profile. UI: "Compute
+  readiness" panel in `connectors.html`. Tests: +5 (`test_project_readiness.py`). Full suite:
+  **159 passed, 0 failed.**
+- 2026-06-27 — **Phase 3.2 + 3.3 done — PHASE 3 COMPLETE.** 3.2 `saas/app/connectors_api.py`:
+  `GET /api/v1/connectors` (catalog: providers + requirements + per-provider least-privilege
+  policy), `POST /projects/{id}/connectors/{provider}/discover` (creds FILTERED to the exact
+  accepted kwargs — blocks client_factory/http_get injection — used once then dropped;
+  signals+suggestions returned; persisted to `connector_discoveries` ONLY with
+  `consent_to_store`; never stores creds; ConnectorError→400, SDK/net→502; audit logged),
+  list/get discoveries, `POST .../apply` (confirm accepted suggestions → merged into
+  project `discovered_manifest`, human-in-the-loop, audited). Indexes + router + page route
+  wired. 3.3 `saas/templates/connectors.html` + `/projects/{id}/connectors`: provider picker,
+  least-privilege handout, credential form (creds-never-stored warning), run discovery,
+  suggestion review→confirm checkboxes, raw signals, past-discoveries table; cross-linked
+  from monitoring + reports. Tests: +11 (`test_connectors_api.py`, fake connector/collections,
+  no SDK/net). Full suite: **154 passed, 0 failed.**
+- 2026-06-27 — **Phase 2.3 + 2.4 done — PHASE 2 COMPLETE.** 2.3 trend UI:
+  `saas/templates/monitoring.html` (Chart.js posture-over-time + drift tables +
+  alerts + schedule selector; client-fetches the monitoring JSON API), page route
+  `GET /projects/{id}/monitoring` (main.py) + "Monitoring" link on reports.html.
+  2.4 schedule + alerts: per-project `monitoring_schedule` (off/daily/weekly/monthly)
+  via `GET/PUT /projects/{id}/monitoring/schedule`; `monitor_alerts` collection +
+  `create_alert` (dedupe on open) + `list_alerts`/`acknowledge_alert` endpoints;
+  **regression alerts raised inline** in `record_scan_run` when a new scan drifts
+  backwards (high if a high-severity rule regressed); `evaluate_overdue_scans` sweep +
+  `saas/app/monitoring_cron.py` entrypoint + Render `cron` service (daily 06:00 UTC) for
+  scan-overdue alerts. Indexes for `monitor_alerts` (database.py). Tests: +12
+  (test_monitoring_api.py now 20). Full suite: **124 passed, 0 failed.**
+- 2026-06-27 — **Phase 3.1 done.** Tier-1 connector framework + AWS read-only discovery.
+  Decisions (confirmed with user): access = cross-account **STS AssumeRole**; persist
+  **signals + suggestions only, consent-gated** (never creds/raw payloads/ARNs). New
+  `connectors/` package: `base.py` (`DiscoveredSignal`, `Suggestion`, `Connector` ABC —
+  pure, dep-free), `aws.py` (`AWSConnector`: boto3-OPTIONAL/lazy + injectable
+  `client_factory`; assume-role once, reuse temp creds; 9 read-only probes — CloudTrail,
+  S3 enc/PAB/lifecycle/location, IAM MFA, GuardDuty, Config, KMS, RDS, Backup, region;
+  each probe defensively wrapped → one failure degrades a single signal, not the scan;
+  `least_privilege_policy()` = Get/List/Describe only), `mapping.py`
+  (`signals_to_suggestions` → manifest answer suggestions: storage_locations,
+  has_security_safeguards [confirm when enc+logging+access all present, else review],
+  retention_defined, cross_border_transfer [review]; honest — PII/consent NOT inferred).
+  Suggestions are proposals, never auto-applied. Tests: +8 (`test_connectors_aws.py`,
+  fake client_factory, no boto3/network).
+  **Multi-connector (same session):** added `gcp.py`, `azure.py`, `github.py` — all
+  real over bearer-token REST via an injectable `http_get` (default = `requests`; tests
+  inject a fake router, no SDK/network), emitting the SAME normalized signal keys so one
+  mapper serves every provider. `connectors/registry.py` (`get_connector(provider, **kw)`
+  + `available_providers` + `CONNECTOR_REQUIREMENTS`). Each connector ships a per-provider
+  least-privilege doc (AWS IAM JSON, GCP role/perms, Azure Reader, GitHub fine-grained
+  read scopes). Tests: +11 (`test_connectors_more.py`). NEXT in Phase 3: 3.2 API endpoints
+  (run discovery + consent-gated persist + audit) + per-provider credential wiring, 3.3 UI.
 - 2026-06-27 — **Phase 2.1 + 2.2 backend foundation done.** Continuous monitoring spine.
   `compliance/drift.py` (pure): `rule_states_from_findings` (compact snapshot, no raw
   artefact text), `posture_score` (0-100 over applicable rules; None when none applicable,
