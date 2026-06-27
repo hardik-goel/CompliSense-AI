@@ -12,24 +12,23 @@
 
 ## ▶ RESUME HERE (checkpoint 2026-06-27, end of day)
 
-**Status:** Phase 0 (Foundation) ✅ + Phase 1 (Tier-0 Manifest + public DPDP Readiness
-Score) ✅ + Phase-1 follow-ups (admin-gate, nav discoverability, env) ✅.
-**Tests:** full suite **92 passed, 0 failed** (run: `3.11_venv/bin/python -m pytest -q`;
-slow ~4min due to weasyprint — use `-o addopts=""` and target files for speed).
-**Branch:** Tier-0-Guided-Manifest. Working tree has uncommitted Phase 0+1 work
-(`git status`); user stages/pushes into `dev` and cuts the next branch.
+**Status:** Phase 0 ✅ + Phase 1 ✅ + **Phase 2 (continuous monitoring) ✅** + Phase 3.1
+(Tier-1 connector framework + AWS read-only discovery) ✅.
+**Tests:** full suite **124 passed, 0 failed** on `Phase-2` (run: `3.11_venv/bin/python -m
+pytest -q`; slow ~4min due to weasyprint — use `-o addopts=""` + target files for speed).
+**Branches:** Phase 2 lives on `Phase-2` (PR → `dev` to be raised); `Phase-3` is branched
+off Phase-2 and holds 3.1. Phase 2 (2.3/2.4) added on `Phase-2`, then merged forward into
+`Phase-3`.
 
-**NEXT: Phase 2 — Continuous monitoring, scan history & drift detection.** Build plan:
-persist every scan per project with timestamps; history/timeline view; drift = diff new
-scan vs previous (newly passed/failed, regressions) + alert on regressions; scheduled
-re-scans (cron) per project; dashboard posture-over-time / open-gaps / trend. This is the
-core paid differentiator vs the stateless free CLI. Reuse: `scans_collection` already
-exists (`saas/app/projects.py`); v2 result fields (status/enforcement/verification) and
-`NOT_APPLICABLE` are already in scanner output to diff against.
+**NEXT: Phase 3 — Tier-1 Connector Discovery.** 3.1 done (`connectors/` pkg). Remaining:
+3.2 discovery API endpoints (run discovery via STS assume-role, return + consent-gated
+persist signals/suggestions, audit trail), 3.3 UI (connect-AWS flow + least-privilege /
+CloudFormation handout + suggestion review→confirm into manifest). Roadmap beyond AWS:
+same `connectors.base.Connector` interface for GCP / Azure / GitHub, etc.
 
 To resume: read this file's Progress Log (section C) bottom-up + memories
-[[complisense-phase1-readiness]], [[complisense-engine-gaps]]. Then propose Phase 2 as
-sub-features (one at a time) and wait for go.
+[[complisense-phase1-readiness]], [[complisense-engine-gaps]]. Propose Phase 3 sub-features
+one at a time and wait for go.
 
 ---
 
@@ -144,11 +143,11 @@ cited rules. Build the spine before the product on top of it.
   - [x] 1.4 Public web page (`landing-page/app/readiness/`) — questionnaire → score → signup gate
   - [x] 1.5 Persistence + auth gating — consented signed-in storage; anonymous ephemeral
   - [x] 1.6 First-party analytics (`saas/app/analytics.py`) + DATA_HANDLING.md update
-- [~] **Phase 2** Continuous monitoring, scan history & drift detection (backend foundation done)
+- [x] **Phase 2** Continuous monitoring, scan history & drift detection
   - [x] 2.1 Scan history (no-overwrite) — immutable `scan_runs` per project + posture score
   - [x] 2.2 Drift core (`compliance/drift.py`) + `/projects/{id}/monitoring/{history,drift,summary}`
-  - [ ] 2.3 Dashboard posture-over-time / trend UI
-  - [ ] 2.4 Scheduled re-scans (cron) + regression alerts
+  - [x] 2.3 Dashboard posture-over-time / trend UI (`monitoring.html` + `/projects/{id}/monitoring`)
+  - [x] 2.4 Schedule + regression/overdue alerts + cron sweep (`monitoring_cron.py`, render cron)
 - [~] **Phase 3** Tier-1 Connector Discovery (AWS, read-only least-privilege)
   - [x] 3.1 Connector framework + signal model + AWS read-only connector (STS assume-role,
     boto3-optional/injectable) + least-privilege policy + signal→manifest-suggestion mapper
@@ -164,6 +163,18 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 2.3 + 2.4 done — PHASE 2 COMPLETE.** 2.3 trend UI:
+  `saas/templates/monitoring.html` (Chart.js posture-over-time + drift tables +
+  alerts + schedule selector; client-fetches the monitoring JSON API), page route
+  `GET /projects/{id}/monitoring` (main.py) + "Monitoring" link on reports.html.
+  2.4 schedule + alerts: per-project `monitoring_schedule` (off/daily/weekly/monthly)
+  via `GET/PUT /projects/{id}/monitoring/schedule`; `monitor_alerts` collection +
+  `create_alert` (dedupe on open) + `list_alerts`/`acknowledge_alert` endpoints;
+  **regression alerts raised inline** in `record_scan_run` when a new scan drifts
+  backwards (high if a high-severity rule regressed); `evaluate_overdue_scans` sweep +
+  `saas/app/monitoring_cron.py` entrypoint + Render `cron` service (daily 06:00 UTC) for
+  scan-overdue alerts. Indexes for `monitor_alerts` (database.py). Tests: +12
+  (test_monitoring_api.py now 20). Full suite: **124 passed, 0 failed.**
 - 2026-06-27 — **Phase 3.1 done.** Tier-1 connector framework + AWS read-only discovery.
   Decisions (confirmed with user): access = cross-account **STS AssumeRole**; persist
   **signals + suggestions only, consent-gated** (never creds/raw payloads/ARNs). New
