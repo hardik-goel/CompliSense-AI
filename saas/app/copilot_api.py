@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 from agent.db.mongo import insert_audit_log
 from agent.rules.loader import iter_rules, load_rulepack
 from agent.scoring.overall import readiness_framing
-from compliance.copilot import RemediationCopilot, default_llm
+from compliance.copilot import RemediationCopilot, default_llm_from_env
 from compliance.registry import get_rulepack_ids
 from saas.app.auth import get_current_user
 from saas.app.projects import get_project_for_user
@@ -36,8 +36,9 @@ _VALID_MODES = {"explain", "draft"}
 
 
 def get_copilot() -> RemediationCopilot:
-    """Factory for the production copilot (Anthropic-backed). Patched in tests."""
-    return RemediationCopilot(default_llm())
+    """Factory for the production copilot. OpenRouter when OPENROUTER_API_KEY is set, else
+    Anthropic. Patched in tests."""
+    return RemediationCopilot(default_llm_from_env())
 
 
 class RemediateRequest(BaseModel):
