@@ -7,6 +7,9 @@ EU AI Act). It helps a team assess and track how *ready* they are for a regulati
 "prepare by \<date\>" readiness items, with citations and enforcement framing, never as
 "violations."
 
+> **Want the whole product on one page?** Read [`docs/CAPABILITIES.md`](docs/CAPABILITIES.md) — a
+> short end-to-end overview of everything it supports.
+>
 > **Source of truth for all legal content:** [`docs/LEGAL_REFERENCE_DPDP_EUAI.md`](docs/LEGAL_REFERENCE_DPDP_EUAI.md)
 > and [`docs/SOURCES_ACT.md`](docs/SOURCES_ACT.md). Rulepacks are **pending professional legal
 > review** — see [`LEGAL_REVIEW_NEEDED.md`](LEGAL_REVIEW_NEEDED.md).
@@ -16,20 +19,24 @@ EU AI Act). It helps a team assess and track how *ready* they are for a regulati
 | # | Capability | Where |
 |---|------------|-------|
 | 0 | **Foundation** — rulepack schema v2 (dual citations, applicability blocks, enforcement dates, verification signals) + engine applicability-gating | `rulepacks/`, `compliance/rulepack_schema.py`, `compliance/applicability.py` |
-| 1 | **Tier-0 manifest + public DPDP readiness score** — no-login questionnaire → honest score (teaser anonymous, full report on signup) | `compliance/manifest.py`, `compliance/readiness.py`, `saas/app/readiness.py`, `landing-page/app/readiness/` |
+| 1 | **Tier-0 manifest + public readiness score (DPDP + EU AI Act)** — no-login questionnaire → honest score; pick India DPDP or EU AI Act; teaser anonymous, full report on signup | `compliance/manifest.py`, `compliance/readiness.py`, `saas/app/readiness.py`, `landing-page/app/readiness/` |
 | 2 | **Continuous monitoring** — immutable scan history, posture-over-time, drift/regression detection, alerts + cron | `compliance/drift.py`, `saas/app/monitoring.py`, `saas/app/monitoring_cron.py` |
 | 3 | **Tier-1 connectors** — read-only least-privilege discovery (AWS/GCP/Azure/GitHub) → manifest *suggestions* (user confirms) | `connectors/`, `saas/app/connectors_api.py`, `saas/app/project_readiness.py` |
 | 4 | **Tier-2 PII / data-flow inference** — infer categories from field **names only** (never values), human-in-the-loop | `compliance/pii.py`, `compliance/dataflow.py`, `saas/app/pii_api.py` |
 | 5 | **Regulatory-change watcher** — hash watched legal sources, raise a **human-gated** review item on change (never auto-edits rules) | `compliance/regwatch.py`, `saas/app/regwatch_api.py`, `saas/app/regwatch_cron.py` |
 | 6 | **MCP server** — exposes the grounded read-only engine as tools for Claude Desktop | `mcp_server/` |
 | 7 | **LLM remediation copilot** — explains/drafts grounded in the cited rule + user facts, consent-gated, readiness-framed | `compliance/copilot.py`, `saas/app/copilot_api.py` |
-| 8 | **Evidence exports + team roles** — regulator-ready citation-backed pack (JSON/HTML) + viewer/member/admin/owner RBAC | `compliance/evidence.py`, `saas/app/evidence_api.py`, `saas/app/rbac.py`, `saas/app/teams.py` |
+| 8 | **Evidence exports + team roles + gap governance** — regulator-ready citation-backed pack (JSON/HTML) + RBAC (viewer/engineer/**DPO**/admin/owner) + per-gap assignment & DPO **sign-off**, audited | `compliance/evidence.py`, `saas/app/evidence_api.py`, `saas/app/rbac.py`, `saas/app/teams.py`, `saas/app/gaps_api.py` |
+
+Both **India DPDP and the EU AI Act** are applicability/role-gated and posture-scored end to end
+(public tool, project, MCP, evidence). EU AI Act scoring is role-gated and honest ("unknown = gap")
+but remains **secondary-sourced and pending legal review** — see `LEGAL_REVIEW_NEEDED.md`.
+A 30-second product teaser is on the homepage (`landing-page/public/teaser.html`).
 
 ## What it does NOT do (read this)
 
 - **Not legal advice; no compliance determination.** Output is *readiness*, never "you are compliant."
-- **Rulepacks are not lawyer-reviewed yet** (`LEGAL_REVIEW_NEEDED.md` is open; `docs/SOURCES_ACT.md` is DRAFT).
-- **Readiness scoring is DPDP-only.** EU AI Act rules exist but are not scored end-to-end, and the Tier-0 manifest does not yet capture EU provider/deployer/GPAI role-gating.
+- **Rulepacks are not lawyer-reviewed yet** (`LEGAL_REVIEW_NEEDED.md` is open; `docs/SOURCES_ACT.md` is DRAFT). The EU AI Act score is **self-attested** posture against secondary-sourced rules — gated behind that review.
 - **The engine verifies declared facts and field-shape, not real-world truth** — a well-formed manifest that doesn't reflect reality can still score well.
 - **Discovery is metadata-only.** Connectors are read-only and never remediate; PII inference reads column *names*, never data, so PII in generically-named fields or free text is invisible to it.
 - **No fully-local/offline LLM path.** The copilot calls the Anthropic API (consent-gated, non-PII facts only); it drafts text and never changes your systems.
@@ -114,7 +121,7 @@ validates all four rulepacks. Regenerate/download the agent ZIP from the SaaS af
 
 | Area | Endpoint |
 |------|----------|
-| Public readiness | `POST /api/v1/readiness/score` |
+| Public readiness | `POST /api/v1/readiness/score` (DPDP packs scored; EU packs role-gated, gated behind legal review) |
 | Scan upload (agent) | `POST /api/v1/upload-scan` (Bearer JWT or `X-API-Key: ADMIN_API_TOKEN`) |
 | Monitoring | `GET /projects/{id}/monitoring/{history,drift,summary}` |
 | Connectors | `GET /api/v1/connectors`, `POST /projects/{id}/connectors/{provider}/discover` |
@@ -123,7 +130,9 @@ validates all four rulepacks. Regenerate/download the agent ZIP from the SaaS af
 | Reg-change watcher | `GET /api/v1/regwatch/{sources,changes}` (admin: `/run`, `/changes/{id}/review`) |
 | Copilot | `POST /projects/{id}/copilot/remediate` (consent required) |
 | Evidence export | `GET /projects/{id}/evidence`, `GET /projects/{id}/evidence/export.html` |
-| Teams / roles | `POST /teams`, `POST /teams/{id}/members`, `POST /projects/{id}/team` |
+| Teams / roles | `POST /teams`, `POST /teams/{id}/members` (viewer/engineer/dpo/admin/owner), `POST /projects/{id}/team` |
+| Gap governance | `POST /projects/{id}/gaps/{rule_id}/assign`, `POST /projects/{id}/gaps/{rule_id}/signoff` (DPO/admin), `GET /projects/{id}/gaps` |
+| Teaser | `GET /teaser.html` (animated product teaser) |
 
 Scheduled sweeps run as Render cron jobs: `monitoring_cron` (overdue/regression alerts) and
 `regwatch_cron` (legal-source watch). See `render.yaml`.
