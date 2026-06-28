@@ -61,22 +61,21 @@ def render_dashboard(
     # -----------------------------
     # Auto-generated executive narrative
     # -----------------------------
+    # Readiness language only — never assert compliance/violation status.
     if badge == "GREEN":
         narrative = (
-            "The system demonstrates strong alignment with the selected regulatory pack. "
-            "Only minor gaps were identified, with no critical systemic risks."
+            "The system appears largely ready against the selected regulatory pack. "
+            "Only minor readiness gaps were identified."
         )
     elif badge == "YELLOW":
         narrative = (
-            "The system shows partial alignment with the selected regulatory pack. "
-            "Several material gaps require remediation, though no immediate "
-            "high-risk violations were detected."
+            "The system appears partially ready against the selected regulatory pack. "
+            "Several material readiness gaps were identified to prepare for."
         )
     else:
         narrative = (
-            "The system does not meet the selected regulatory pack expectations. "
-            "Critical governance or documentation failures were detected "
-            "and require immediate remediation."
+            "The system shows significant readiness gaps against the selected regulatory pack. "
+            "Key governance or documentation items were not evidenced and should be prepared."
         )
 
     exec_summary = {

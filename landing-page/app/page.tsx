@@ -221,10 +221,12 @@ export default function HomePage() {
             <img src="/logo.png" alt="CompliSense-AI" className="brand-logo" />
           </Link>
           <nav className="site-nav">
+            <a href="#teaser">Watch</a>
             <a href="#platform">Platform</a>
             <a href="#solutions">Solutions</a>
             <a href="#pricing">Pricing</a>
             <a href="#about">About</a>
+            <Link href="/readiness">DPDP Score</Link>
           </nav>
           <div className="header-actions">
             <a href="#contact" className="btn-ghost">Contact</a>
@@ -264,6 +266,10 @@ export default function HomePage() {
                 zIndex: 999,
               }}
             >
+              <a href="#teaser" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Watch
+              </a>
               <a href="#platform" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
                 Platform
@@ -279,6 +285,10 @@ export default function HomePage() {
               <a href="/about" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
                 About
+              </a>
+              <a href="/readiness" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                DPDP Readiness Score
               </a>
               <a href="#contact" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
@@ -456,6 +466,42 @@ export default function HomePage() {
             <p style={{ fontSize: "11px", color: "#64748B", textAlign: "center", marginTop: "8px" }}>
               * Simulated scan output. Your actual results appear after first scan.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* PRODUCT TEASER VIDEO */}
+      <section className="content-section" id="teaser">
+        <div className="container" style={{ textAlign: "center" }}>
+          <span className="label-caption">See it in 30 seconds</span>
+          <h2 style={{ marginTop: "8px", fontSize: "clamp(24px, 3vw, 38px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+            Readiness, not guesswork
+          </h2>
+          <p className="body-text" style={{ maxWidth: 640, margin: "10px auto 28px" }}>
+            A 30-second look at how CompliSense-AI turns DPDP &amp; EU AI Act obligations into a
+            clear, cited readiness picture.
+          </p>
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: 960,
+              margin: "0 auto",
+              aspectRatio: "16 / 9",
+              borderRadius: 16,
+              overflow: "hidden",
+              border: "1px solid #1B3A5C",
+              boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
+            }}
+          >
+            <iframe
+              src="https://www.youtube.com/embed/4wWrPl-T2C0?autoplay=1&mute=1&loop=1&playlist=4wWrPl-T2C0&controls=1&rel=0&modestbranding=1&playsinline=1"
+              title="CompliSense-AI — product teaser"
+              loading="lazy"
+              allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+            />
           </div>
         </div>
       </section>
@@ -1072,7 +1118,7 @@ export default function HomePage() {
             <div className="security-item" data-animate>
               <div className="icon-box"><Building2 size={24} /></div>
               <strong className="author-name">India-hosted roadmap</strong>
-              <p className="body-text" style={{ fontSize: "0.85rem" }}>Data residency options planned for 2026 to ensure compliance.</p>
+              <p className="body-text" style={{ fontSize: "0.85rem" }}>Data residency options planned for 2026 to support your readiness posture.</p>
             </div>
           </div>
         </div>
@@ -1452,6 +1498,11 @@ export default function HomePage() {
             <span>&copy; 2026 CompliSense-AI &middot; Built in India 🇮🇳</span>
             <a href={`mailto:${supportEmail}`} style={{ color: "var(--text-muted)", fontSize: "12px", textDecoration: "underline" }}>{supportEmail}</a>
           </div>
+          <p className="body-text" style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "12px", textAlign: "center", lineHeight: 1.5 }}>
+            CompliSense-AI provides compliance-<strong>readiness</strong> assessment and tooling, not legal advice.
+            Results are informational, may not reflect the latest legal position, and do not constitute a legal
+            determination of compliance. Consult a qualified data-protection practitioner before relying on these results.
+          </p>
         </div>
       </footer>
     </main>

@@ -1,12 +1,34 @@
 pack_id: "dpdp_india_extended_v1"
+schema_version: 2
 version: "1.0.0"
 jurisdiction: "DPDP_INDIA"
-updated: "2026-05-01"
+updated: "2026-06-26"
+current_as_of: "2026-06-26"
+reference_doc: "docs/LEGAL_REFERENCE_DPDP_EUAI.md"
+legal_review_status: "pending"
+legal_review_note: >-
+  Rule content pending professional legal review as of 2026-06-26. This is a
+  compliance-readiness engineering artefact, not legal advice. DPDP operational
+  obligations (Rules 3, 5-16) become enforceable ~13 May 2027 — findings are
+  "prepare by" items, not present-day violations.
+reviewer: null
+reviewed_on: null
 required_artifacts_manifest: "agent/artefacts/required_artifacts_dpdp.yaml"
 rules:
   - id: DPDP-SEC5-NOTICE-001
     clause: "Section 5"
     title: "Privacy notice covers processing essentials"
+    act_citation: "DPDP Act 2023, s.5 (Notice)"
+    rule_citation: "DPDP Rules 2025, Rule 3 (Notice given by Data Fiduciary)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/privacy_notice.json"
@@ -17,6 +39,8 @@ rules:
         - "rights_summary"
         - "grievance_contact"
         - "retention_policy"
+      field_validations:
+        grievance_contact: "email"
     expression: "exists and missing_fields <= 1"
     thresholds:
       pass: 0.0
@@ -26,6 +50,17 @@ rules:
   - id: DPDP-SEC6-CONSENT-001
     clause: "Section 6"
     title: "Consent record and withdrawal mechanism documented"
+    act_citation: "DPDP Act 2023, s.6 (Consent)"
+    rule_citation: "DPDP Rules 2025, Rule 3 (notice enabling specific, informed consent)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "secondary_source_only"
     evaluator: "file_presence"
     inputs:
       file: "compliance/consent_record.json"
@@ -44,6 +79,17 @@ rules:
   - id: DPDP-SEC7-LEGITIMATE-USE-001
     clause: "Section 7"
     title: "Legitimate use register is maintained"
+    act_citation: "DPDP Act 2023, s.7 (Certain legitimate uses)"
+    rule_citation: null
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "secondary_source_only"
     evaluator: "file_presence"
     inputs:
       file: "compliance/legitimate_use_register.yaml"
@@ -62,6 +108,17 @@ rules:
   - id: DPDP-SEC8-OBLIGATIONS-001
     clause: "Section 8"
     title: "Security safeguards and deletion controls documented"
+    act_citation: "DPDP Act 2023, s.8(5) (reasonable security safeguards)"
+    rule_citation: "DPDP Rules 2025, Rule 6 (safeguards (a)-(g))"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/security_safeguards.yaml"
@@ -80,6 +137,17 @@ rules:
   - id: DPDP-SEC8-OBLIGATIONS-002
     clause: "Section 8"
     title: "Breach register structure is maintained"
+    act_citation: "DPDP Act 2023, s.8(6) (breach intimation)"
+    rule_citation: "DPDP Rules 2025, Rule 7 (two tracks; Board detailed report within 72h)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "schema_validate"
     inputs:
       file: "compliance/breach_register.yaml"
@@ -94,6 +162,17 @@ rules:
   - id: DPDP-SEC8-OBLIGATIONS-003
     clause: "Section 8"
     title: "Retention and erasure schedule is documented"
+    act_citation: "DPDP Act 2023, s.8(7)-(8) (retention limitation & erasure)"
+    rule_citation: "DPDP Rules 2025, Rule 8 (8(3) universal 1-yr retention floor; 8(1) 3-yr class-based erasure)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: "The 1-year retention floor (Rule 8(3)) applies to all. The 3-year inactivity erasure (Rule 8(1)) applies ONLY to Third-Schedule classes (e-commerce >=2cr, gaming >=50L, social media >=2cr users)."
+      exemption_ref: "Rule 8(1) class scope: third_schedule_class_only"
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/retention_schedule.yaml"
@@ -109,9 +188,47 @@ rules:
       partial: 2.0
     severity: "Critical"
 
+  - id: DPDP-SEC8-RETENTION-CLASS-001
+    clause: "Section 8"
+    title: "Third-Schedule class-based 3-year inactivity erasure is documented"
+    act_citation: "DPDP Act 2023, s.8(7)-(8) (retention limitation & erasure)"
+    rule_citation: "DPDP Rules 2025, Rule 8(1) + Third Schedule (3-year inactivity erasure for notified classes)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "third_schedule_class_only"
+      threshold: "Applies ONLY to Third-Schedule classes: e-commerce >=2cr registered users, online gaming >=50L, social media >=2cr. Non-class entities are NOT_APPLICABLE (only the universal 1-yr floor, DPDP-SEC8-OBLIGATIONS-003, applies)."
+      exemption_ref: "third_schedule_class_only"
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/retention_schedule.yaml"
+      required_json_fields:
+        - "data_classes"
+        - "inactivity_erasure_period_days"
+        - "erasure_workflow"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+
   - id: DPDP-SEC9-CHILDREN-001
     clause: "Section 9"
     title: "Children's data safeguards are documented"
+    act_citation: "DPDP Act 2023, s.9 (substantive bans on tracking/behavioural monitoring/targeted ads to children)"
+    rule_citation: "DPDP Rules 2025, Rule 10 (verifiable parental-consent mechanics)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "child_data_processing_only"
+      threshold: "Applies only where the Data Fiduciary processes personal data of children (<18)."
+      exemption_ref: "Fourth Schedule exemptions (Rule 12)."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/child_data_policy.yaml"
@@ -128,6 +245,17 @@ rules:
   - id: DPDP-SEC10-SDF-001
     clause: "Section 10"
     title: "Significant Data Fiduciary obligations are mapped"
+    act_citation: "DPDP Act 2023, s.10 (additional SDF obligations)"
+    rule_citation: "DPDP Rules 2025, Rule 13 (DPIA + audit, algorithmic-risk diligence, localisation)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "significant_data_fiduciary_only"
+      threshold: "Applies ONLY to entities notified as SDF by the Central Government. Most startups are NOT SDFs."
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/significant_data_fiduciary.yaml"
@@ -145,6 +273,17 @@ rules:
   - id: DPDP-SEC11-ACCESS-001
     clause: "Section 11"
     title: "Access request workflow is documented"
+    act_citation: "DPDP Act 2023, s.11 (right to access information about personal data)"
+    rule_citation: "DPDP Rules 2025, Rule 14 (publish request means + identifier)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/rights_request_sop.yaml"
@@ -163,6 +302,17 @@ rules:
   - id: DPDP-SEC12-CORRECTION-001
     clause: "Section 12"
     title: "Correction and erasure requests are tracked"
+    act_citation: "DPDP Act 2023, s.12 (right to correction and erasure)"
+    rule_citation: "DPDP Rules 2025, Rule 14 (rights exercise mechanics)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "schema_validate"
     inputs:
       file: "compliance/rights_request_register.yaml"
@@ -177,6 +327,17 @@ rules:
   - id: DPDP-SEC13-GRIEVANCE-001
     clause: "Section 13"
     title: "Grievance redressal workflow is documented"
+    act_citation: "DPDP Act 2023, s.13 (right to grievance redressal)"
+    rule_citation: "DPDP Rules 2025, Rule 14 (respond within 90 days)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/grievance_redressal.yaml"
@@ -194,6 +355,17 @@ rules:
   - id: DPDP-SEC16-TRANSFER-001
     clause: "Section 16"
     title: "Cross-border transfer posture is documented"
+    act_citation: "DPDP Act 2023, s.16 (processing/transfer of personal data outside India)"
+    rule_citation: "DPDP Rules 2025, Rule 15 (transfer permitted subject to Central Govt restrictions)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: "Liberalised 'blacklist' posture — transfer is allowed subject to future govt restrictions. Do NOT assert a hard block."
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "file_presence"
     inputs:
       file: "compliance/cross_border_transfer_policy.yaml"
@@ -212,6 +384,17 @@ rules:
   - id: DPDP-SEC8-PROCESSOR-001
     clause: "Section 8"
     title: "Processor inventory and ownership are maintained"
+    act_citation: "DPDP Act 2023, s.8(2) (Data Fiduciary responsible for processing by a Data Processor under contract)"
+    rule_citation: "DPDP Rules 2025, Rule 6(f) (processor-contract safeguard clause)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "all_data_fiduciaries"
+      threshold: null
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
     evaluator: "schema_validate"
     inputs:
       file: "vendors/processor_inventory.json"

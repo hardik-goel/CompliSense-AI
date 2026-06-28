@@ -147,10 +147,22 @@ def run_scan(
     required_artifacts_manifest: str | None = None,
     llm_enabled: bool = False,
     progress_callback=None,
-    cancel_event=None
+    cancel_event=None,
+    entity_profile: Dict[str, Any] | None = None,
+    consistency_checks: List[Dict[str, Any]] | None = None,
 ) -> Dict[str, Any]:
-    """Run compliance scan with enhanced error handling."""
-    
+    """Run compliance scan with enhanced error handling.
+
+    ``entity_profile`` (from the Tier-0 manifest) gates each rule's applicability: a rule
+    whose ``applicability.scope`` does not match the profile is reported ``NOT_APPLICABLE``
+    instead of being evaluated, so the engine never flags (e.g.) SDF-only duties for a
+    non-SDF startup. When ``entity_profile`` is None, gating is inactive (legacy behaviour).
+    """
+    try:
+        from compliance.applicability import resolve_applicability
+    except Exception:  # pragma: no cover - defensive fallback
+        resolve_applicability = None  # type: ignore
+
     # Validate inputs
     if not root.exists():
         raise FileNotFoundError(f"Root directory does not exist: {root}")
@@ -159,14 +171,14 @@ def run_scan(
     if not rules:
         logger.warning("No rules provided for scan")
         return {
-            "summary": {"passed": 0, "partial": 0, "failed": 0},
+            "summary": {"passed": 0, "partial": 0, "failed": 0, "not_applicable": 0},
             "results": [],
             "artifacts": {"required_total": 0, "present": [], "missing": [], "compliance_pct": 0.0},
             "error": "No rules provided"
         }
 
     results = []
-    counts = {"passed": 0, "partial": 0, "failed": 0}
+    counts = {"passed": 0, "partial": 0, "failed": 0, "not_applicable": 0}
     
     try:
         artifact_scan = scan_required_artifacts(root, required_artifacts_manifest)
@@ -210,6 +222,48 @@ def run_scan(
                 "index": idx,
                 "total": total_rules
             })
+
+        # ---- Applicability gating ----
+        # A rule that does not apply to this entity is NOT a gap. Report it as
+        # NOT_APPLICABLE and skip evaluation, so we never over-flag the user.
+        if resolve_applicability is not None:
+            applicable, applicability_reason = resolve_applicability(r, entity_profile)
+        else:
+            applicable, applicability_reason = True, "applicability resolver unavailable"
+
+        if not applicable:
+            counts["not_applicable"] += 1
+            results.append({
+                "rule_id": r.get("id", f"rule_{idx}"),
+                "clause": r.get("clause", "Unknown"),
+                "title": r.get("title", "Untitled rule"),
+                "severity": r.get("severity", "unknown"),
+                "status": "NOT_APPLICABLE",
+                "applicability": r.get("applicability"),
+                "applicability_reason": applicability_reason,
+                "confidence": None,
+                "risk": "N/A",
+                "act_citation": r.get("act_citation"),
+                "rule_citation": r.get("rule_citation"),
+                "source_url": r.get("source_url"),
+                "legal_status": r.get("status"),
+                "enforcement_date": r.get("enforcement_date"),
+                "date_status": r.get("date_status"),
+                "verification": r.get("verification"),
+                "files_used": [],
+                "remediation": [],
+                "evidence": {},
+                "context": {},
+            })
+            if progress_callback:
+                progress_callback({
+                    "event": "RULE_END",
+                    "rule_id": r.get("id", f"rule_{idx}"),
+                    "status": "NOT_APPLICABLE",
+                    "index": idx,
+                    "total": total_rules
+                })
+            continue
 
         start = perf_counter()
         ctx: Dict[str, Any] = {}
@@ -364,6 +418,8 @@ def run_scan(
             evidence["schema_valid"] = True
         if ctx.get("missing_fields", 0) > 0:
             evidence["missing_fields"] = ctx.get("missing_fields_list", [])
+        if ctx.get("invalid_fields_list"):
+            evidence["invalid_fields"] = ctx.get("invalid_fields_list", [])
         if ctx.get("exists") is False:
             evidence["missing_file"] = True
         if ctx.get("coverage") is not None:
@@ -395,6 +451,15 @@ def run_scan(
             "risk": risk,
             "execution_time_sec": elapsed_sec,
             "sla_status": sla_status,
+            "applicability": r.get("applicability"),
+            "applicability_reason": applicability_reason,
+            "act_citation": r.get("act_citation"),
+            "rule_citation": r.get("rule_citation"),
+            "source_url": r.get("source_url"),
+            "legal_status": r.get("status"),
+            "enforcement_date": r.get("enforcement_date"),
+            "date_status": r.get("date_status"),
+            "verification": r.get("verification"),
             "files_used": files_used,
             "remediation": remediation,
             "evidence": evidence,
@@ -410,11 +475,21 @@ def run_scan(
                 "total": total_rules
             })
 
+    # ---- Cross-document consistency (advisory; does not affect pass/fail) ----
+    consistency: List[Dict[str, Any]] = []
+    if consistency_checks:
+        try:
+            from compliance.cross_document import run_consistency_checks
+            consistency = run_consistency_checks(root, consistency_checks)
+        except Exception as e:
+            logger.warning(f"Consistency checks failed: {e}")
+
     if progress_callback:
         progress_callback({"event": "SCAN_COMPLETE"})
 
     return {
         "summary": counts,
         "results": results,
-        "artifacts": artifact_scan
+        "artifacts": artifact_scan,
+        "consistency": consistency,
     }

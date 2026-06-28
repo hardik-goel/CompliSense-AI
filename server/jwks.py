@@ -1,19 +1,19 @@
 # server/jwks.py
-from fastapi import FastAPI
+import os
 from pathlib import Path
-import json
-import base64
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import hashes
+
+from fastapi import FastAPI, HTTPException
 
 app = FastAPI()
 
-PUB_KEY_PATH = Path("/Users/hardikgoel/compli-keys/public.pem")
-pub_pem = PUB_KEY_PATH.read_text()
+# Public-key path is environment-driven (no hardcoded local path); read lazily so the
+# module imports cleanly even where the key is absent.
+PUB_KEY_PATH = Path(os.getenv("COMPLISENSE_PUBLIC_KEY_PATH", "compli-keys/public.pem"))
+
 
 @app.get("/.well-known/jwks.json")
 def jwks():
-    # Simple conversion: serve PEM as-is (agent can load PEM)
-    # For full JWKS, convert to modulus/exponent
-    return {"keys": [{"kty":"RSA", "pem": pub_pem}]}
+    if not PUB_KEY_PATH.exists():
+        raise HTTPException(status_code=503, detail="Public key not configured (set COMPLISENSE_PUBLIC_KEY_PATH)")
+    # Serve PEM as-is (agent can load PEM). For full JWKS, convert to modulus/exponent.
+    return {"keys": [{"kty": "RSA", "pem": PUB_KEY_PATH.read_text()}]}

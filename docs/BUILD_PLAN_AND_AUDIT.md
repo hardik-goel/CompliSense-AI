@@ -1,0 +1,433 @@
+# CompliSense-AI — Build Plan & Audit Checkpoint
+
+> **Purpose:** single source of truth for the end-to-end build across all CLAUDE.md
+> prompts (Phases 1–8 + the four grounding/liability/legal-correctness appendices).
+> Doubles as a resume checkpoint. Update the status boxes as work lands.
+>
+> **Created:** 2026-06-26 · **Branch at creation:** Tier-0-Guided-Manifest
+> **Discipline:** one feature at a time — propose → confirm → build → report → STOP →
+> user tests + branches → next. Nothing deleted without explicit user approval.
+
+---
+
+## ▶ RESUME HERE (checkpoint 2026-06-27, end of day)
+
+**Status:** Phase 0 ✅ + Phase 1 ✅ + **Phase 2 (continuous monitoring) ✅** + Phase 3.1
+(Tier-1 connector framework + AWS read-only discovery) ✅.
+**Tests:** full suite **124 passed, 0 failed** on `Phase-2` (run: `3.11_venv/bin/python -m
+pytest -q`; slow ~4min due to weasyprint — use `-o addopts=""` + target files for speed).
+**Branches:** Phase 2 lives on `Phase-2` (PR → `dev` to be raised); `Phase-3` is branched
+off Phase-2 and holds 3.1. Phase 2 (2.3/2.4) added on `Phase-2`, then merged forward into
+`Phase-3`.
+
+**NEXT: Phase 3 — Tier-1 Connector Discovery.** 3.1 done (`connectors/` pkg). Remaining:
+3.2 discovery API endpoints (run discovery via STS assume-role, return + consent-gated
+persist signals/suggestions, audit trail), 3.3 UI (connect-AWS flow + least-privilege /
+CloudFormation handout + suggestion review→confirm into manifest). Roadmap beyond AWS:
+same `connectors.base.Connector` interface for GCP / Azure / GitHub, etc.
+
+To resume: read this file's Progress Log (section C) bottom-up + memories
+[[complisense-phase1-readiness]], [[complisense-engine-gaps]]. Propose Phase 3 sub-features
+one at a time and wait for go.
+
+---
+
+## A. END-TO-END AUDIT FINDINGS (2026-06-26, read-only, nothing changed)
+
+Audited by 4 parallel read-only agents across: root `.md` docs, compliance engine +
+rulepacks, legal-grounding/safety docs, backend + landing page. Mapped to the four
+appendices: Grounding (primary sources), Liability/Disclaimer/Accuracy-Safety,
+Legal-Correctness Mechanics (Addendum), and the "scan end-to-end" instruction.
+
+### HIGH — legal/liability exposure
+
+- [ ] **H1** `agent/scoring/overall.py:8` — `verdict_from_score()` returns
+  "PARTIALLY COMPLIANT" (compliance-determination language). Must be readiness
+  language. *(Liability §1)*
+- [ ] **H2** `rulepacks/*.yaml` (ALL) — no `applicability` block on any rule. Engine
+  flags non-SDF startups for SDF-only duties (DPIA/audit/DPO). False-flags the ICP.
+  *(Addendum §2)*
+- [ ] **H3** `rulepacks/*.yaml` (ALL) — no dual-layer citations
+  (`act_citation`+`rule_citation`), no `source_url`, `status`, `enforcement_date`,
+  `date_status`, `verification`. Bare "Section 5"/"Art.9" only. *(Grounding §1,
+  Addendum §1)*
+- [ ] **H4** `LEGAL_REVIEW_NEEDED.md` — MISSING. Mandated living checklist +
+  per-pack reviewer sign-off absent. No auditable "reviewed by counsel" state.
+  *(Grounding §E, Liability §8)*
+- [ ] **H5** `euai_core_v1.yaml` (updated 2025-08-24, ~306 days stale) — pre-dates
+  Digital Omnibus (7 May 2026). Risk: hardcodes EU high-risk 2 Aug 2026 instead of
+  `provisional_pending_amendment` ~Dec 2027. *(Addendum §3)*
+- [ ] **H6** `agent/evaluators/file_presence.py`, `keyword_check.py`,
+  `schema_validate.py` — gameable: pass on file existence / keyword-anywhere /
+  field-presence. No value validation (email format, ISO date, threshold ranges).
+  Verifies presence not substance. *(matches engine-gaps memory)*
+- [ ] **H7** `saas/app/config.py:51` — hardcoded default
+  `admin_api_token = "dev-admin-token"`; weak fallback guards
+  `POST /api/v1/upload-scan`.
+
+### MEDIUM
+
+- [ ] **M1** Missing docs: `docs/SOURCES.md`, `docs/SOURCES_ACT.md`,
+  `docs/DATA_HANDLING.md`, `docs/TERMS_NOTES.md`, `SECURITY.md`, root `LICENSE`.
+  *(Grounding §A/§E, Liability §5/§7)*
+- [ ] **M2** `docs/` untracked in git. `LEGAL_REFERENCE_DPDP_EUAI.md` (good,
+  primary-sourced, EU date correct) lacks `version` + `last_verified`, no VC history.
+- [ ] **M3** rulepacks pre-date `LEGAL_REFERENCE_DPDP_EUAI.md` by 29–306 days. 9
+  Part-A.3 corrections (Rule 6 (a)–(g) not "7+MFA"; breach two-track clock; retention
+  two-tier floor; SDF gating) NOT applied to packs.
+- [ ] **M4** EU coverage ~10–13% (euai_core = 10 rules / 9 articles). Missing: Art 5
+  prohibited practices, Art 6/Annex III high-risk classification, Art 50 transparency,
+  role-gating (provider/deployer/importer/GPAI). *(Addendum §5)*
+- [ ] **M5** `saas/app/distribution.py:263` — "without storing your data" but
+  `findings_json` + `results_summary` stored in Mongo. Defensible (no raw artefacts)
+  but undocumented → needs `DATA_HANDLING.md`.
+- [ ] **M6** `landing-page/app/page.tsx:1075` — "ensure compliance" → readiness.
+  Disclaimer buried in `/terms`, not on main site.
+- [ ] **M7** `AGENT_ZIP_USAGE.md:136` — contradicts 3 docs: claims scanner scans
+  model binaries (.pkl/.onnx/.pt); others say docs-only.
+- [ ] **M8** Findings carry no `enforcement_date` in UI. DPDP phased to ~May 2027
+  shown as urgent fails → false "violation today" impression. *(Liability §2)*
+
+### LOW — doc hygiene (NO deletions without user ok)
+
+- [ ] **L1** Duplicate root `.md`: `ARCHITECTURE_DECISION` vs `ARCHITECTURE_CLARIFICATION`;
+  `PHASE_STATUS` vs `ALL_FIXES_AND_STATUS`; 4× FIXES files. See
+  `REDUNDANT_FILES_TO_REMOVE.md` (not acted on).
+- [ ] **L2** `ANALYSIS_AND_ROADMAP.md:290` growth projections undated, no baseline.
+- [ ] **L3** `COMPLETE_IMPLEMENTATION_SUMMARY.md:49` points to legacy `scanner_enhanced.py`.
+- [ ] **L4** Landing testimonials = generic placeholders ("Media Platform"/"Fintech");
+  confirm intent (not fake logos).
+
+### CLEAN (verified OK)
+
+JWT auth (no leaked secrets / no tokens in logs) · raw artefact content NOT uploaded ·
+no fake customer logos/traction · public readiness tool correctly absent (it is Phase 1) ·
+`LEGAL_REFERENCE_DPDP_EUAI.md` EU date + DPDP dual-cite logic correct **in the reference**
+(just not propagated to packs).
+
+---
+
+## B. RECOMMENDED BUILD ORDER
+
+### PHASE 0 — Foundation (correctness scaffolding; the appendices). Build FIRST.
+
+Rationale: Phase 1 captures applicability facts and consumes applicability-gated,
+cited rules. Build the spine before the product on top of it.
+
+- [x] **0.1 Rulepack schema v2** — add `applicability` block, dual citations
+  (`act_citation`/`rule_citation` + `source_url`), `status`, `enforcement_date`,
+  `date_status`, `verification`, `current_as_of`, per-pack `reviewer`/`review_status`
+  + "pending professional legal review" note. JSON-schema validator. Stay
+  complykit-format-compatible. *(closes H3, parts of H2/H4/M2)*
+- [x] **0.2 Engine applicability gating** — scanner resolves each rule's
+  `applicability` against an entity profile; non-applicable → `not_applicable`, never
+  `fail`. *(closes H2)*
+- [x] **0.3 Propagate legal corrections** — apply the 9 Part-A.3 fixes to DPDP packs;
+  set EU high-risk to `provisional_pending_amendment` ~Dec 2027; refresh euai packs.
+  *(closes H5, M3; starts M4)*
+- [x] **0.4 Grounding + safety docs** — `SOURCES.md`, `SOURCES_ACT.md` (STOP for
+  review per grounding rule), `LEGAL_REVIEW_NEEDED.md`, `DATA_HANDLING.md`,
+  `TERMS_NOTES.md`, `SECURITY.md`, `LICENSE`; commit `docs/`. *(closes H4, M1, M5)*
+- [x] **0.5 Honesty quick-wins** — readiness verdict language; surface
+  `status`/`enforcement_date` in output; landing disclaimer + "ensure readiness";
+  admin-token hardening. *(closes H1, H7, M6, M8)*
+- [x] **0.6 Engine substance hardening** — value validation (email/date/threshold
+  formats, semantic context) to reduce gameability. *(closes H6)*
+
+### PHASES 1–8 — product capabilities (per CLAUDE.md, unchanged order)
+
+- [x] **Phase 1** Tier-0 Guided Manifest + public DPDP Readiness Score (no-login)
+  - [x] 1.1 Manifest model + questionnaire (`compliance/manifest.py`) → applicability profile
+  - [x] 1.2 Readiness scoring engine (`compliance/readiness.py`) — unknown ≠ ready
+  - [x] 1.3 Public no-login API (`saas/app/readiness.py`) — anonymous teaser vs signed-in full
+  - [x] 1.4 Public web page (`landing-page/app/readiness/`) — questionnaire → score → signup gate
+  - [x] 1.5 Persistence + auth gating — consented signed-in storage; anonymous ephemeral
+  - [x] 1.6 First-party analytics (`saas/app/analytics.py`) + DATA_HANDLING.md update
+- [x] **Phase 2** Continuous monitoring, scan history & drift detection
+  - [x] 2.1 Scan history (no-overwrite) — immutable `scan_runs` per project + posture score
+  - [x] 2.2 Drift core (`compliance/drift.py`) + `/projects/{id}/monitoring/{history,drift,summary}`
+  - [x] 2.3 Dashboard posture-over-time / trend UI (`monitoring.html` + `/projects/{id}/monitoring`)
+  - [x] 2.4 Schedule + regression/overdue alerts + cron sweep (`monitoring_cron.py`, render cron)
+- [x] **Phase 3** Tier-1 Connector Discovery (AWS/GCP/Azure/GitHub, read-only least-privilege)
+  - [x] 3.1 Connector framework + signal model + **4 read-only connectors** (AWS via STS
+    assume-role/boto3; GCP, Azure, GitHub via bearer-token REST) + registry +
+    least-privilege policy per provider + provider-agnostic signal→manifest-suggestion mapper
+  - [x] 3.2 API endpoints (`saas/app/connectors_api.py`): catalog, run discovery (creds
+    filtered + never stored), consent-gated persist of signals/suggestions, audit, apply→manifest
+  - [x] 3.3 UI (`connectors.html` + `/projects/{id}/connectors`): provider picker +
+    least-privilege handout + credential form + suggestion review→confirm + history
+  - [x] 3.4 Readiness wire (`project_readiness.py` + `GET /projects/{id}/readiness`):
+    discovered_manifest overlays self-declared answers → applicability-gated readiness;
+    connector-corroborated rules tagged. Closes the connector→manifest→readiness loop.
+- [x] **Phase 4** Tier-2 PII / Data-Flow Inference (human-in-the-loop)
+  - [x] 4.1 PII inference engine (`compliance/pii.py`) — infer categories from field/element
+    NAMES (never values) → `pii_categories` suggestion (human-confirms). Pure, local.
+  - [x] 4.2 Data-flow inference (`compliance/dataflow.py`) — PII category → source/sink +
+    cross-border flags; suggestions for pii_categories/storage_locations/cross_border_transfer.
+  - [x] 4.3 API + UI (`saas/app/pii_api.py` + `pii.html` + `/projects/{id}/pii`) — paste
+    field names/sources → infer → review→confirm into `discovered_manifest`; consent-gated + audit.
+  - [x] 4.4 Feed into readiness — children_data ⇒ `processes_children_data` suggestion flips the
+    applicability profile; all applied facts scored via the 3.4 readiness wire.
+- [x] **Phase 5** Auto-updating rules: regulatory-change watcher (human-gated)
+  - [x] 5.1 Regwatch core (`compliance/regwatch.py`): watch-source derivation from rulepack
+    `source_url`s, whitespace-normalized content hashing, baseline/change detection.
+  - [x] 5.2/5.3 API (`saas/app/regwatch_api.py`): `run_watch_sweep` (snapshot + raise pending
+    change on diff; best-effort per source), sources/changes list, admin-gated run + human
+    review (approve/dismiss, audited) — NEVER edits rulepacks.
+  - [x] 5.4 Cron (`regwatch_cron.py` + render weekly cron) + admin UI (`regwatch.html` + `/regwatch`).
+- [x] **Phase 6** MCP server for CompliSense
+  - [x] 6.1 Pure tool registry (`mcp_server/tools.py`) — 8 read-only tools over the existing
+    engine (rulepacks/rules+citations, questionnaire, score_readiness, infer_pii,
+    infer_data_flows, list_connectors, connector_policy). DB-free, SDK-free, tested directly.
+  - [x] 6.2 MCP stdio transport (`mcp_server/server.py`) — wraps the registry via the `mcp`
+    SDK (lazy import); `python -m mcp_server.server`.
+  - [x] 6.3 Docs + Claude Desktop config (`mcp_server/README.md`) + `mcp` in requirements.
+- [x] **Phase 7** LLM Remediation Copilot (consent data path)
+  - [x] 7.1 Copilot core (`compliance/copilot.py`) — grounded system prompt (answer only from
+    cited rule + user facts; readiness framing; not legal advice; drafts text, never mutates
+    systems), explain/draft, injectable LLM (default = Anthropic `claude-opus-4-8`, adaptive).
+  - [x] 7.2 API (`saas/app/copilot_api.py`) — `POST /projects/{id}/copilot/remediate`,
+    consent-gated, sends only non-PII facts (discovered_manifest) + rule, audited, `data_sent`
+    transparency; LLM failure → 502.
+  - [x] 7.3 UI — per-gap Explain/Draft buttons + consent in the readiness panel (`connectors.html`).
+- [x] **Phase 8** Regulator-ready evidence exports + multi-team roles
+  - [x] 8.1 RBAC core (`saas/app/rbac.py`) — viewer/member/admin/owner + action→min-role matrix (fail-closed).
+  - [x] 8.2 Teams API (`saas/app/teams.py`) — create/list teams, invite (active|pending) +
+    role management, attach project to team, `resolve_project_role` + `get_project_with_role`.
+  - [x] 8.3 Evidence assembler (`compliance/evidence.py`) — grounded pack: readiness+citations,
+    posture history, alerts, discovery/PII summaries, confirmed manifest, disclaimer (summaries only).
+  - [x] 8.4 Evidence export API (`saas/app/evidence_api.py`) — `GET /projects/{id}/evidence`
+    (JSON) + `/evidence/export.html` (download), role-gated (viewer+); "Export evidence" link.
+
+---
+
+## C. PROGRESS LOG (append one line per completed feature)
+
+- 2026-06-28 — **Final audit + remediation + EU parity + docs.** Ran a read-only Phase A–F audit
+  (`AUDIT_REPORT.md`), then applied approved fixes: copilot draft "DRAFT—REQUIRES LEGAL REVIEW"
+  marker, disclaimers on SaaS scan-report HTML, dashboard.py readiness reframe, verification
+  surfaced (public + SaaS), DATA_HANDLING covers all flows + TERMS_NOTES DPDP-notice checklist,
+  auth on /agent/results+/heartbeat, env-driven server/ key path, untracked .env/dist/.coverage,
+  dropped unused deps. Built: DPDP Rule 8(1) class-erasure rule; **EU AI Act scored end-to-end**
+  (EU manifest role-gating + 16 posture questions + predicates; honest "unknown=gap", gated behind
+  legal review); named **DPO/engineer** roles + per-gap **assignment & sign-off** (`gaps_api.py`),
+  audited role-changes/exports, rulepack+governance in the evidence pack; EU added to the public
+  tool (regulation selector). Marketing: 30s product teaser (`landing-page/public/teaser.html`) +
+  homepage YouTube embed + "Watch" nav. Docs: README refreshed + new `docs/CAPABILITIES.md`
+  one-pager. Full suite **261 passed**; landing TSX clean.
+
+- 2026-06-27 — **Phase 8 done — COMPLETE. 🎉 ALL PHASES 0–8 DONE.** Regulator-ready evidence
+  exports + multi-team roles. 8.1 `saas/app/rbac.py` (pure): roles viewer<member<admin<owner,
+  `ACTION_MIN_ROLE` matrix, `can()` fail-closed. 8.2 `saas/app/teams.py`: `teams`/`team_members`
+  collections; create/list teams, invite (resolves email→user or pending) + update/remove role
+  (manage_members-gated, can't remove owner), attach project to team; `resolve_project_role`
+  (owner via user_id, else team role) + `get_project_with_role(project,user,action)` (404 no-leak
+  for non-members). 8.3 `compliance/evidence.py` (pure): `build_evidence_pack` → grounded
+  snapshot (readiness+gaps with citations, posture history, open alerts, connector/PII summaries,
+  confirmed manifest, deduped citations, disclaimer; summaries only — no creds/raw/PII values).
+  8.4 `saas/app/evidence_api.py`: `GET /projects/{id}/evidence` (JSON) + `/evidence/export.html`
+  (downloadable doc), role-gated viewer+; computes readiness from merged manifest. Indexes +
+  routers wired; "Export evidence" link on connectors page. Tests: +19 (test_rbac 4, test_teams 7,
+  test_evidence 5, test_evidence_api 3). Full suite: **244 passed, 0 failed.**
+- 2026-06-27 — **Phase 7 done — COMPLETE (LLM Remediation Copilot).** Grounded, read-only,
+  consent-gated. 7.1 `compliance/copilot.py`: `SYSTEM_PROMPT` enforces answer-only-from-context
+  + readiness framing + not-legal-advice + may-draft-text-never-mutate-systems + says-so-when-
+  ungrounded; `RemediationCopilot.explain/draft`; `build_context_block` (cited rule + non-PII
+  facts); `default_llm()` = Anthropic SDK `claude-opus-4-8` + adaptive thinking, imported LAZILY
+  so the module/tests need no SDK; handles `stop_reason: refusal`. 7.2 `saas/app/copilot_api.py`:
+  `POST /projects/{id}/copilot/remediate` (mode explain|draft) — **requires consent_to_send**;
+  sends only the rule + project `discovered_manifest` (non-PII), never raw artefacts/values;
+  echoes `data_sent` (fact KEYS + citation) for transparency; audited; LLM/SDK failure → 502;
+  `get_copilot()` factory patched in tests. 7.3 UI: per-gap Explain/Draft buttons + consent box
+  in the readiness panel (`connectors.html`). `anthropic==0.69.0` added to requirements. Tests:
+  +13 (`test_copilot.py` 6, `test_copilot_api.py` 7). Full suite: **225 passed, 0 failed.**
+- 2026-06-27 — **Phase 6 done — COMPLETE (MCP server).** New top-level `mcp_server/` package,
+  DB-free + standalone so MCP clients (Claude Desktop) get the grounded read-only engine. 6.1
+  `tools.py` pure registry: 8 tools — list_rulepacks, list_rules (dual citations + framing),
+  get_questionnaire, score_readiness (DPDP, applicability-gated), infer_pii / infer_data_flows
+  (NAMES only), list_connectors, connector_policy. `list_tools()`/`call_tool(name,args)`
+  dispatch (KeyError unknown tool, ValueError bad args). 6.2 `server.py` stdio transport wraps
+  the registry via the `mcp` SDK, imported LAZILY in `main()` so the package imports without
+  the SDK. 6.3 `mcp_server/README.md` (tool table + Claude Desktop config) + `mcp==1.2.0` added
+  to requirements. Tests: +14 (`test_mcp_tools.py`, pure, incl. import-without-SDK). Full
+  suite: **212 passed, 0 failed.**
+- 2026-06-27 — **Phase 5 done — COMPLETE (regulatory-change watcher, human-gated).** Monitors
+  the LAW, not the customer; detection only, never auto-edits a rulepack or rescores. 5.1
+  `compliance/regwatch.py` (pure): `collect_watch_sources` (dedupe rulepack `source_url`s →
+  rule/pack map), `normalize_text`+`content_hash` (whitespace-insensitive so reformatting ≠
+  legal change), `detect_change` (baseline vs changed). 5.2/5.3 `saas/app/regwatch_api.py`:
+  `run_watch_sweep(fetcher,now)` — fetch each source (injectable; default requests),
+  snapshot to `regulatory_snapshots`, raise a PENDING `regulatory_changes` on diff (deduped
+  while pending; per-source fetch errors recorded, never fatal); `GET /sources`, `GET /changes`
+  (signed-in); admin-gated (`require_admin`) `POST /run` + `POST /changes/{id}/review`
+  (approve/dismiss + note, audited; approve returns rules_to_review, edits nothing). 5.4
+  `saas/app/regwatch_cron.py` + Render weekly cron (Mon 05:00 UTC); admin UI `regwatch.html`
+  + `/regwatch` (token field, run sweep, approve/dismiss). Indexes added. Tests: +13
+  (`test_regwatch.py` 4, `test_regwatch_api.py` 9). Full suite: **198 passed, 0 failed.**
+- 2026-06-27 — **Phase 4.2 + 4.3 + 4.4 done — PHASE 4 COMPLETE.** 4.2 `compliance/dataflow.py`
+  (`DataSource`, `infer_data_flows` — per-source PII via infer_pii, category→sources map,
+  cross-border flag when PII in a non-India region [`is_india_region`, provider-agnostic],
+  suggestions for pii_categories/storage_locations/cross_border_transfer; names-only). 4.3
+  `saas/app/pii_api.py` (`POST /projects/{id}/pii/infer` [sources or field_names shorthand;
+  consent-gated persist to `pii_inferences`; audit], list/get, `POST .../apply` → merge into
+  `discovered_manifest`, union for multi-valued) + `pii.html` + `/projects/{id}/pii` (multi-
+  source field-name entry, names-only warning, data-flow table, suggestion review→confirm,
+  history; linked from connectors). 4.4 children_data ⇒ `processes_children_data` suggestion
+  flips applicability profile, scored via the 3.4 readiness wire. Tests: +18 (test_dataflow 9,
+  test_pii_api 8, +1 readiness; 4.1 test_pii 8 landed earlier). Full suite: **185 passed, 0 failed.**
+- 2026-06-27 — **Phase 4.1 done.** Tier-2 PII inference engine `compliance/pii.py` (pure,
+  local, NAMES-ONLY — never reads values, so the no-store stance holds). `PII_PATTERNS`
+  (category → keyword/confidence dict for the 9 manifest categories), `infer_pii(field_names)`
+  → `PIIFinding`s (camelCase/underscore tokenizer; short keywords match exact-token only to
+  avoid false positives like "pan" in "company"), `pii_to_suggestion` → one human-review
+  `pii_categories` manifest suggestion carrying the matched field NAMES as evidence. Input
+  source (confirmed direction): field/column/element names — foundation that 4.2/4.3 feed.
+  Tests: +8 (`test_pii.py`). Full suite: **167 passed, 0 failed.**
+- 2026-06-27 — **Phase 3.4 readiness wire done.** Closed the connector→manifest→readiness
+  loop. `saas/app/project_readiness.py` + `GET /projects/{id}/readiness?pack_id=`: merges
+  self-declared `manifest_answers` with connector-confirmed `discovered_manifest` (discovery
+  wins as live evidence), builds a Manifest (`build_manifest`), scores via `score_manifest`
+  (applicability-gated, DPDP packs only), and tags ready/gap rules a connector corroborated
+  (`evidence_source: connector`) + returns the derived applicability profile. UI: "Compute
+  readiness" panel in `connectors.html`. Tests: +5 (`test_project_readiness.py`). Full suite:
+  **159 passed, 0 failed.**
+- 2026-06-27 — **Phase 3.2 + 3.3 done — PHASE 3 COMPLETE.** 3.2 `saas/app/connectors_api.py`:
+  `GET /api/v1/connectors` (catalog: providers + requirements + per-provider least-privilege
+  policy), `POST /projects/{id}/connectors/{provider}/discover` (creds FILTERED to the exact
+  accepted kwargs — blocks client_factory/http_get injection — used once then dropped;
+  signals+suggestions returned; persisted to `connector_discoveries` ONLY with
+  `consent_to_store`; never stores creds; ConnectorError→400, SDK/net→502; audit logged),
+  list/get discoveries, `POST .../apply` (confirm accepted suggestions → merged into
+  project `discovered_manifest`, human-in-the-loop, audited). Indexes + router + page route
+  wired. 3.3 `saas/templates/connectors.html` + `/projects/{id}/connectors`: provider picker,
+  least-privilege handout, credential form (creds-never-stored warning), run discovery,
+  suggestion review→confirm checkboxes, raw signals, past-discoveries table; cross-linked
+  from monitoring + reports. Tests: +11 (`test_connectors_api.py`, fake connector/collections,
+  no SDK/net). Full suite: **154 passed, 0 failed.**
+- 2026-06-27 — **Phase 2.3 + 2.4 done — PHASE 2 COMPLETE.** 2.3 trend UI:
+  `saas/templates/monitoring.html` (Chart.js posture-over-time + drift tables +
+  alerts + schedule selector; client-fetches the monitoring JSON API), page route
+  `GET /projects/{id}/monitoring` (main.py) + "Monitoring" link on reports.html.
+  2.4 schedule + alerts: per-project `monitoring_schedule` (off/daily/weekly/monthly)
+  via `GET/PUT /projects/{id}/monitoring/schedule`; `monitor_alerts` collection +
+  `create_alert` (dedupe on open) + `list_alerts`/`acknowledge_alert` endpoints;
+  **regression alerts raised inline** in `record_scan_run` when a new scan drifts
+  backwards (high if a high-severity rule regressed); `evaluate_overdue_scans` sweep +
+  `saas/app/monitoring_cron.py` entrypoint + Render `cron` service (daily 06:00 UTC) for
+  scan-overdue alerts. Indexes for `monitor_alerts` (database.py). Tests: +12
+  (test_monitoring_api.py now 20). Full suite: **124 passed, 0 failed.**
+- 2026-06-27 — **Phase 3.1 done.** Tier-1 connector framework + AWS read-only discovery.
+  Decisions (confirmed with user): access = cross-account **STS AssumeRole**; persist
+  **signals + suggestions only, consent-gated** (never creds/raw payloads/ARNs). New
+  `connectors/` package: `base.py` (`DiscoveredSignal`, `Suggestion`, `Connector` ABC —
+  pure, dep-free), `aws.py` (`AWSConnector`: boto3-OPTIONAL/lazy + injectable
+  `client_factory`; assume-role once, reuse temp creds; 9 read-only probes — CloudTrail,
+  S3 enc/PAB/lifecycle/location, IAM MFA, GuardDuty, Config, KMS, RDS, Backup, region;
+  each probe defensively wrapped → one failure degrades a single signal, not the scan;
+  `least_privilege_policy()` = Get/List/Describe only), `mapping.py`
+  (`signals_to_suggestions` → manifest answer suggestions: storage_locations,
+  has_security_safeguards [confirm when enc+logging+access all present, else review],
+  retention_defined, cross_border_transfer [review]; honest — PII/consent NOT inferred).
+  Suggestions are proposals, never auto-applied. Tests: +8 (`test_connectors_aws.py`,
+  fake client_factory, no boto3/network).
+  **Multi-connector (same session):** added `gcp.py`, `azure.py`, `github.py` — all
+  real over bearer-token REST via an injectable `http_get` (default = `requests`; tests
+  inject a fake router, no SDK/network), emitting the SAME normalized signal keys so one
+  mapper serves every provider. `connectors/registry.py` (`get_connector(provider, **kw)`
+  + `available_providers` + `CONNECTOR_REQUIREMENTS`). Each connector ships a per-provider
+  least-privilege doc (AWS IAM JSON, GCP role/perms, Azure Reader, GitHub fine-grained
+  read scopes). Tests: +11 (`test_connectors_more.py`). NEXT in Phase 3: 3.2 API endpoints
+  (run discovery + consent-gated persist + audit) + per-provider credential wiring, 3.3 UI.
+- 2026-06-27 — **Phase 2.1 + 2.2 backend foundation done.** Continuous monitoring spine.
+  `compliance/drift.py` (pure): `rule_states_from_findings` (compact snapshot, no raw
+  artefact text), `posture_score` (0-100 over applicable rules; None when none applicable,
+  no fake 0), `compute_drift` (regressions/improvements/added/removed/NA-transitions +
+  score_delta; PARTIAL ranks between FAIL/MISSING and PASS; NA flips never count as
+  drift). `saas/app/monitoring.py`: `record_scan_run` appends an immutable `scan_runs`
+  history doc on completion + read API `/projects/{id}/monitoring/{history,drift,summary}`.
+  Hooked into BOTH completion paths in `distribution.py` (`/agent/results`,
+  `/api/v1/upload-scan`) — best-effort, never breaks upload. `scan_runs` indexes added
+  (database.py); router wired in main.py. History is additive (no overwrite) so re-running
+  a scan_id preserves the timeline. Tests: +18 (`test_drift.py` 10, `test_monitoring_api.py`
+  8). Full suite: **112 passed, 0 failed.** NEXT in Phase 2: 2.3 trend UI, 2.4 cron+alerts.
+- 2026-06-26 — End-to-end audit complete; this plan written. No code changed.
+- 2026-06-26 — **0.1 done.** Added `compliance/rulepack_schema.py` (v2 validator), wired
+  validation into `agent/rules/loader.py` (non-fatal warn; `strict`/`RULEPACK_STRICT`),
+  populated all 4 packs with applicability + dual citations + status/enforcement/date_status/
+  verification + pack-level review metadata. Tests: `tests/test_rulepack_schema.py` (14 pass).
+  EU packs set to `provisional_pending_amendment` ~2027-12-02 (Omnibus), not 2 Aug 2026.
+  NOTE: euai_core and euai_extended are byte-identical content — flagged for 0.3 dedup.
+- 2026-06-26 — **0.2 done.** Added `compliance/applicability.py` (resolve_applicability +
+  default_profile). Wired into `agent/scanner.py`: `run_scan(..., entity_profile=None)` —
+  non-applicable rules → `NOT_APPLICABLE` status + `not_applicable` count, evaluator skipped.
+  Result dicts now pass through citations/legal_status/enforcement_date/date_status/
+  verification. Profile None = gating inactive (backward compatible). Tests:
+  `tests/test_applicability.py` (9). Suite: 23 pass.
+- 2026-06-26 — **0.3 done.** EU date corrections already applied in 0.1. Resolved the
+  euai_core==euai_extended duplication: extended is now a true superset — added 4 LIVE-now
+  EU rules (Art 5 prohibited, Art 4 literacy, Art 50 transparency, Arts 53-55 GPAI),
+  role-gated + correctly dated (in_force vs phased). Pack rule counts: dpdp_core 7,
+  dpdp_extended 13, euai_core 10, euai_extended 14.
+- 2026-06-26 — **0.4 done.** Created `LEGAL_REVIEW_NEEDED.md` (generated from packs;
+  per-rule review checklist + non-primary flags), `docs/SOURCES.md`, `docs/SOURCES_ACT.md`
+  (DRAFT, Act pending primary-text verification), `docs/DATA_HANDLING.md`,
+  `docs/TERMS_NOTES.md`, `SECURITY.md`, root `LICENSE` (proprietary; complykit stays
+  Apache-2.0). Added `version`/`last_verified` to LEGAL_REFERENCE.
+- 2026-06-26 — **0.5 done.** `agent/scoring/overall.py`: verdict now readiness language
+  ("PARTIALLY READY — GAPS IDENTIFIED", never "COMPLIANT") + `readiness_framing()` helper.
+  `saas/app/config.py`: weak default secrets (admin token, jwt) now WARN in dev, RAISE in
+  production (H7); render.yaml already provisions both. Landing: "ensure compliance" →
+  readiness; added "not legal advice" footer disclaimer. Tests: `test_readiness_language.py`.
+- 2026-06-26 — **0.6 done.** `agent/evaluators/file_presence.py`: present-but-empty /
+  placeholder values ("TODO"/"changeme"/blank) now count as MISSING; optional typed
+  `field_validations` (email/iso_date/url/min_length) — wired `grievance_contact: email`
+  into DPDP notice rules. Scanner surfaces `invalid_fields`. Tests:
+  `test_substance_hardening.py`. End-to-end sample scan: 5 PASS + SDF/Children correctly
+  NOT_APPLICABLE for a default startup.
+- 2026-06-26 — **POST-PHASE-0 CLEANUP (user-requested).**
+  - Fixed the 3 pre-existing test failures at root cause: `render_pdf` now accepts the
+    legacy 2-arg form + synthesizes safe assessment defaults + `ChainableUndefined` so
+    optional/NA fields render blank (also fixed the genuinely broken `api_handlers.py`
+    2-arg caller); `test_cli` rewritten against the real `agent.cli` click group;
+    `test_scanner_enhanced` mock made realistic (`exists: True`).
+  - Gameability gap 3: `schema_validate` no longer returns blanket coverage=1.0 — measures
+    substantive field population. Gap 5: `techdoc_coverage` scales the explicit-doc score
+    by how populated the doc is (empty `{}` model card no longer earns full credit).
+  - Gap 4: added `compliance/cross_document.py` — advisory, opt-in cross-document
+    consistency checks (never affects pass/fail). Wired into `run_scan(consistency_checks=)`.
+  - EU coverage (M4): added high-risk classification (Art 6/Annex III), conformity + CE
+    marking (Arts 43/47-48), EU-database registration (Art 49), post-market monitoring
+    (Arts 72-73). Pack counts now: dpdp_core 7, dpdp_extended 13, euai_core 14,
+    euai_extended 18.
+  - Report UI: audit PDF template now shows a "Citation &amp; readiness" column (act+rule
+    citations, "prepare by {date}" vs "enforceable now", provisional flag, verification
+    badge with ⚠ for non-primary) and NOT_APPLICABLE rows; surfaces `invalid_fields`.
+  - Tests: 66 pass (added cross_document + evaluator-substance tests). Full suite GREEN
+    (no `--ignore` needed anymore).
+- 2026-06-27 — **Phase 1 follow-ups (user-requested).**
+  - Admin-gated `GET /api/v1/readiness/analytics/summary`: now requires `X-Admin-Api-Token`
+    (new `require_admin` dep in `saas/app/readiness.py`), not just any signed-in user.
+    Tests added (reject missing/bad token, accept valid).
+  - Discoverability: added `/readiness` to the landing nav (desktop `site-nav` + mobile
+    menu) so the public tool isn't an orphan page. `landing/.env.example` documents
+    `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_APP_BASE_URL`. Landing typechecks clean.
+  - (The "untracked files" note was a `git add` reminder for staging — no code change.)
+- 2026-06-27 — **PHASE 1 COMPLETE.** Tier-0 Guided Manifest + public DPDP Readiness Score.
+  1.1 `compliance/manifest.py` (questionnaire + Manifest + `manifest_to_profile` →
+  applicability gate; Third-Schedule trigger logic). 1.2 `compliance/readiness.py`
+  (score_manifest reuses v2 packs + gating; unknown counts as gap, never silently ready;
+  each gap carries citation + readiness framing). 1.3 `saas/app/readiness.py` public router
+  (`/api/v1/readiness/questionnaire`, `/score`) — anonymous = score + top-3 teaser +
+  ephemeral; signed-in = full report. 1.4 `landing-page/app/readiness/` (client tool →
+  score → signup gate; "answers not stored" notice; typechecks clean). 1.5 persistence
+  (`readiness_assessments`, consent-gated, anonymous never stored) + list/get endpoints.
+  1.6 `saas/app/analytics.py` first-party non-PII funnel (`readiness_completed`, `signup`)
+  + admin summary; DATA_HANDLING.md §3 updated to built reality. Tests: +26 (manifest 7,
+  readiness 6, readiness_api 10, analytics 3). Full suite: **92 passed, 0 failed.**
+  NOTE: marketing site change only visible after `npm run build` / Vercel redeploy. New
+  page reads `NEXT_PUBLIC_API_BASE_URL` (defaults to prod backend).
+- 2026-06-26 — **PHASE 0 COMPLETE.** New tests: 35 pass (schema/applicability/readiness/
+  substance). Full suite: 53 pass, 2 fail + 1 collection error — ALL THREE PRE-EXISTING on
+  the clean base (test_cli `cli.cli` attr, test_render `render_pdf()` signature,
+  test_scanner_enhanced threshold). Phase 0 added zero new failures. Pre-existing failures
+  left untouched (not in Phase-0 scope; flagged here for a future cleanup pass).

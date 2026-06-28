@@ -67,6 +67,36 @@ app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(distribution_router)
 
+from saas.app.readiness import router as readiness_router  # noqa: E402
+app.include_router(readiness_router)
+
+from saas.app.monitoring import router as monitoring_router  # noqa: E402
+app.include_router(monitoring_router)
+
+from saas.app.connectors_api import router as connectors_router  # noqa: E402
+app.include_router(connectors_router)
+
+from saas.app.project_readiness import router as project_readiness_router  # noqa: E402
+app.include_router(project_readiness_router)
+
+from saas.app.pii_api import router as pii_router  # noqa: E402
+app.include_router(pii_router)
+
+from saas.app.regwatch_api import router as regwatch_router  # noqa: E402
+app.include_router(regwatch_router)
+
+from saas.app.copilot_api import router as copilot_router  # noqa: E402
+app.include_router(copilot_router)
+
+from saas.app.teams import router as teams_router  # noqa: E402
+app.include_router(teams_router)
+
+from saas.app.evidence_api import router as evidence_router  # noqa: E402
+app.include_router(evidence_router)
+
+from saas.app.gaps_api import router as gaps_router  # noqa: E402
+app.include_router(gaps_router)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -96,8 +126,12 @@ def _is_html_app_path(path: str) -> bool:
         or path.startswith("/dashboard")
         or path.startswith("/about")
         or path.startswith("/reports")
+        or path.startswith("/regwatch")
         or path.startswith("/scan/")
         or path.startswith("/experience/")
+        or (path.startswith("/projects/") and path.endswith("/monitoring"))
+        or (path.startswith("/projects/") and path.endswith("/connectors"))
+        or (path.startswith("/projects/") and path.endswith("/pii"))
     )
 
 
@@ -186,6 +220,14 @@ async def dpdp_experience(request: Request):
     return templates.TemplateResponse("experience_dpdp.html", _template_context(request))
 
 
+@app.get("/regwatch", response_class=HTMLResponse)
+async def regwatch_page(request: Request):
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    return templates.TemplateResponse("regwatch.html", _template_context(request, user=user))
+
+
 @app.get("/reports", response_class=HTMLResponse)
 async def reports_page(request: Request):
     user = _get_user_from_request(request)
@@ -199,6 +241,51 @@ async def reports_page(request: Request):
         payload["project_name"] = project_docs.get(payload.get("project_id"), {}).get("name", "Unknown project")
         scans.append(payload)
     return templates.TemplateResponse("reports.html", _template_context(request, user=user, scans=scans))
+
+
+@app.get("/projects/{project_id}/monitoring", response_class=HTMLResponse)
+async def project_monitoring_page(project_id: str, request: Request):
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    project = projects_collection().find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return templates.TemplateResponse(
+        "monitoring.html",
+        _template_context(request, user=user, project_id=project_id,
+                          project_name=project.get("name", "Project")),
+    )
+
+
+@app.get("/projects/{project_id}/connectors", response_class=HTMLResponse)
+async def project_connectors_page(project_id: str, request: Request):
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    project = projects_collection().find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return templates.TemplateResponse(
+        "connectors.html",
+        _template_context(request, user=user, project_id=project_id,
+                          project_name=project.get("name", "Project")),
+    )
+
+
+@app.get("/projects/{project_id}/pii", response_class=HTMLResponse)
+async def project_pii_page(project_id: str, request: Request):
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    project = projects_collection().find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return templates.TemplateResponse(
+        "pii.html",
+        _template_context(request, user=user, project_id=project_id,
+                          project_name=project.get("name", "Project")),
+    )
 
 
 @app.get("/scan/{scan_id}", response_class=HTMLResponse)
@@ -339,6 +426,10 @@ async def get_scan_report_html(scan_id: str, request: Request):
 <tr><td>Failed</td><td>{failed}</td></tr>
 <tr><td>Rulepack</td><td>{scan.get("rulepack_version", "-")}</td></tr>
 </table>
+<p style="background:#fff8e6;border:1px solid #f0d28a;padding:10px;border-radius:6px;font-size:0.85rem">
+<strong>Readiness self-assessment — not legal advice and not a determination of compliance.</strong>
+Findings are readiness/"prepare-by" items, never assertions of compliance status. Verify against
+primary sources and consult a qualified practitioner.</p>
 <p><em>Report generated by CompliSense-AI. For full details run the agent locally.</em></p>
 </body></html>"""
     return HTMLResponse(content=html)
@@ -370,7 +461,11 @@ async def download_scan_report(scan_id: str, request: Request, format: str = "ht
 <p>Project: {project_name} | Status: {scan.get("status", "-")} | {timestamp_display}</p>
 <table><tr><th>Metric</th><th>Value</th></tr>
 <tr><td>Total</td><td>{total}</td></tr><tr><td>Passed</td><td>{passed}</td></tr><tr><td>Failed</td><td>{failed}</td></tr>
-</table></body></html>"""
+</table>
+<p style="background:#fff8e6;border:1px solid #f0d28a;padding:10px;border-radius:6px;font-size:0.85rem">
+<strong>Readiness self-assessment — not legal advice and not a determination of compliance.</strong>
+Verify against primary sources and consult a qualified practitioner.</p>
+</body></html>"""
         return Response(
             content=html,
             media_type="text/html",

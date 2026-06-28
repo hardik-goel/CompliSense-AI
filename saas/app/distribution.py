@@ -17,6 +17,7 @@ from agent.db.mongo import insert_audit_log
 from saas.app.auth import get_current_user, get_current_user_optional
 from saas.app.config import settings
 from saas.app.database import get_collection, serialize_document
+from saas.app.monitoring import record_scan_run
 from saas.app.projects import get_project_for_user
 
 try:
@@ -162,7 +163,10 @@ async def download_agent(scan_id: str, request: Request, token: str | None = Non
 
 
 @router.post("/agent/heartbeat")
-async def receive_agent_heartbeat(heartbeat_data: dict[str, Any]):
+async def receive_agent_heartbeat(
+    heartbeat_data: dict[str, Any],
+    actor: dict[str, Any] = Depends(_get_upload_actor),
+):
     scan_id = heartbeat_data.get("scan_id")
     status_value = heartbeat_data.get("status")
     if not scan_id:
@@ -179,7 +183,10 @@ async def receive_agent_heartbeat(heartbeat_data: dict[str, Any]):
 
 
 @router.post("/agent/results")
-async def receive_scan_results(results_data: dict[str, Any]):
+async def receive_scan_results(
+    results_data: dict[str, Any],
+    actor: dict[str, Any] = Depends(_get_upload_actor),
+):
     scan_id = results_data.get("scan_id")
     if not scan_id:
         raise HTTPException(status_code=400, detail="scan_id is required")
@@ -203,6 +210,17 @@ async def receive_scan_results(results_data: dict[str, Any]):
             "client_run_metadata": client_run_metadata,
         }
         scans_collection().update_one({"id": scan_id}, {"$set": update_fields})
+
+        try:
+            record_scan_run(
+                {**scan, **update_fields},
+                findings_json,
+                summary,
+                update_fields["last_completed"],
+                source="agent_results",
+            )
+        except Exception:
+            logger.exception("Scan-run history write failed for scan_id=%s", scan_id)
 
         try:
             insert_audit_log(
@@ -266,6 +284,17 @@ async def upload_scan(payload: UploadScanRequest, actor: dict[str, Any] = Depend
 
     scans_collection().update_one({"id": scan_id}, {"$set": scan_doc}, upsert=True)
     logger.info("Stored uploaded scan scan_id=%s project_id=%s auth_type=%s", scan_id, payload.project_id, actor["auth_type"])
+
+    try:
+        record_scan_run(
+            scan_doc,
+            payload.findings_json,
+            payload.scan_summary,
+            payload.timestamp,
+            source="api_v1_upload_scan",
+        )
+    except Exception:
+        logger.exception("Scan-run history write failed for uploaded scan scan_id=%s", scan_id)
 
     try:
         insert_audit_log(
