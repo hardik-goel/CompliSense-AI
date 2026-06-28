@@ -66,6 +66,9 @@ class AgentGenerator:
             # Create installation script
             self._create_install_script(agent_temp_dir)
 
+            # Always include a minimal how-to-run guide (both compiled + source bundles)
+            self._write_how_to_run(agent_temp_dir)
+
             # Create ZIP file
             zip_path = self._create_zip_file(agent_temp_dir, scan_id)
 
@@ -76,6 +79,63 @@ class AgentGenerator:
             if agent_temp_dir.exists():
                 shutil.rmtree(agent_temp_dir)
             raise e
+
+    def _write_how_to_run(self, target_dir: Path) -> None:
+        """Write a minimal HOW-TO-RUN.txt into the bundle (compiled and source modes)."""
+        how_to_run = """CompliSense-AI - HOW TO RUN
+==========================
+
+WHAT THIS DOES
+  Scans a folder of your artefacts (privacy notice, model card, configs, registers, etc.)
+  against the selected rulepack and writes a readiness report. Runs entirely on your
+  machine - your files never leave your computer.
+
+PREREQUISITE
+  Python 3.10 or 3.11 installed.
+
+RUN (3 steps)
+  1) Unzip this bundle.
+  2) Set it up:
+       macOS / Linux :  ./setup_agent.sh
+       Windows       :  setup_agent.bat
+  3) Activate, then scan:
+       macOS / Linux :  source complisense_env/bin/activate
+       Windows       :  complisense_env\\Scripts\\activate.bat
+
+       python run_scan.py --project-path <INPUT_FOLDER> --output-dir <OUTPUT_FOLDER>
+
+  INPUT_FOLDER  = one consolidated folder holding the artefacts to be checked.
+  OUTPUT_FOLDER = where the report is written (created if it does not exist).
+                  Defaults to ./complisense_output if you omit --output-dir.
+
+  Example:
+       python run_scan.py --project-path ./my_artefacts --output-dir ./output
+
+NO ARTEFACTS YET? COLLECT THEM FROM A FOLDER (optional, runs locally)
+  Point this at a folder/repo where your docs already live; it finds and copies the likely
+  compliance artefacts into ./collected_artefacts, then you scan that.
+       python -m agent.collectors.collect --source-path ./my_repo --out ./collected_artefacts
+       python run_scan.py --project-path ./collected_artefacts --output-dir ./output
+  Smarter classification uses Claude: set ANTHROPIC_API_KEY first (your key, called locally;
+  file contents never leave your machine). Without a key it uses filename + keyword matching.
+  Add --no-llm to force the offline classifier.
+
+OUTPUT (in OUTPUT_FOLDER)
+  compliance_findings.json   - per-rule status + citations
+  compliance_report.pdf      - readable report (when generated)
+
+IF THE INPUT FOLDER / ARTEFACTS ARE NOT PRESENT
+  - If --project-path does NOT exist: the scan stops immediately with
+      "Error: Project path does not exist" and exits WITHOUT scanning. Re-run with a valid path.
+  - If the folder exists but artefacts are missing or incomplete: the scan STILL completes.
+      Each rule whose evidence is absent is reported as MISSING (a readiness gap); rules that
+      do not apply to you show NOT_APPLICABLE. You get a "here are your gaps" report, not a crash.
+
+NOTE
+  Readiness self-assessment - not legal advice. Findings are framed as "prepare by <date>",
+  never as "violations".
+"""
+        (target_dir / "HOW-TO-RUN.txt").write_text(how_to_run, encoding="utf-8")
 
     def _copy_agent_files(self, target_dir: Path) -> str:
         """
@@ -114,6 +174,7 @@ PyYAML==6.0.3
 requests==2.32.5
 rule-engine==4.5.3
 weasyprint==66.0
+anthropic==0.69.0
 """
         (target_dir / "requirements.txt").write_text(requirements, encoding="utf-8")
         return "source"

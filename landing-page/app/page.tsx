@@ -224,6 +224,8 @@ export default function HomePage() {
             <a href="#teaser">Watch</a>
             <a href="#platform">Platform</a>
             <a href="#solutions">Solutions</a>
+            <a href="/showcase">Showcase</a>
+            <a href="/readiness">Readiness Score</a>
             <a href="#pricing">Pricing</a>
             <a href="#about">About</a>
             <Link href="/readiness">DPDP Score</Link>
@@ -277,6 +279,10 @@ export default function HomePage() {
               <a href="#solutions" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
                 Solutions
+              </a>
+              <a href="/showcase" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Showcase
               </a>
               <a href="#pricing" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
@@ -387,7 +393,10 @@ export default function HomePage() {
               DPDP, AI governance, vendor reviews, and audit readiness — automated from one operating layer.
             </p>
             <div className="hero-actions" data-animate style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
-              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
+              <a href="/readiness" className="btn-primary">
+                Get your free readiness score &rarr;
+              </a>
+              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
                 📅 Book a Demo
               </a>
               <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
@@ -1476,6 +1485,8 @@ export default function HomePage() {
               <strong>Product</strong>
               <a href="#platform">Platform</a>
               <a href="#solutions">Solutions</a>
+              <a href="/readiness">Free Readiness Score</a>
+              <a href="/showcase">Showcase</a>
               <a href="#impact">Impact</a>
               <a href="/changelog" style={{ fontSize: "13px", color: "#64748B", textDecoration: "none" }}>Changelog</a>
               <a href={appUrl} target="_blank" rel="noopener noreferrer">Launch App</a>
