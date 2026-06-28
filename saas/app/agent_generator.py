@@ -66,6 +66,12 @@ class AgentGenerator:
             # Create installation script
             self._create_install_script(agent_temp_dir)
 
+            # Always include a minimal how-to-run guide (both compiled + source bundles)
+            self._write_how_to_run(agent_temp_dir)
+
+            # Ship the source-collection runner (reads declared sources from agent_config.json)
+            self._write_collect_sources(agent_temp_dir)
+
             # Create ZIP file
             zip_path = self._create_zip_file(agent_temp_dir, scan_id)
 
@@ -77,6 +83,174 @@ class AgentGenerator:
                 shutil.rmtree(agent_temp_dir)
             raise e
 
+    def _write_how_to_run(self, target_dir: Path) -> None:
+        """Write a minimal HOW-TO-RUN.txt into the bundle (compiled and source modes)."""
+        how_to_run = """CompliSense-AI - HOW TO RUN
+==========================
+
+WHAT THIS DOES
+  Scans a folder of your artefacts (privacy notice, model card, configs, registers, etc.)
+  against the selected rulepack and writes a readiness report. Runs entirely on your
+  machine - your files never leave your computer.
+
+PREREQUISITE
+  Python 3.10 or 3.11 installed.
+
+RUN (3 steps)
+  1) Unzip this bundle.
+  2) Set it up:
+       macOS / Linux :  ./setup_agent.sh
+       Windows       :  setup_agent.bat
+  3) Activate, then scan:
+       macOS / Linux :  source complisense_env/bin/activate
+       Windows       :  complisense_env\\Scripts\\activate.bat
+
+       python run_scan.py --project-path <INPUT_FOLDER> --output-dir <OUTPUT_FOLDER>
+
+  INPUT_FOLDER  = one consolidated folder holding the artefacts to be checked.
+  OUTPUT_FOLDER = where the report is written (created if it does not exist).
+                  Defaults to ./complisense_output if you omit --output-dir.
+
+  Example:
+       python run_scan.py --project-path ./my_artefacts --output-dir ./output
+
+NO ARTEFACTS YET? COLLECT THEM (optional, runs locally)
+  From a single local folder/repo:
+       python -m agent.collectors.collect --source local --source-path ./my_repo --out ./collected_artefacts
+       python run_scan.py --project-path ./collected_artefacts --output-dir ./output
+  From the cloud sources you declared in the app (S3 / GCS / Azure / GitHub / Notion / Drive /
+  SharePoint) - credentials read from your local environment, never stored:
+       python collect_sources.py
+       python run_scan.py --project-path ./collected_artefacts --output-dir ./output
+
+  SMART CLASSIFICATION (optional). Set ONE of these before collecting; file contents stay on
+  your machine and only the chosen provider is called:
+    - Claude     : export ANTHROPIC_API_KEY=sk-ant-...
+    - OpenRouter : export OPENROUTER_API_KEY=sk-or-...   (and optionally
+                   export OPENROUTER_MODEL='nvidia/nemotron-3-super-120b-a12b:free')
+  Selection order is OpenRouter > Claude > offline. With no key it uses filename + keyword
+  matching. Add --no-llm to force the offline classifier.
+
+  Credential env vars for cloud collection: AWS uses the standard AWS chain; GCS/Azure use
+  their default credentials; GITHUB_TOKEN (private repos), NOTION_TOKEN, GDRIVE_TOKEN,
+  SHAREPOINT_TOKEN as needed.
+
+OUTPUT (in OUTPUT_FOLDER)
+  compliance_findings.json   - per-rule status + citations
+  compliance_report.pdf      - readable report (when generated)
+
+IF THE INPUT FOLDER / ARTEFACTS ARE NOT PRESENT
+  - If --project-path does NOT exist: the scan stops immediately with
+      "Error: Project path does not exist" and exits WITHOUT scanning. Re-run with a valid path.
+  - If the folder exists but artefacts are missing or incomplete: the scan STILL completes.
+      Each rule whose evidence is absent is reported as MISSING (a readiness gap); rules that
+      do not apply to you show NOT_APPLICABLE. You get a "here are your gaps" report, not a crash.
+
+NOTE
+  Readiness self-assessment - not legal advice. Findings are framed as "prepare by <date>",
+  never as "violations".
+"""
+        (target_dir / "HOW-TO-RUN.txt").write_text(how_to_run, encoding="utf-8")
+
+    def _write_collect_sources(self, target_dir: Path) -> None:
+        """Write collect_sources.py — runs the collectors for the sources declared in the app.
+
+        Credentials are read from local env vars at runtime; they are never in the bundle.
+        """
+        script = r'''#!/usr/bin/env python3
+"""Collect artefacts from the sources declared in the CompliSense app (runs locally).
+
+Credentials come from your local environment, never from the app:
+  AWS        -> standard AWS env/instance credentials (boto3 default chain)
+  GCS/Azure  -> Application Default Credentials / DefaultAzureCredential
+  GitHub     -> GITHUB_TOKEN (optional for public repos)
+  Notion     -> NOTION_TOKEN     GDrive -> GDRIVE_TOKEN     SharePoint -> SHAREPOINT_TOKEN
+Smart classification (file contents stay local): set ANTHROPIC_API_KEY (Claude) OR
+OPENROUTER_API_KEY (+ optional OPENROUTER_MODEL). Selection order: OpenRouter > Claude >
+deterministic filename/keyword classifier.
+"""
+import json, os, sys
+from pathlib import Path
+
+agent_dir = Path(__file__).resolve().parent
+sys.path.insert(0, str(agent_dir))
+OUT = "./collected_artefacts"
+
+
+def _llm():
+    from agent.collectors.classifier import default_classifier
+    return default_classifier()  # OpenRouter (OPENROUTER_API_KEY) > Anthropic (ANTHROPIC_API_KEY) > none
+
+
+def _fetch(s):
+    t = s["type"]; cfg = s.get("config", {})
+    if t == "s3":
+        from agent.collectors.s3 import collect_s3_candidates
+        return collect_s3_candidates(cfg["bucket"], prefix=cfg.get("prefix", ""), region=cfg.get("region"))
+    if t == "gcs":
+        from agent.collectors.gcs import collect_gcs_candidates
+        return collect_gcs_candidates(cfg["bucket"], prefix=cfg.get("prefix", ""))
+    if t == "azure_blob":
+        from agent.collectors.azure_blob import collect_azure_candidates
+        return collect_azure_candidates(cfg["account_url"], cfg["container"], prefix=cfg.get("prefix", ""))
+    if t == "github":
+        from agent.collectors.github import collect_github_candidates
+        return collect_github_candidates(cfg["repo"], path=cfg.get("path", ""), ref=cfg.get("ref"),
+                                         token=os.getenv("GITHUB_TOKEN"))
+    if t == "notion":
+        from agent.collectors.docstores import collect_notion_candidates
+        return collect_notion_candidates(os.environ["NOTION_TOKEN"], database_id=cfg.get("database_id"))
+    if t == "gdrive":
+        from agent.collectors.docstores import collect_gdrive_candidates
+        return collect_gdrive_candidates(os.environ["GDRIVE_TOKEN"], folder_id=cfg.get("folder_id"))
+    if t == "sharepoint":
+        from agent.collectors.docstores import collect_sharepoint_candidates
+        return collect_sharepoint_candidates(os.environ["SHAREPOINT_TOKEN"], site=cfg.get("site"))
+    if t == "local":
+        from agent.collectors.local_folder import crawl
+        return crawl(cfg["path"])
+    return []
+
+
+def main():
+    cfg = json.loads((agent_dir / "agent_config.json").read_text())
+    sources = cfg.get("collection_sources", [])
+    if not sources:
+        print("No collection sources declared in the app. Add them under your project then re-download,")
+        print("or run a single source directly, e.g.:")
+        print("  python -m agent.collectors.collect --source local --source-path <folder> --out ./collected_artefacts")
+        return 0
+    llm = _llm()
+    if llm is None:
+        print("No LLM key (OPENROUTER_API_KEY / ANTHROPIC_API_KEY) — using the deterministic classifier.")
+    from agent.collectors.base import stage_candidates
+    collected = []
+    for s in sources:
+        print("Collecting from %s (%s) ..." % (s["type"], s.get("label")))
+        try:
+            collected += list(_fetch(s) or [])
+        except KeyError as e:
+            print("  missing credential env var %s — set it and re-run. Skipping." % e)
+        except ImportError as e:
+            print("  missing SDK (%s). pip install the source SDK (boto3 / google-cloud-storage / "
+                  "azure-storage-blob / azure-identity). Skipping." % e)
+        except Exception as e:
+            print("  error: %s. Skipping." % e)
+    if not collected:
+        print("Nothing collected.")
+        return 0
+    m = stage_candidates(collected, OUT, llm=llm, source_label="multi")
+    print("Collected %d of %d -> %s" % (m["collected"], m["scanned"], OUT))
+    print("Review %s/COLLECTION_MANIFEST.json, then:" % OUT)
+    print("  python run_scan.py --project-path ./collected_artefacts --output-dir ./output")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+'''
+        (target_dir / "collect_sources.py").write_text(script, encoding="utf-8")
+
     def _copy_agent_files(self, target_dir: Path) -> str:
         """
         Copy the agent files needed for the downloadable bundle.
@@ -86,7 +260,15 @@ class AgentGenerator:
         """
         if self.cli_binary.exists():
             shutil.copy2(self.cli_binary, target_dir / "CompliSenseCLI")
-            (target_dir / "requirements.txt").write_text("requests\n", encoding="utf-8")
+            # Ship the (pure-python) collectors so the optional collect step works in compiled
+            # bundles too; the CLI handles scanning, the collectors handle gathering artefacts.
+            collectors_src = self.agent_source_dir / "collectors"
+            if collectors_src.exists():
+                (target_dir / "agent").mkdir(exist_ok=True)
+                (target_dir / "agent" / "__init__.py").write_text("", encoding="utf-8")
+                shutil.copytree(collectors_src, target_dir / "agent" / "collectors",
+                                dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            (target_dir / "requirements.txt").write_text("requests\nanthropic==0.69.0\n", encoding="utf-8")
             return "compiled"
 
         if not self.agent_source_dir.exists():
@@ -114,6 +296,7 @@ PyYAML==6.0.3
 requests==2.32.5
 rule-engine==4.5.3
 weasyprint==66.0
+anthropic==0.69.0
 """
         (target_dir / "requirements.txt").write_text(requirements, encoding="utf-8")
         return "source"
@@ -162,6 +345,8 @@ requests
             "created_at": datetime.datetime.utcnow().isoformat(),
             "version": "1.0.0",
             "bundle_mode": bundle_mode,
+            # Non-secret collection sources declared in the app (credentials stay local).
+            "collection_sources": scan_config.get("collection_sources", []),
         }
 
         config_path = target_dir / "agent_config.json"

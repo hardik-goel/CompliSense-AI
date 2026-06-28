@@ -98,12 +98,14 @@ def _get_scan_and_check(scan_id: str, current_user: dict[str, Any]) -> tuple[dic
 
 @router.post("/agent/download/{scan_id}/prepare")
 async def prepare_agent_download(scan_id: str, request: Request, current_user: dict[str, Any] = Depends(get_current_user)):
-    _get_scan_and_check(scan_id, current_user)
+    _scan, project = _get_scan_and_check(scan_id, current_user)
     if agent_generator is None:
         raise HTTPException(status_code=500, detail="Agent generator is unavailable")
 
     try:
         scan_doc = serialize_document(_get_scan(scan_id))
+        # Embed the project's declared (non-secret) collection sources so the bundle can collect.
+        scan_doc["collection_sources"] = project.get("collection_sources", [])
         zip_path = await asyncio.to_thread(
             agent_generator.create_custom_agent,
             scan_doc,
