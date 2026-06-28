@@ -188,6 +188,33 @@ rules:
       partial: 2.0
     severity: "Critical"
 
+  - id: DPDP-SEC8-RETENTION-CLASS-001
+    clause: "Section 8"
+    title: "Third-Schedule class-based 3-year inactivity erasure is documented"
+    act_citation: "DPDP Act 2023, s.8(7)-(8) (retention limitation & erasure)"
+    rule_citation: "DPDP Rules 2025, Rule 8(1) + Third Schedule (3-year inactivity erasure for notified classes)"
+    source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
+    applicability:
+      scope: "third_schedule_class_only"
+      threshold: "Applies ONLY to Third-Schedule classes: e-commerce >=2cr registered users, online gaming >=50L, social media >=2cr. Non-class entities are NOT_APPLICABLE (only the universal 1-yr floor, DPDP-SEC8-OBLIGATIONS-003, applies)."
+      exemption_ref: "third_schedule_class_only"
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-05-13"
+    date_status: "phased_confirmed"
+    verification: "primary_source_verified"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/retention_schedule.yaml"
+      required_json_fields:
+        - "data_classes"
+        - "inactivity_erasure_period_days"
+        - "erasure_workflow"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+
   - id: DPDP-SEC9-CHILDREN-001
     clause: "Section 9"
     title: "Children's data safeguards are documented"

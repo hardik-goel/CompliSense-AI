@@ -187,6 +187,41 @@ QUESTIONS: List[Dict[str, Any]] = [
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-PROCESSOR-001",
     },
+    # --- EU AI Act facts (applicability only; EU posture scoring pending legal review) ---
+    {
+        "id": "has_ai_system",
+        "section": "EU AI Act (if applicable)",
+        "text": "Do you build, deploy, import, or distribute an AI system?",
+        "type": "bool",
+        "help": "Gates whether EU AI Act obligations apply at all.",
+        "optional": True,
+    },
+    {
+        "id": "eu_role",
+        "section": "EU AI Act (if applicable)",
+        "text": "What is your role for that AI system?",
+        "type": "single",
+        "options": ["none", "provider", "deployer", "importer", "distributor",
+                    "gpai_provider", "gpai_downstream"],
+        "help": "EU AI Act obligations are role-gated (provider duties differ from deployer duties).",
+        "optional": True,
+    },
+    {
+        "id": "provides_to_eu",
+        "section": "EU AI Act (if applicable)",
+        "text": "Is the AI system placed on the EU market or is its output used in the EU?",
+        "type": "bool",
+        "help": "The EU AI Act applies extraterritorially when output is used in the EU (Art. 2).",
+        "optional": True,
+    },
+    {
+        "id": "is_open_source",
+        "section": "EU AI Act (if applicable)",
+        "text": "Is the AI model/system released under a free and open-source licence?",
+        "type": "bool",
+        "help": "Some EU AI Act duties carry open-source carve-outs (scope subject to legal review).",
+        "optional": True,
+    },
 ]
 
 QUESTION_IDS = {q["id"] for q in QUESTIONS}
@@ -218,6 +253,11 @@ class Manifest:
     has_grievance_contact: bool = False
     grievance_email: Optional[str] = None
     processors_listed: bool = False
+    # EU AI Act facts
+    has_ai_system: bool = False
+    eu_role: str = "none"
+    provides_to_eu: bool = False
+    is_open_source: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -259,6 +299,30 @@ def is_third_schedule_class(manifest: Manifest) -> bool:
     return bool(trigger and manifest.registered_users >= trigger)
 
 
+# Manifest eu_role value -> applicability scope name.
+_EU_ROLE_TO_SCOPE = {
+    "provider": "eu_provider",
+    "deployer": "eu_deployer",
+    "importer": "eu_importer",
+    "distributor": "eu_distributor",
+    "gpai_provider": "eu_gpai_provider",
+    "gpai_downstream": "eu_gpai_downstream",
+}
+
+
+def eu_roles(manifest: Manifest) -> List[str]:
+    """Applicability role-scopes for the EU AI Act gate.
+
+    Roles apply only when the entity actually has an AI system with an EU nexus (placed on
+    the EU market or output used in the EU, Art. 2). Empty otherwise — so non-EU entities are
+    never flagged for EU provider/deployer duties.
+    """
+    if not manifest.has_ai_system or not manifest.provides_to_eu:
+        return []
+    scope = _EU_ROLE_TO_SCOPE.get(manifest.eu_role)
+    return [scope] if scope else []
+
+
 def manifest_to_profile(manifest: Manifest) -> Dict[str, Any]:
     """Map a manifest to the entity profile consumed by the applicability gate."""
     return {
@@ -267,8 +331,8 @@ def manifest_to_profile(manifest: Manifest) -> Dict[str, Any]:
         "is_third_schedule_class": is_third_schedule_class(manifest),
         "is_consent_manager": bool(manifest.acts_as_consent_manager),
         "is_state_instrumentality": bool(manifest.is_state_instrumentality),
-        # Phase 1 is DPDP-only; EU role gating arrives with the EU manifest later.
-        "eu_roles": [],
+        "eu_roles": eu_roles(manifest),
+        "is_open_source": bool(manifest.is_open_source),
     }
 
 

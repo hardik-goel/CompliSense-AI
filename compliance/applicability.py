@@ -76,6 +76,12 @@ def resolve_applicability(
     if profile is None:
         return True, "applicability gating inactive (no entity profile provided)"
 
+    # Open-source carve-out: a rule may declare `open_source_exempt: true`. When the entity
+    # is open-source, that obligation does not apply. (Which EU rules carry this exemption is
+    # subject to legal review — see LEGAL_REVIEW_NEEDED.md.)
+    if block.get("open_source_exempt") and bool(profile.get("is_open_source")):
+        return False, f"scope '{scope}' does not apply: open-source exemption (profile.is_open_source)"
+
     if scope in UNIVERSAL_SCOPES:
         return True, f"scope '{scope}' applies to all in-scope entities"
 

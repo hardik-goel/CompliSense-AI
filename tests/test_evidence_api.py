@@ -20,6 +20,8 @@ def _patch(monkeypatch, role="owner"):
     monkeypatch.setattr(E, "_alerts", lambda pid: [{"status": "open", "message": "regressed"}])
     monkeypatch.setattr(E, "_discoveries", lambda pid: [{"provider": "aws", "signals": [1], "suggestions": [], "applied_fields": []}])
     monkeypatch.setattr(E, "_pii", lambda pid: [{"report": {"category_to_sources": {"email": ["db"]}, "has_cross_border": False}}])
+    monkeypatch.setattr(E, "_gap_states", lambda pid: [{"rule_id": "DPDP-SEC8-OBLIGATIONS-002", "status": "signed_off", "signed_off_by_email": "owner@x.com"}])
+    monkeypatch.setattr(E, "insert_audit_log", lambda *a, **k: None)
 
 
 def test_evidence_json_assembles_with_real_readiness(monkeypatch):
@@ -30,6 +32,8 @@ def test_evidence_json_assembles_with_real_readiness(monkeypatch):
     assert pack["citations"]  # real DPDP rules carry citations
     assert pack["pii_data_flow"]["categories"] == ["email"]
     assert pack["meta"]["prepared_by"] == "owner@x.com"
+    assert pack["meta"]["rulepack_applied"] == "dpdp_india_core_v1"
+    assert pack["governance"]["signed_off_count"] == 1
 
 
 def test_evidence_html_is_downloadable_document(monkeypatch):

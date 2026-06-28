@@ -1,7 +1,7 @@
 """Remediation copilot core (Phase 7) — pure, injectable LLM, no SDK/network."""
 
 from compliance.copilot import (
-    DISCLAIMER, SYSTEM_PROMPT, RemediationCopilot, _Refusal, build_context_block, default_llm,
+    DISCLAIMER, DRAFT_MARKER, SYSTEM_PROMPT, RemediationCopilot, _Refusal, build_context_block, default_llm,
 )
 
 
@@ -34,9 +34,19 @@ def test_explain_passes_guardrailed_system_and_context():
     assert captured["system"] == SYSTEM_PROMPT
 
 
-def test_draft_mode():
+def test_draft_mode_stamps_legal_review_marker():
+    # Model omits the marker -> draft() must inject it (belt-and-suspenders).
     out = RemediationCopilot(lambda s, u: "PRIVACY NOTICE\n...").draft(RULE, FACTS, "privacy policy section")
-    assert out["mode"] == "draft" and out["answer"].startswith("PRIVACY NOTICE")
+    assert out["mode"] == "draft"
+    assert DRAFT_MARKER in out["answer"]
+    assert "PRIVACY NOTICE" in out["answer"]
+    assert out["draft_marker"] == DRAFT_MARKER
+
+
+def test_draft_instruction_requests_marker():
+    captured = {}
+    RemediationCopilot(lambda s, u: captured.setdefault("u", u) or "x").draft(RULE, FACTS, "notice")
+    assert DRAFT_MARKER in captured["u"]  # instruction tells the model to lead with it
 
 
 def test_ungrounded_answer_flagged():

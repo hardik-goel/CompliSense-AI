@@ -69,8 +69,9 @@ async def remediate(
     if not body.consent_to_send:
         raise HTTPException(
             status_code=400,
-            detail="consent_to_send is required: this sends the rule + your confirmed facts "
-                   "(no raw artefacts or personal data) to the LLM.",
+            detail="consent_to_send is required: this sends the cited rule + your confirmed, "
+                   "non-PII facts (no raw artefacts or personal-data values) to the Anthropic "
+                   "API (claude-opus-4-8) to generate guidance.",
         )
     mode = body.mode.strip().lower()
     if mode not in _VALID_MODES:

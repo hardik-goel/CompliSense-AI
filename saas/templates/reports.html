@@ -80,7 +80,7 @@
                     <tr>
                       <td>
                         <div>{{ item.title }}</div>
-                        <div class="muted small">{{ item.rule_id }} | {{ item.clause }}</div>
+                        <div class="muted small">{{ item.rule_id }} | {{ item.clause }}{% if item.verification and item.verification != 'primary_source_verified' %} | <span class="text-warning">⚠ {{ item.verification.replace('_', ' ') }}</span>{% endif %}</div>
                       </td>
                       <td class="{% if item.status == 'PASS' %}text-success{% elif item.status in ['PARTIAL', 'MISSING'] %}text-warning{% else %}text-danger{% endif %} fw-bold">{{ item.status }}</td>
                       <td>{{ item.confidence }}%</td>

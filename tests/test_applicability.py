@@ -86,3 +86,15 @@ def test_run_scan_without_profile_evaluates_all(tmp_path: Path):
     out = run_scan(tmp_path, rules)  # no profile → gating inactive
     assert out["results"][0]["status"] != "NOT_APPLICABLE"
     assert out["summary"]["not_applicable"] == 0
+
+
+def test_eu_provider_scope_gated_on_role():
+    rule = _rule("EUAI-X", "eu_provider")
+    assert resolve_applicability(rule, {"eu_roles": ["eu_provider"]})[0] is True
+    assert resolve_applicability(rule, {"eu_roles": []})[0] is False  # deployer/non-EU not flagged
+
+
+def test_open_source_exemption():
+    rule = {"id": "EUAI-Y", "applicability": {"scope": "all_ai_actors", "open_source_exempt": True}}
+    assert resolve_applicability(rule, {"is_open_source": True})[0] is False
+    assert resolve_applicability(rule, {"is_open_source": False})[0] is True

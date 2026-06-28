@@ -66,5 +66,14 @@ def test_bad_pack_rejected(monkeypatch):
     from fastapi import HTTPException
     _patch(monkeypatch, {"id": "p1", "user_id": "u1"})
     with pytest.raises(HTTPException) as e:
-        _run(PR.project_readiness("p1", pack_id="euai_core_v1", current_user=USER))
+        _run(PR.project_readiness("p1", pack_id="uk_core_v1", current_user=USER))
     assert e.value.status_code == 400
+
+
+def test_eu_pack_scores_with_role_gating(monkeypatch):
+    # EU pack now scores; provider-role + EU nexus makes eu_provider rules applicable.
+    _patch(monkeypatch, {"id": "p1", "user_id": "u1", "discovered_manifest": {
+        "has_ai_system": True, "eu_role": "provider", "provides_to_eu": True}})
+    report = _run(PR.project_readiness("p1", pack_id="euai_core_v1", current_user=USER))
+    assert report["jurisdiction"] == "EU_AI_ACT"
+    assert report["summary"]["applicable"] > 0  # eu_provider rules now apply (not all N/A)

@@ -15,6 +15,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from agent.db.mongo import insert_audit_log
 from saas.app.auth import get_current_user, users_collection
 from saas.app.database import get_collection, serialize_document
 from saas.app.projects import projects_collection
@@ -46,6 +47,14 @@ class RoleUpdate(BaseModel):
 
 class AttachTeam(BaseModel):
     team_id: str
+
+
+def _audit_team(user_id: str, team_id: str, status: str, meta: dict[str, Any]) -> None:
+    try:
+        insert_audit_log({"user_id": user_id, "source": "team_membership", "status": status,
+                          "timestamp": dt.datetime.utcnow(), "metadata": {"team_id": team_id, **meta}})
+    except Exception:
+        pass
 
 
 def _team_role(team_id: str, user_id: str) -> str | None:
@@ -138,6 +147,7 @@ async def invite_member(team_id: str, body: MemberInvite, current_user: dict[str
     member = {"team_id": team_id, "user_id": user_id, "email": email, "role": role,
               "status": "active" if user_id else "pending", "created_at": dt.datetime.utcnow()}
     team_members_collection().insert_one(member)
+    _audit_team(current_user["id"], team_id, "member_invited", {"email": email, "role": role})
     return serialize_document(member)
 
 
@@ -152,6 +162,7 @@ async def update_member_role(team_id: str, member_user_id: str, body: RoleUpdate
         {"team_id": team_id, "user_id": member_user_id}, {"$set": {"role": role}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Member not found")
+    _audit_team(current_user["id"], team_id, "role_changed", {"user_id": member_user_id, "role": role})
     return {"team_id": team_id, "user_id": member_user_id, "role": role}
 
 
@@ -162,6 +173,7 @@ async def remove_member(team_id: str, member_user_id: str, current_user: dict[st
     if team and team.get("owner_id") == member_user_id:
         raise HTTPException(status_code=400, detail="Cannot remove the team owner")
     team_members_collection().delete_one({"team_id": team_id, "user_id": member_user_id})
+    _audit_team(current_user["id"], team_id, "member_removed", {"user_id": member_user_id})
     return {"removed": member_user_id}
 
 

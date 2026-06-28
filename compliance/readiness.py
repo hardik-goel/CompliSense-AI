@@ -28,6 +28,7 @@ _PREDICATES: Dict[str, Callable[[Manifest], Any]] = {
     "DPDP-SEC8-OBLIGATIONS-001": lambda m: m.has_security_safeguards,
     "DPDP-SEC8-OBLIGATIONS-002": lambda m: m.has_breach_process,
     "DPDP-SEC8-OBLIGATIONS-003": lambda m: m.retention_defined,
+    "DPDP-SEC8-RETENTION-CLASS-001": lambda m: m.retention_defined,
     "DPDP-SEC13-GRIEVANCE-001": lambda m: m.has_grievance_contact,
     "DPDP-SEC8-PROCESSOR-001": lambda m: m.processors_listed,
 }
@@ -92,8 +93,26 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
     # Order gaps by severity so the teaser (top-3) shows the most important first.
     gaps.sort(key=lambda g: _SEVERITY_RANK.get(g["severity"], 9))
 
+    jurisdiction = pack.get("jurisdiction", "DPDP_INDIA")
+    if jurisdiction == "EU_AI_ACT":
+        disclaimer = (
+            "Readiness self-assessment, not legal advice and not a determination of "
+            "compliance. EU AI Act prohibited-practices (Art. 5), literacy (Art. 4) and GPAI "
+            "duties are in force; high-risk and Art. 50 transparency duties are deferred "
+            "('prepare by' items, some PROVISIONAL pending the Digital Omnibus). EU rules here "
+            "are secondary-sourced and PENDING professional legal review. Verify against "
+            "primary sources and consult a qualified practitioner."
+        )
+    else:
+        disclaimer = (
+            "Readiness self-assessment, not legal advice and not a determination of "
+            "compliance. DPDP operational obligations become enforceable ~13 May 2027; "
+            "gaps are 'prepare by' items. Verify against primary sources and consult a "
+            "qualified practitioner."
+        )
+
     return {
-        "jurisdiction": pack.get("jurisdiction", "DPDP_INDIA"),
+        "jurisdiction": jurisdiction,
         "pack_id": pack.get("pack_id"),
         "readiness_score": score,
         "summary": {
@@ -105,12 +124,7 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
         "ready": ready,
         "gaps": gaps,
         "not_applicable": not_applicable,
-        "disclaimer": (
-            "Readiness self-assessment, not legal advice and not a determination of "
-            "compliance. DPDP operational obligations become enforceable ~13 May 2027; "
-            "gaps are 'prepare by' items. Verify against primary sources and consult a "
-            "qualified practitioner."
-        ),
+        "disclaimer": disclaimer,
     }
 
 

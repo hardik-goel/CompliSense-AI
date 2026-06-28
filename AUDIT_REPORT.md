@@ -1,6 +1,28 @@
 # CompliSense-AI — Final Audit & Verification Report
 
-> **Read-only audit. Nothing was modified or deleted to produce this report.** Date: 2026-06-28.
+> **REMEDIATION APPLIED 2026-06-28 (user-approved).** The audit below was read-only; fixes
+> were then applied in a follow-up pass. Status: **full suite 258 passed, 0 failed.**
+>
+> **Fixed:** P0 D7 (copilot drafts stamped "DRAFT — REQUIRES LEGAL REVIEW"), D1 (disclaimer
+> on SaaS scan-report HTML), D2 (`dashboard.py` reframed to readiness language), D3
+> (verification surfaced on public tool + SaaS reports/readiness), D5 (DATA_HANDLING.md now
+> covers connector/PII/Anthropic-egress/evidence flows; DPDP-tool notice checklist added to
+> TERMS_NOTES). P0 legal: C4 (DPDP Rule 8(1) class-erasure now a gated rule
+> `DPDP-SEC8-RETENTION-CLASS-001`), C7 (EU manifest built — `eu_roles` no longer hardcoded;
+> EU packs score role-gated via project/MCP; OSS-exemption mechanism added). P1 security: E4
+> (`/agent/results` + `/agent/heartbeat` now auth-gated), E2 (server/ key paths env-driven +
+> lazy), E1 (`.env`/`dist`/`.coverage` untracked), E7 (dropped python-jose/ecdsa/passlib).
+> Feature B9: gap **assignment + sign-off** workflow + audit of role-changes/exports +
+> `rulepack_applied` in the evidence pack. Cleanup bucket-1 deleted.
+>
+> **Deliberately deferred (flagged to LEGAL_REVIEW_NEEDED.md):** EU posture predicates (EU
+> rules surface as needs-review, not pass/fail); which EU rules carry the open-source
+> exemption; regwatch LLM-diff/versioning/customer-alert pipeline (B6); MCP user-auth +
+> run-scan/fetch-findings/explain-gap tools (B7); a fully-local/offline copilot path.
+>
+> ---
+>
+> **Original read-only audit (nothing modified to produce it).** Date: 2026-06-28.
 > Method: 6 parallel read-only agents across Phases A–F, evidence cited as `file:line`.
 > Source of truth for legal content: `docs/LEGAL_REFERENCE_DPDP_EUAI.md` + `docs/SOURCES_ACT.md`.
 

@@ -7,6 +7,25 @@ from compliance.readiness import score_manifest, top_gaps
 from agent.rules.loader import load_rulepack
 
 PACK = load_rulepack(Path("rulepacks/dpdp_india_core_v1.yaml"), validate=False)
+EXT_PACK = load_rulepack(Path("rulepacks/dpdp_india_extended_v1.yaml"), validate=False)
+
+
+def _ids(report, bucket):
+    return {r["rule_id"] for r in report[bucket]}
+
+
+def test_class_retention_rule_gated_to_third_schedule_class():
+    # Non-class startup: the 3-yr class erasure rule is NOT_APPLICABLE.
+    startup = build_manifest({"entity_type": "startup", "sector": "saas", "registered_users": 100})
+    r1 = score_manifest(startup, EXT_PACK)
+    assert "DPDP-SEC8-RETENTION-CLASS-001" in _ids(r1, "not_applicable")
+
+    # E-commerce with >=2cr users IS a Third-Schedule class -> rule applies and is a gap.
+    klass = build_manifest({"entity_type": "enterprise", "sector": "ecommerce",
+                            "registered_users": 25_000_000, "retention_defined": False})
+    r2 = score_manifest(klass, EXT_PACK)
+    assert "DPDP-SEC8-RETENTION-CLASS-001" in (_ids(r2, "gaps") | _ids(r2, "ready"))
+    assert "DPDP-SEC8-RETENTION-CLASS-001" not in _ids(r2, "not_applicable")
 
 
 def test_empty_startup_scores_low_with_gaps():

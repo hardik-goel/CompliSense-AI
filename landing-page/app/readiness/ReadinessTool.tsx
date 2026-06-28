@@ -112,6 +112,11 @@ export default function ReadinessTool() {
             <p className="body-text" style={{ fontSize: "0.82rem" }}>
               {g.act_citation || g.rule_citation} — {g.framing}
             </p>
+            {g.verification && g.verification !== "primary_source_verified" ? (
+              <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.75 }}>
+                ⚠ Source: {g.verification.replace(/_/g, " ")} — not yet primary-verified; treat as indicative.
+              </p>
+            ) : null}
           </div>
         ))}
 

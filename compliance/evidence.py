@@ -49,6 +49,8 @@ def build_evidence_pack(
     pii_inferences: List[Dict[str, Any]],
     generated_at: str,
     prepared_by: Optional[str] = None,
+    rulepack_id: Optional[str] = None,
+    gap_states: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Build the structured evidence pack. ``generated_at`` is an ISO string (injected)."""
     discovered = project.get("discovered_manifest") or {}
@@ -71,16 +73,30 @@ def build_evidence_pack(
 
     open_alerts = [a for a in alerts if a.get("status") == "open"]
 
+    gap_states = gap_states or []
+    governance = {
+        "assignments": [
+            {"rule_id": g.get("rule_id"), "status": g.get("status"),
+             "assignee_user_id": g.get("assignee_user_id"), "assigned_by": g.get("assigned_by"),
+             "signed_off_by": g.get("signed_off_by"), "signed_off_by_email": g.get("signed_off_by_email"),
+             "signed_off_at": g.get("signed_off_at"), "signoff_note": g.get("signoff_note")}
+            for g in gap_states
+        ],
+        "signed_off_count": sum(1 for g in gap_states if g.get("status") == "signed_off"),
+    }
+
     return {
         "meta": {
             "title": "CompliSense-AI Regulator-Ready Evidence Pack",
             "project_id": project.get("id"),
             "project_name": project.get("name"),
             "compliance_standard": project.get("compliance_standard"),
+            "rulepack_applied": rulepack_id,
             "generated_at": generated_at,
             "prepared_by": prepared_by,
             "team_id": project.get("team_id"),
         },
+        "governance": governance,
         "readiness": {
             "score": readiness_report.get("readiness_score"),
             "summary": readiness_report.get("summary"),

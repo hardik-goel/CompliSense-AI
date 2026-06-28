@@ -1,6 +1,6 @@
 # DATA_HANDLING.md — how CompliSense handles data
 
-> Status: 2026-06-26. Dogfooding the DPDP notice standard: this document itemises what
+> Status: 2026-06-28 (updated through Phase 8). Dogfooding the DPDP notice standard: this document itemises what
 > data each component touches, why, where it goes, and how long it is kept. Brand promise:
 > **"without storing your data."** Where any tension exists, it is flagged here explicitly
 > rather than hidden.
@@ -57,13 +57,60 @@ Endpoints: `GET/POST /api/v1/readiness/*` (`saas/app/readiness.py`); UI:
   (score bucket, authenticated flag, pack id) — a blocklist strips email/answers/name/ip.
   No third-party tracker; consistent with the privacy promise.
 
-### 4. LLM-assisted features (Phase 7 — PLANNED)
-- No user artefacts/personal data may be sent to a third-party model without **explicit,
-  specific, opt-in consent that names the provider**. A local/no-egress model path must be
-  offered for sensitive scans. The data flow must be shown to the user before any egress.
+### 4. Tier-1 connector discovery (Phase 3 — IMPLEMENTED)
+Endpoints: `POST /projects/{id}/connectors/{provider}/discover` (`saas/app/connectors_api.py`);
+engine: `connectors/`.
+- **Credentials are NEVER stored.** They arrive in the request body, are filtered to the
+  exact accepted read-only kwargs (blocking `client_factory`/`http_get` injection), used for
+  the single read-only discovery call, then dropped (`connectors_api.py`: `creds = None`).
+- **Reads (read-only, least-privilege):** cloud/SCM *resource metadata* — bucket/account
+  names, encryption/public-access flags, region, MFA/logging status. No object contents, no
+  personal data.
+- **Stores (MongoDB `connector_discoveries`):** normalized **signals + manifest suggestions
+  only**, and **only with `consent_to_store: true`**. Never credentials, raw API payloads, or
+  resource ARNs. The exact data path is echoed to the user (`data_sent`/disclaimer).
+- **Retention:** per account; deletable on request.
+
+### 5. Tier-2 PII / data-flow inference (Phase 4 — IMPLEMENTED)
+Endpoints: `POST /projects/{id}/pii/infer` (`saas/app/pii_api.py`); engine: `compliance/pii.py`,
+`compliance/dataflow.py`.
+- **Reads:** the **NAMES** of data fields/columns/JSON keys the user supplies (e.g.
+  `user_email`, `pan_number`). **Never field values / personal data.**
+- **Stores (MongoDB `pii_inferences`):** the submitted field **names** + inferred categories +
+  suggestions, **only with `consent_to_store: true`**. Field names are metadata, not personal
+  data values; documented here for precision.
+- **Retention:** per account; deletable on request.
+
+### 6. LLM remediation copilot (Phase 7 — IMPLEMENTED; live third-party egress)
+Endpoints: `POST /projects/{id}/copilot/remediate` (`saas/app/copilot_api.py`); engine:
+`compliance/copilot.py`.
+- **Provider:** Anthropic (`claude-opus-4-8`) via the Anthropic API. **This is real egress to a
+  third party.**
+- **Consent:** the call runs **only** with explicit `consent_to_send: true`.
+- **What is sent:** the cited rule text + the project's confirmed, **non-PII** manifest facts
+  (`discovered_manifest` booleans/categories). **Never** raw artefacts, field values, or
+  personal-data values. The exact fact keys + citation sent are echoed back in `data_sent`.
+- **What is stored:** the copilot response is returned to the user; it is not persisted by
+  default. Generated documents are stamped "DRAFT — REQUIRES LEGAL REVIEW".
+- **No fully-local/offline model path yet** — egress is consent-gated and minimised, but a
+  no-egress option is not implemented (tracked below).
+
+### 7. Evidence export (Phase 8 — IMPLEMENTED)
+- `GET /projects/{id}/evidence[/export.html]` assembles a pack from **summaries only** —
+  readiness + citations, posture history, alert/discovery/PII *summaries*, the confirmed
+  manifest. No credentials, raw artefacts, or personal-data values are included.
+
+## Public-tool privacy notice (DPDP-grade) — OPEN
+- `landing-page/app/privacy/page.tsx` is a generic **website** privacy policy; it does not yet
+  cover the readiness tool as a DPDP data-fiduciary notice (data-principal rights, purpose,
+  retention, grievance officer, consent withdrawal, cross-border). A DPDP-grade notice for the
+  tool is drafted as a counsel checklist in `docs/TERMS_NOTES.md` and must be reviewed by
+  counsel before publishing.
 
 ## Open items
-- [ ] Document the Phase-1 web tool data flow here once built.
-- [ ] Confirm and document an account-deletion / data-export path for stored findings.
-- [ ] Ensure user-facing copy says "we do not store your source artefacts / personal
-      data" rather than an absolute "we store nothing," since findings/metadata are stored.
+- [x] Document the Phase-1 web tool data flow (see §3).
+- [x] Document connector (§4), PII (§5), copilot/LLM egress (§6), evidence (§7) flows.
+- [ ] Offer a local/no-egress model path for the copilot, or keep it strictly consent-gated.
+- [ ] Publish a DPDP-grade privacy notice for the public readiness tool (counsel review).
+- [ ] Confirm and document an account-deletion / data-export path for stored findings,
+      discoveries, PII inferences, and assessments.

@@ -46,6 +46,10 @@ environment is not.
 DISCLAIMER = ("Grounded engineering guidance, not legal advice and not a determination of "
               "compliance. Verify against primary sources and consult a qualified practitioner.")
 
+# Stamped into every drafted document so a generated artefact can never be mistaken for a
+# finished, lawyer-approved one.
+DRAFT_MARKER = "DRAFT — REQUIRES LEGAL REVIEW. Not a final or legally-approved document."
+
 _UNGROUNDED_MARKER = "I can't ground an answer in your data"
 
 
@@ -106,12 +110,23 @@ class RemediationCopilot:
         return self._run(instruction, ctx, "explain")
 
     def draft(self, rule: Dict[str, Any], facts: Dict[str, Any], artifact_type: str) -> Dict[str, Any]:
-        """Draft a remediation document (text only) for this gap."""
+        """Draft a remediation document (text only) for this gap.
+
+        The drafted body is stamped with ``DRAFT_MARKER`` so a generated artefact is never
+        mistaken for a finished, lawyer-approved document.
+        """
         ctx = build_context_block(rule, facts)
         instruction = (f"Draft a '{artifact_type}' that would help close this readiness gap. "
+                       f"Begin the document with this exact line on its own: '{DRAFT_MARKER}'. "
                        "Produce document text only — do not instruct the user to change live "
                        "systems. Ground the content in the CONTEXT.")
-        return self._run(instruction, ctx, "draft")
+        result = self._run(instruction, ctx, "draft")
+        # Belt-and-suspenders: ensure the marker is present even if the model omitted it.
+        answer = result.get("answer") or ""
+        if result.get("grounded") and DRAFT_MARKER not in answer:
+            result["answer"] = f"{DRAFT_MARKER}\n\n{answer}"
+        result["draft_marker"] = DRAFT_MARKER
+        return result
 
 
 class _Refusal(Exception):

@@ -55,6 +55,16 @@ def test_pii_and_discovery_summary():
     assert pack["confirmed_manifest"]["has_security_safeguards"] is True
 
 
+def test_rulepack_and_governance_in_pack():
+    gap_states = [{"rule_id": "R2", "status": "signed_off", "assignee_user_id": "u2",
+                   "signed_off_by_email": "admin@x.com", "signed_off_at": "2026-06-28"}]
+    pack = build_evidence_pack(PROJECT, READINESS, RUNS, ALERTS, DISCOVERIES, PII, generated_at="t",
+                               rulepack_id="dpdp_india_core_v1", gap_states=gap_states)
+    assert pack["meta"]["rulepack_applied"] == "dpdp_india_core_v1"
+    assert pack["governance"]["signed_off_count"] == 1
+    assert pack["governance"]["assignments"][0]["signed_off_by_email"] == "admin@x.com"
+
+
 def test_no_credentials_or_raw_values_leak():
     # Discovery summary carries counts + applied field names, never signal/credential payloads.
     pack = build_evidence_pack(PROJECT, READINESS, RUNS, ALERTS, DISCOVERIES, PII, generated_at="t")

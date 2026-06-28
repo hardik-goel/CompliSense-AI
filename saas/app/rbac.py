@@ -20,8 +20,10 @@ ACTION_MIN_ROLE = {
     "run_scan": "member",
     "edit_project": "member",
     "use_copilot": "member",
+    "assign_gap": "member",
     "manage_members": "admin",
     "manage_schedule": "admin",
+    "sign_off_gap": "admin",
     "delete_project": "owner",
 }
 
