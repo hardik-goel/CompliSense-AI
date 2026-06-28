@@ -88,12 +88,16 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
             })
 
     scored = len(ready) + len(gaps)
-    score = round(100 * len(ready) / scored) if scored else 0
+    jurisdiction = pack.get("jurisdiction", "DPDP_INDIA")
+
+    # Honest EU handling: there are no EU *posture* predicates yet, so every applicable EU rule
+    # is needs-review. Emitting a percentage (which would be ~0%) would be a fake number — so
+    # for EU we return NO numeric score and surface the applicable obligations instead.
+    scoring_available = jurisdiction != "EU_AI_ACT"
+    score = (round(100 * len(ready) / scored) if scored else 0) if scoring_available else None
 
     # Order gaps by severity so the teaser (top-3) shows the most important first.
     gaps.sort(key=lambda g: _SEVERITY_RANK.get(g["severity"], 9))
-
-    jurisdiction = pack.get("jurisdiction", "DPDP_INDIA")
     if jurisdiction == "EU_AI_ACT":
         disclaimer = (
             "Readiness self-assessment, not legal advice and not a determination of "
@@ -115,6 +119,8 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
         "jurisdiction": jurisdiction,
         "pack_id": pack.get("pack_id"),
         "readiness_score": score,
+        "scoring_available": scoring_available,
+        "obligations_identified": scored,
         "summary": {
             "ready": len(ready),
             "gaps": len(gaps),

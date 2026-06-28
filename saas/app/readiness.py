@@ -44,7 +44,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/readiness", tags=["readiness"])
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_ALLOWED_PACKS = {"dpdp_india_core_v1", "dpdp_india_extended_v1"}
+# DPDP packs are fully scored; EU AI Act packs are role-gated and surface obligations only
+# (no numeric score until EU posture scoring is built + legally reviewed).
+_DPDP_PACKS = {"dpdp_india_core_v1", "dpdp_india_extended_v1"}
+_ALLOWED_PACKS = _DPDP_PACKS | {"euai_core_v1", "euai_extended_v1"}
 
 
 def assessments_collection():
@@ -89,7 +92,7 @@ async def score_endpoint(
     # First-party, non-PII funnel event (no answers/email stored).
     record_event("readiness_completed", {
         "authenticated": bool(user),
-        "score_bucket": score_bucket(report["readiness_score"]),
+        "score_bucket": score_bucket(report["readiness_score"]) if report["readiness_score"] is not None else "na",
         "pack_id": payload.pack_id,
         "jurisdiction": report["jurisdiction"],
         "complete": not missing,
@@ -97,6 +100,8 @@ async def score_endpoint(
 
     response: Dict[str, Any] = {
         "readiness_score": report["readiness_score"],
+        "scoring_available": report.get("scoring_available", True),
+        "obligations_identified": report.get("obligations_identified", 0),
         "summary": report["summary"],
         "jurisdiction": report["jurisdiction"],
         "pack_id": report["pack_id"],

@@ -47,13 +47,24 @@ def test_authenticated_gets_full_report():
     assert body["authenticated"] is True
 
 
-def test_bad_pack_rejected():
+def test_unknown_pack_rejected():
     from fastapi import HTTPException
     try:
-        _run(score_endpoint(ScoreRequest(answers=GOOD_ANSWERS, pack_id="euai_core_v1"), user=None))
+        _run(score_endpoint(ScoreRequest(answers=GOOD_ANSWERS, pack_id="uk_core_v1"), user=None))
         assert False, "expected HTTPException"
     except HTTPException as e:
         assert e.status_code == 400
+
+
+def test_eu_pack_returns_obligations_not_a_fake_score():
+    # EU AI Act: no numeric score (would be fake) — obligations surfaced instead.
+    body = _run(score_endpoint(ScoreRequest(
+        answers={"has_ai_system": True, "eu_role": "provider", "provides_to_eu": True},
+        pack_id="euai_extended_v1"), user=None))
+    assert body["jurisdiction"] == "EU_AI_ACT"
+    assert body["scoring_available"] is False
+    assert body["readiness_score"] is None
+    assert body["obligations_identified"] >= 1  # eu_provider rules now apply
 
 
 def test_score_is_honest_zero_for_empty_posture():
