@@ -114,14 +114,26 @@ RUN (3 steps)
   Example:
        python run_scan.py --project-path ./my_artefacts --output-dir ./output
 
-NO ARTEFACTS YET? COLLECT THEM FROM A FOLDER (optional, runs locally)
-  Point this at a folder/repo where your docs already live; it finds and copies the likely
-  compliance artefacts into ./collected_artefacts, then you scan that.
-       python -m agent.collectors.collect --source-path ./my_repo --out ./collected_artefacts
+NO ARTEFACTS YET? COLLECT THEM (optional, runs locally)
+  From a single local folder/repo:
+       python -m agent.collectors.collect --source local --source-path ./my_repo --out ./collected_artefacts
        python run_scan.py --project-path ./collected_artefacts --output-dir ./output
-  Smarter classification uses Claude: set ANTHROPIC_API_KEY first (your key, called locally;
-  file contents never leave your machine). Without a key it uses filename + keyword matching.
-  Add --no-llm to force the offline classifier.
+  From the cloud sources you declared in the app (S3 / GCS / Azure / GitHub / Notion / Drive /
+  SharePoint) - credentials read from your local environment, never stored:
+       python collect_sources.py
+       python run_scan.py --project-path ./collected_artefacts --output-dir ./output
+
+  SMART CLASSIFICATION (optional). Set ONE of these before collecting; file contents stay on
+  your machine and only the chosen provider is called:
+    - Claude     : export ANTHROPIC_API_KEY=sk-ant-...
+    - OpenRouter : export OPENROUTER_API_KEY=sk-or-...   (and optionally
+                   export OPENROUTER_MODEL='nvidia/nemotron-3-super-120b-a12b:free')
+  Selection order is OpenRouter > Claude > offline. With no key it uses filename + keyword
+  matching. Add --no-llm to force the offline classifier.
+
+  Credential env vars for cloud collection: AWS uses the standard AWS chain; GCS/Azure use
+  their default credentials; GITHUB_TOKEN (private repos), NOTION_TOKEN, GDRIVE_TOKEN,
+  SHAREPOINT_TOKEN as needed.
 
 OUTPUT (in OUTPUT_FOLDER)
   compliance_findings.json   - per-rule status + citations
@@ -153,8 +165,9 @@ Credentials come from your local environment, never from the app:
   GCS/Azure  -> Application Default Credentials / DefaultAzureCredential
   GitHub     -> GITHUB_TOKEN (optional for public repos)
   Notion     -> NOTION_TOKEN     GDrive -> GDRIVE_TOKEN     SharePoint -> SHAREPOINT_TOKEN
-Smart classification uses Claude when ANTHROPIC_API_KEY is set (file contents stay local);
-otherwise a deterministic filename/keyword classifier is used.
+Smart classification (file contents stay local): set ANTHROPIC_API_KEY (Claude) OR
+OPENROUTER_API_KEY (+ optional OPENROUTER_MODEL). Selection order: OpenRouter > Claude >
+deterministic filename/keyword classifier.
 """
 import json, os, sys
 from pathlib import Path
