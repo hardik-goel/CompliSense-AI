@@ -86,10 +86,19 @@ pip install -r requirements.txt
 
 ```bash
 source 3.11_venv/bin/activate
+export ENVIRONMENT=development
+export MONGO_URI="mongodb://127.0.0.1:27017"   # or your Atlas URI
+export MONGO_DB=complisense
 export DEFAULT_RULEPACK_ID=dpdp_india_core_v1
+export JWT_SECRET=dev-local-secret ADMIN_API_TOKEN=dev-local-admin
+export SECURE_COOKIES=false COOKIE_DOMAIN=""    # host-only cookie so login works on localhost
 python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 # open http://127.0.0.1:8000/  ·  catalog: curl http://127.0.0.1:8000/api/rulepacks
 ```
+
+> **Localhost login tip:** leave `COOKIE_DOMAIN=""`. The production default is
+> `.complisenseai.com`, which the browser rejects on `localhost` — so login appears to fail
+> ("Network error"). The app's API calls are same-origin, so no `API_BASE_URL` is needed locally.
 
 ### Run the landing page (Next.js, :3000)
 
@@ -132,6 +141,7 @@ validates all four rulepacks. Regenerate/download the agent ZIP from the SaaS af
 | Evidence export | `GET /projects/{id}/evidence`, `GET /projects/{id}/evidence/export.html` |
 | Teams / roles | `POST /teams`, `POST /teams/{id}/members` (viewer/engineer/dpo/admin/owner), `POST /projects/{id}/team` |
 | Gap governance | `POST /projects/{id}/gaps/{rule_id}/assign`, `POST /projects/{id}/gaps/{rule_id}/signoff` (DPO/admin), `GET /projects/{id}/gaps` |
+| Artefact generator | `GET /projects/{id}/artefacts/needed`, `POST .../artefacts/{art}/draft` (consent), `.../approve`, `GET .../artefacts/export.zip` |
 | Teaser | `GET /teaser.html` (animated product teaser) |
 
 Scheduled sweeps run as Render cron jobs: `monitoring_cron` (overdue/regression alerts) and

@@ -11,6 +11,14 @@ compliance determination.** Rulepacks are **pending professional legal review**.
 3. **Score** — applicability/role-gated readiness; each gap carries its citation + enforcement date.
 4. **Monitor** — every scan is kept; posture-over-time + drift/regression alerts; scheduled re-scan reminders.
 5. **Remediate** — an AI copilot explains a gap or drafts a document (grounded, consent-gated, "DRAFT — requires legal review").
+   - **Generate artefacts** *(no documents yet?)* — for each gap, see where the artefact can be sourced
+     (connector / questionnaire / AI draft / manual), AI-draft it, **explicitly approve** each one,
+     then **download the approved set as a zip** to drop into the scan input folder. We can auto-fetch
+     facts only from the connectors (AWS/GCP/Azure/GitHub) — everything else is your answers, an
+     approved AI draft, or material only you can provide.
+   - **Collect existing artefacts** *(agent-side)* — point the local agent at a folder/repo; it
+     classifies files with Claude (locally; deterministic fallback) and stages the likely
+     artefacts into a folder to scan. Contents never leave your machine. `agent/collectors/`.
 6. **Govern** — assign a gap to a member; a **DPO signs it off**; every action audited.
 7. **Export** — a regulator-ready, citation-backed evidence pack (JSON / HTML).
 
