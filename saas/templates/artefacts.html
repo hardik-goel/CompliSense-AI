@@ -55,6 +55,28 @@
     </section>
 
     <section class="card-pane">
+      <h2 class="h5 mb-2">Collect existing artefacts from your sources</h2>
+      <p class="muted small mb-2">Already have documents in the cloud? Declare where they live. Collection runs
+        inside the <strong>downloaded agent</strong> — your credentials are entered locally and never stored here.
+        Configuration below is non-secret only.</p>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="muted small">Source</label>
+          <select id="srcType" class="form-control form-control-sm">
+            <option value="s3">AWS S3</option><option value="gcs">Google Cloud Storage</option>
+            <option value="azure_blob">Azure Blob</option><option value="github">GitHub</option>
+            <option value="notion">Notion</option><option value="gdrive">Google Drive</option>
+            <option value="sharepoint">SharePoint</option><option value="local">Local folder</option>
+          </select>
+        </div>
+        <div class="col-md-7"><label class="muted small">Config (non-secret)</label><div id="srcFields" class="row g-1"></div></div>
+        <div class="col-md-2"><button id="addSrc" class="btn btn-outline-light btn-sm w-100">Add source</button></div>
+      </div>
+      <div id="srcList" class="mt-3"></div>
+      <div id="srcMsg" class="muted small mt-2"></div>
+    </section>
+
+    <section class="card-pane">
       <h2 class="h5 mb-3">Needed artefacts</h2>
       <div id="list"><p class="muted mb-0">Click “Find needed artefacts”.</p></div>
     </section>
@@ -112,6 +134,50 @@
 
     document.getElementById("refresh").addEventListener("click", load);
     load();
+
+    // ---- Collection sources (declare where docs live; creds stay local) ----
+    const SRC_FIELDS = {
+      s3: [["bucket","bucket *"],["prefix","prefix"],["region","region"]],
+      gcs: [["bucket","bucket *"],["prefix","prefix"]],
+      azure_blob: [["account_url","account_url *"],["container","container *"],["prefix","prefix"]],
+      github: [["repo","owner/name *"],["path","path"],["ref","branch"]],
+      notion: [["database_id","database_id"]],
+      gdrive: [["folder_id","folder_id"]],
+      sharepoint: [["site","site"]],
+      local: [["path","folder path *"]],
+    };
+    function renderFields() {
+      const t = document.getElementById("srcType").value;
+      document.getElementById("srcFields").innerHTML = SRC_FIELDS[t].map(([k,ph]) =>
+        `<div class="col"><input class="form-control form-control-sm src-f" data-k="${k}" placeholder="${ph}"></div>`).join("");
+    }
+    async function loadSources() {
+      const d = await fetch(`/projects/${PID}/collection/sources`).then(r => r.json());
+      const box = document.getElementById("srcList");
+      if (!d.sources.length) { box.innerHTML = `<p class="muted small mb-0">No sources declared yet.</p>`; return; }
+      box.innerHTML = d.sources.map(s => `<div class="d-flex justify-content-between align-items-center" style="border-top:1px solid #2a2f3a;padding:6px 0;">
+        <div><strong>${esc(s.type)}</strong> <span class="muted small">${esc(s.label||"")} — ${esc(JSON.stringify(s.config))}</span></div>
+        <button class="btn btn-sm btn-outline-danger" data-del="${esc(s.id)}">Remove</button></div>`).join("");
+      box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => delSource(b.dataset.del)));
+    }
+    async function addSource() {
+      const t = document.getElementById("srcType").value;
+      const config = {};
+      document.querySelectorAll("#srcFields .src-f").forEach(i => { if (i.value.trim()) config[i.dataset.k] = i.value.trim(); });
+      const res = await fetch(`/projects/${PID}/collection/sources`, {
+        method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({type: t, config})});
+      const d = await res.json();
+      const msg = document.getElementById("srcMsg");
+      msg.innerHTML = res.ok ? `<span class="green">Added. Re-download the agent to use it.</span>` : `<span style="color:#ff8a8a">✗ ${esc(d.detail||res.status)}</span>`;
+      if (res.ok) { renderFields(); loadSources(); }
+    }
+    async function delSource(id) {
+      await fetch(`/projects/${PID}/collection/sources/${id}`, { method: "DELETE" });
+      loadSources();
+    }
+    document.getElementById("srcType").addEventListener("change", renderFields);
+    document.getElementById("addSrc").addEventListener("click", addSource);
+    renderFields(); loadSources();
   </script>
   <script src="/static/app-enhance.js"></script>
 </body>

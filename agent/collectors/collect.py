@@ -1,116 +1,108 @@
-"""Collect orchestrator: crawl a local folder → classify → stage matched artefacts + manifest.
+"""Collect orchestrator: fetch candidates from a source → classify → stage matches + manifest.
 
 Runs entirely on the client machine. Files are copied into an output folder the local agent can
-then scan; nothing is uploaded by this step. CLI:
+then scan; nothing is uploaded by this step. Sources: local | s3 | gcs | azure_blob | github |
+notion | gdrive | sharepoint. CLI examples:
 
-    python -m agent.collectors.collect --source-path ./my_repo --out ./collected_artefacts
+    python -m agent.collectors.collect --source local  --source-path ./my_repo --out ./collected
+    python -m agent.collectors.collect --source s3     --bucket my-bkt --prefix docs/ --out ./collected
+    python -m agent.collectors.collect --source github --repo org/name --path docs --out ./collected
 """
 
 from __future__ import annotations
 
 import argparse
-import datetime as dt
-import json
-import shutil
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, List, Optional
 
-from agent.collectors.artefact_types import TITLES
-from agent.collectors.classifier import AnthropicClassifier, classify
+from agent.collectors.base import DEFAULT_MIN_CONFIDENCE, Candidate, stage_candidates
+from agent.collectors.classifier import AnthropicClassifier
 from agent.collectors.local_folder import crawl
-
-DEFAULT_MIN_CONFIDENCE = 0.6
 
 
 def collect_local(source_path: str, out_dir: str, llm: Optional[Any] = None,
-                  min_confidence: float = DEFAULT_MIN_CONFIDENCE) -> dict[str, Any]:
-    """Crawl source_path, classify each file, copy matches (>= min_confidence) into out_dir.
-
-    Returns a manifest dict. Also writes COLLECTION_MANIFEST.json + READ_ME_FIRST.txt into out_dir.
-    """
-    candidates = crawl(source_path)
-    out = Path(out_dir).resolve()
-    out.mkdir(parents=True, exist_ok=True)
-
-    matched: list[dict[str, Any]] = []
-    skipped: list[dict[str, Any]] = []
-    used_names: set[str] = set()
-    for c in candidates:
-        result = classify(c.filename, c.sample, llm=llm)
-        row = {"file": c.rel, "artefact_id": result.artefact_id, "title": TITLES.get(result.artefact_id),
-               "confidence": result.confidence, "reason": result.reason, "method": result.method}
-        if result.artefact_id and result.confidence >= min_confidence:
-            dest_name = _unique(c.filename, used_names)
-            shutil.copy2(c.path, out / dest_name)
-            row["staged_as"] = dest_name
-            matched.append(row)
-        else:
-            skipped.append(row)
-
-    manifest = {
-        "source_path": str(Path(source_path).resolve()),
-        "output_path": str(out),
-        "scanned": len(candidates),
-        "collected": len(matched),
-        "skipped": len(skipped),
-        "min_confidence": min_confidence,
-        "classifier": "llm" if (llm is not None and getattr(llm, "available", lambda: True)()) else "deterministic",
-        "matched": matched,
-        "skipped_files": skipped,
-    }
-    (out / "COLLECTION_MANIFEST.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    (out / "READ_ME_FIRST.txt").write_text(_readme(manifest), encoding="utf-8")
-    return manifest
+                  min_confidence: float = DEFAULT_MIN_CONFIDENCE) -> dict:
+    """Crawl a local folder and stage matched artefacts."""
+    return stage_candidates(crawl(source_path), out_dir, llm=llm,
+                            min_confidence=min_confidence, source_label="local")
 
 
-def _unique(name: str, used: set[str]) -> str:
-    if name not in used:
-        used.add(name)
-        return name
-    stem, dot, ext = name.partition(".")
-    i = 2
-    while f"{stem}_{i}{dot}{ext}" in used:
-        i += 1
-    final = f"{stem}_{i}{dot}{ext}"
-    used.add(final)
-    return final
+def collect_candidates(candidates: List[Candidate], out_dir: str, llm: Optional[Any] = None,
+                       min_confidence: float = DEFAULT_MIN_CONFIDENCE, source_label: str = "") -> dict:
+    """Stage an already-fetched candidate list (used by the cloud/doc-store collectors)."""
+    return stage_candidates(candidates, out_dir, llm=llm,
+                            min_confidence=min_confidence, source_label=source_label)
 
 
-def _readme(m: dict[str, Any]) -> str:
-    lines = [f"  - {x['staged_as']}  ->  {x['title']} ({x['confidence']})" for x in m["matched"]]
-    return (
-        "CompliSense-AI — collected artefacts\n"
-        "====================================\n\n"
-        f"Scanned {m['scanned']} files in {m['source_path']}\n"
-        f"Collected {m['collected']} candidate artefacts (classifier: {m['classifier']}).\n\n"
-        "These were AUTO-CLASSIFIED. Review COLLECTION_MANIFEST.json and remove anything wrong\n"
-        "before scanning. Then run the agent on this folder:\n"
-        "  python run_scan.py --project-path . --output-dir ./output\n\n"
-        "Collected files:\n" + ("\n".join(lines) if lines else "  (none matched)") + "\n"
-    )
+def _resolve_llm(no_llm: bool):
+    if no_llm:
+        return None
+    llm = AnthropicClassifier()
+    if not llm.available():
+        print("No ANTHROPIC_API_KEY — using the deterministic classifier (filename + keywords).")
+        return None
+    return llm
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Collect compliance artefacts from a local folder")
-    ap.add_argument("--source-path", required=True, help="Folder to crawl for existing artefacts")
-    ap.add_argument("--out", default="./collected_artefacts", help="Where to stage matched files")
+    ap = argparse.ArgumentParser(description="Collect compliance artefacts from a source")
+    ap.add_argument("--source", default="local",
+                    choices=["local", "s3", "gcs", "azure_blob", "github", "notion", "gdrive", "sharepoint"])
+    ap.add_argument("--out", default="./collected_artefacts")
     ap.add_argument("--min-confidence", type=float, default=DEFAULT_MIN_CONFIDENCE)
     ap.add_argument("--no-llm", action="store_true", help="Use the deterministic classifier only")
+    # local
+    ap.add_argument("--source-path", help="local: folder to crawl")
+    # object stores
+    ap.add_argument("--bucket", help="s3/gcs/azure_blob: bucket/container name")
+    ap.add_argument("--prefix", default="", help="s3/gcs/azure_blob: key prefix")
+    ap.add_argument("--region", help="s3: region")
+    ap.add_argument("--account-url", help="azure_blob: https://<account>.blob.core.windows.net")
+    # github
+    ap.add_argument("--repo", help="github: owner/name")
+    ap.add_argument("--path", default="", help="github/gdrive: path/folder within the source")
+    ap.add_argument("--ref", default=None, help="github: branch/tag/sha")
+    ap.add_argument("--token", default=None, help="github/notion/gdrive/sharepoint: access token (or use env)")
+    # doc stores
+    ap.add_argument("--database-id", help="notion: database id")
+    ap.add_argument("--site", help="sharepoint: site id/path")
     args = ap.parse_args()
 
-    src = Path(args.source_path)
-    if not src.exists() or not src.is_dir():
-        print(f"Error: source path is not a folder: {src}")
-        return 1
+    llm = _resolve_llm(args.no_llm)
+    src = args.source
 
-    llm = None if args.no_llm else AnthropicClassifier()
-    if llm is not None and not llm.available():
-        print("No ANTHROPIC_API_KEY — using the deterministic classifier (filename + keywords).")
-        llm = None
-    m = collect_local(args.source_path, args.out, llm=llm, min_confidence=args.min_confidence)
-    print(f"Scanned {m['scanned']}, collected {m['collected']} -> {m['output_path']}")
+    if src == "local":
+        if not args.source_path or not Path(args.source_path).is_dir():
+            print(f"Error: --source-path is not a folder: {args.source_path}"); return 1
+        m = collect_local(args.source_path, args.out, llm=llm, min_confidence=args.min_confidence)
+    else:
+        cands = _fetch(src, args)
+        m = collect_candidates(cands, args.out, llm=llm,
+                               min_confidence=args.min_confidence, source_label=src)
+
+    print(f"[{src}] scanned {m['scanned']}, collected {m['collected']} -> {m['output_path']}")
     print(f"Review {m['output_path']}/COLLECTION_MANIFEST.json before scanning.")
     return 0
+
+
+def _fetch(src: str, args) -> List[Candidate]:
+    """Lazy-import the right source collector and return candidates."""
+    if src == "s3":
+        from agent.collectors.s3 import collect_s3_candidates
+        return collect_s3_candidates(args.bucket, prefix=args.prefix, region=args.region)
+    if src == "gcs":
+        from agent.collectors.gcs import collect_gcs_candidates
+        return collect_gcs_candidates(args.bucket, prefix=args.prefix)
+    if src == "azure_blob":
+        from agent.collectors.azure_blob import collect_azure_candidates
+        return collect_azure_candidates(args.account_url, args.bucket, prefix=args.prefix)
+    if src == "github":
+        from agent.collectors.github import collect_github_candidates
+        return collect_github_candidates(args.repo, path=args.path, ref=args.ref, token=args.token)
+    if src in ("notion", "gdrive", "sharepoint"):
+        from agent.collectors.docstores import collect_docstore_candidates
+        return collect_docstore_candidates(src, args)
+    return []
 
 
 if __name__ == "__main__":
