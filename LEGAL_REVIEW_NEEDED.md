@@ -80,3 +80,25 @@
 | [ ] | EUAI-ART50-TRANSPARENCY-001 | Regulation (EU) 2024/1689 (EU AI Act), Art. 50 (transparency obligations for certain AI systems) | — | phased_not_yet_in_force | 2026-08-02 | phased_confirmed | secondary_source_only ⚠️ |
 | [ ] | EUAI-ART53-GPAI-001 | Regulation (EU) 2024/1689 (EU AI Act), Arts. 53-55 (general-purpose AI model obligations) | — | in_force | 2025-08-02 | in_force | secondary_source_only ⚠️ |
 
+
+---
+
+## Post-audit additions (2026-06-28) — pending counsel
+
+- **EU AI Act readiness scoring is now enabled (role-gated)** for project + MCP scoring. EU rules
+  remain `secondary_source_only` and are **not yet primary-verified**. EU *posture* predicates are
+  not implemented, so applicable EU rules surface as **NEEDS_REVIEW** ("prepare-by") gaps rather
+  than pass/fail — honest, but a counsel-reviewed EU posture model is still needed.
+- **Open-source exemption mechanism added** (`applicability.open_source_exempt` + manifest
+  `is_open_source`). WHICH EU rules actually carry the open-source carve-out is **not yet mapped**
+  to the packs — counsel must decide before any rule sets `open_source_exempt: true`.
+- **New rule `DPDP-SEC8-RETENTION-CLASS-001`** (Rule 8(1) Third-Schedule 3-year inactivity erasure,
+  gated to `third_schedule_class_only`). Cited to DPDP Rules 2025 Rule 8(1) + Third Schedule;
+  verify the erasure-period framing against primary text.
+
+- **EU posture scoring is now LIVE (self-attested).** 16 EU posture questions were added to the
+  manifest and mapped to EU rule predicates (`compliance/readiness.py`), so EU packs now return a
+  real readiness percentage (same "unknown = gap" honesty as DPDP). Caveats for counsel: the score
+  is **manifest self-attestation** (not independently verified), the rule→question mapping is an
+  engineering interpretation, and all EU rules remain `secondary_source_only` pending primary-text
+  verification. The score is gated by the EU disclaimer ("PENDING professional legal review").

@@ -23,8 +23,9 @@ from compliance.registry import get_rulepack_catalog, get_rulepack_ids
 from connectors.registry import CONNECTOR_REQUIREMENTS, available_providers, get_connector
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
-# Readiness scoring + its predicates are DPDP-specific (Phase 1).
-_SCORE_PACKS = {"dpdp_india_core_v1", "dpdp_india_extended_v1"}
+# Readiness scoring: DPDP (full predicate coverage) + EU AI Act (role-gated; EU posture
+# items surface as needs-review, and EU rules are pending legal review).
+_SCORE_PACKS = {"dpdp_india_core_v1", "dpdp_india_extended_v1", "euai_core_v1", "euai_extended_v1"}
 _NOT_LEGAL_ADVICE = "Readiness signal, not legal advice or a determination of compliance."
 
 

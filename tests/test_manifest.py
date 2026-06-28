@@ -74,3 +74,24 @@ def test_questionnaire_ids_unique_and_complete():
     ids = [q["id"] for q in qs]
     assert len(ids) == len(set(ids))
     assert set(ids) == QUESTION_IDS
+
+
+# ── EU AI Act manifest fields (audit fix: eu_roles no longer hardcoded []) ──────
+
+def test_eu_roles_empty_without_ai_or_eu_nexus():
+    assert manifest_to_profile(build_manifest({"has_ai_system": False}))["eu_roles"] == []
+    # AI system but no EU nexus -> no EU roles (never over-flag a non-EU entity)
+    assert manifest_to_profile(build_manifest(
+        {"has_ai_system": True, "eu_role": "provider", "provides_to_eu": False}))["eu_roles"] == []
+
+
+def test_eu_provider_role_mapped_when_eu_nexus():
+    p = manifest_to_profile(build_manifest(
+        {"has_ai_system": True, "eu_role": "provider", "provides_to_eu": True}))
+    assert p["eu_roles"] == ["eu_provider"]
+
+
+def test_eu_gpai_provider_and_open_source_flag():
+    p = manifest_to_profile(build_manifest(
+        {"has_ai_system": True, "eu_role": "gpai_provider", "provides_to_eu": True, "is_open_source": True}))
+    assert p["eu_roles"] == ["eu_gpai_provider"] and p["is_open_source"] is True

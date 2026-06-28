@@ -7,6 +7,43 @@ from compliance.readiness import score_manifest, top_gaps
 from agent.rules.loader import load_rulepack
 
 PACK = load_rulepack(Path("rulepacks/dpdp_india_core_v1.yaml"), validate=False)
+EXT_PACK = load_rulepack(Path("rulepacks/dpdp_india_extended_v1.yaml"), validate=False)
+EU_PACK = load_rulepack(Path("rulepacks/euai_extended_v1.yaml"), validate=False)
+
+
+def _ids(report, bucket):
+    return {r["rule_id"] for r in report[bucket]}
+
+
+def test_eu_posture_predicates_score():
+    base = {"has_ai_system": True, "eu_role": "provider", "provides_to_eu": True}
+    empty = score_manifest(build_manifest(base), EU_PACK)
+    assert empty["jurisdiction"] == "EU_AI_ACT" and empty["scoring_available"] is True
+    # No posture declared -> applicable EU rules are gaps (ready 0).
+    assert empty["summary"]["applicable"] > 0 and empty["summary"]["ready"] == 0
+    # Declare provider posture -> those rules become ready.
+    strong = score_manifest(build_manifest({
+        **base, "has_risk_management_system": True, "has_human_oversight": True,
+        "has_technical_documentation": True, "has_accuracy_robustness": True,
+        "avoids_prohibited_practices": True, "has_ai_literacy_program": True,
+    }), EU_PACK)
+    assert strong["readiness_score"] > empty["readiness_score"]
+    ready_ids = {r["rule_id"] for r in strong["ready"]}
+    assert "EUAI-ART9-RISK-MGMT-001" in ready_ids and "EUAI-ART5-PROHIBITED-001" in ready_ids
+
+
+def test_class_retention_rule_gated_to_third_schedule_class():
+    # Non-class startup: the 3-yr class erasure rule is NOT_APPLICABLE.
+    startup = build_manifest({"entity_type": "startup", "sector": "saas", "registered_users": 100})
+    r1 = score_manifest(startup, EXT_PACK)
+    assert "DPDP-SEC8-RETENTION-CLASS-001" in _ids(r1, "not_applicable")
+
+    # E-commerce with >=2cr users IS a Third-Schedule class -> rule applies and is a gap.
+    klass = build_manifest({"entity_type": "enterprise", "sector": "ecommerce",
+                            "registered_users": 25_000_000, "retention_defined": False})
+    r2 = score_manifest(klass, EXT_PACK)
+    assert "DPDP-SEC8-RETENTION-CLASS-001" in (_ids(r2, "gaps") | _ids(r2, "ready"))
+    assert "DPDP-SEC8-RETENTION-CLASS-001" not in _ids(r2, "not_applicable")
 
 
 def test_empty_startup_scores_low_with_gaps():

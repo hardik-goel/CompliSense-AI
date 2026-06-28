@@ -23,6 +23,10 @@ from saas.app.readiness import _ALLOWED_PACKS, _load_pack
 
 router = APIRouter(prefix="/projects", tags=["readiness"])
 
+# Project readiness scores DPDP and (role-gated) EU AI Act packs. The public DPDP tool
+# (saas/app/readiness.py) stays DPDP-only; EU rules are pending legal review.
+_PROJECT_PACKS = set(_ALLOWED_PACKS) | {"euai_core_v1", "euai_extended_v1"}
+
 # Readiness rules a Tier-1 connector can corroborate -> the manifest field it sets.
 _CONNECTOR_BACKED_RULES: Dict[str, str] = {
     "DPDP-SEC8-OBLIGATIONS-001": "has_security_safeguards",
@@ -45,7 +49,7 @@ async def project_readiness(
 ):
     """Score the project's merged manifest and tag controls backed by connector evidence."""
     project = get_project_for_user(project_id, current_user["id"])
-    if pack_id not in _ALLOWED_PACKS:
+    if pack_id not in _PROJECT_PACKS:
         raise HTTPException(status_code=400, detail=f"Unsupported pack_id: {pack_id}")
 
     discovered = project.get("discovered_manifest") or {}

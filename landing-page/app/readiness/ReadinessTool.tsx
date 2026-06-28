@@ -28,13 +28,21 @@ type Gap = {
 };
 
 type ScoreResponse = {
-  readiness_score: number;
+  readiness_score: number | null;
+  scoring_available?: boolean;
+  obligations_identified?: number;
+  jurisdiction?: string;
   summary: { ready: number; gaps: number; applicable: number; not_applicable: number };
   top_gaps?: Gap[];
   gaps_locked?: number;
   disclaimer: string;
   incomplete_questions: string[];
 };
+
+const REGULATIONS = [
+  { pack_id: "dpdp_india_core_v1", label: "India DPDP" },
+  { pack_id: "euai_extended_v1", label: "EU AI Act" },
+];
 
 function prettyLabel(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -47,6 +55,7 @@ export default function ReadinessTool() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [packId, setPackId] = useState<string>("dpdp_india_core_v1");
 
   useEffect(() => {
     fetch(`${API_BASE}/api/v1/readiness/questionnaire`)
@@ -77,7 +86,7 @@ export default function ReadinessTool() {
       const res = await fetch(`${API_BASE}/api/v1/readiness/score`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, pack_id: "dpdp_india_core_v1" }),
+        body: JSON.stringify({ answers, pack_id: packId }),
       });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       setResult(await res.json());
@@ -95,15 +104,34 @@ export default function ReadinessTool() {
     return (
       <div className="readiness-result">
         <div className="panel" style={{ textAlign: "center", padding: "2rem" }}>
-          <p className="section-kicker">Your DPDP Readiness Score</p>
-          <div style={{ fontSize: "3.5rem", fontWeight: 700 }}>{result.readiness_score}%</div>
-          <p className="body-text">
-            {result.summary.ready} ready · {result.summary.gaps} gaps ·{" "}
-            {result.summary.not_applicable} not applicable to you
-          </p>
+          {result.scoring_available === false ? (
+            <>
+              <p className="section-kicker">
+                {result.jurisdiction === "EU_AI_ACT" ? "EU AI Act readiness" : "Readiness"}
+              </p>
+              <div style={{ fontSize: "2rem", fontWeight: 700 }}>Under assessment</div>
+              <p className="body-text">
+                {result.obligations_identified ?? result.summary.applicable} applicable obligation(s)
+                identified · {result.summary.not_applicable} not applicable to you. EU posture scoring
+                is pending professional legal review, so no numeric score is shown — review the
+                obligations below.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="section-kicker">Your DPDP Readiness Score</p>
+              <div style={{ fontSize: "3.5rem", fontWeight: 700 }}>{result.readiness_score}%</div>
+              <p className="body-text">
+                {result.summary.ready} ready · {result.summary.gaps} gaps ·{" "}
+                {result.summary.not_applicable} not applicable to you
+              </p>
+            </>
+          )}
         </div>
 
-        <h3 style={{ marginTop: "1.5rem" }}>Top gaps to address</h3>
+        <h3 style={{ marginTop: "1.5rem" }}>
+          {result.scoring_available === false ? "Obligations to prepare for" : "Top gaps to address"}
+        </h3>
         {(result.top_gaps || []).map((g) => (
           <div key={g.rule_id} className="security-item" data-animate style={{ marginBottom: "0.75rem" }}>
             <strong className="author-name">
@@ -112,6 +140,11 @@ export default function ReadinessTool() {
             <p className="body-text" style={{ fontSize: "0.82rem" }}>
               {g.act_citation || g.rule_citation} — {g.framing}
             </p>
+            {g.verification && g.verification !== "primary_source_verified" ? (
+              <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.75 }}>
+                ⚠ Source: {g.verification.replace(/_/g, " ")} — not yet primary-verified; treat as indicative.
+              </p>
+            ) : null}
           </div>
         ))}
 
@@ -145,6 +178,22 @@ export default function ReadinessTool() {
 
   return (
     <div className="readiness-form">
+      <fieldset style={{ border: "none", marginBottom: "1.5rem" }}>
+        <legend className="section-kicker">Regulation</legend>
+        <div className="field field-full">
+          <label htmlFor="regulation">Which regulation do you want a readiness check for?</label>
+          <select id="regulation" value={packId} onChange={(e) => setPackId(e.target.value)}>
+            {REGULATIONS.map((r) => (
+              <option key={r.pack_id} value={r.pack_id}>{r.label}</option>
+            ))}
+          </select>
+          <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.2rem 0" }}>
+            DPDP returns a readiness score. EU AI Act returns the applicable obligations (no numeric
+            score yet — EU posture scoring is pending legal review). Answer the "EU AI Act (if
+            applicable)" questions for an EU check.
+          </p>
+        </div>
+      </fieldset>
       {Object.entries(sections).map(([section, qs]) => (
         <fieldset key={section} style={{ border: "none", marginBottom: "1.5rem" }}>
           <legend className="section-kicker">{section}</legend>

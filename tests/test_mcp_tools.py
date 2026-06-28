@@ -41,9 +41,14 @@ def test_score_readiness():
     assert "readiness_score" in out and "disclaimer" in out
 
 
-def test_score_readiness_rejects_non_dpdp_pack():
+def test_score_readiness_scores_eu_pack():
+    out = call_tool("score_readiness", {"answers": {"has_ai_system": True}, "pack_id": "euai_core_v1"})
+    assert out["jurisdiction"] == "EU_AI_ACT" and "readiness_score" in out
+
+
+def test_score_readiness_rejects_unknown_pack():
     with pytest.raises(ValueError):
-        call_tool("score_readiness", {"answers": {}, "pack_id": "euai_core_v1"})
+        call_tool("score_readiness", {"answers": {}, "pack_id": "uk_core_v1"})
 
 
 def test_infer_pii_names_only():

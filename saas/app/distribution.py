@@ -163,7 +163,10 @@ async def download_agent(scan_id: str, request: Request, token: str | None = Non
 
 
 @router.post("/agent/heartbeat")
-async def receive_agent_heartbeat(heartbeat_data: dict[str, Any]):
+async def receive_agent_heartbeat(
+    heartbeat_data: dict[str, Any],
+    actor: dict[str, Any] = Depends(_get_upload_actor),
+):
     scan_id = heartbeat_data.get("scan_id")
     status_value = heartbeat_data.get("status")
     if not scan_id:
@@ -180,7 +183,10 @@ async def receive_agent_heartbeat(heartbeat_data: dict[str, Any]):
 
 
 @router.post("/agent/results")
-async def receive_scan_results(results_data: dict[str, Any]):
+async def receive_scan_results(
+    results_data: dict[str, Any],
+    actor: dict[str, Any] = Depends(_get_upload_actor),
+):
     scan_id = results_data.get("scan_id")
     if not scan_id:
         raise HTTPException(status_code=400, detail="scan_id is required")

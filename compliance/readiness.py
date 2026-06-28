@@ -28,8 +28,28 @@ _PREDICATES: Dict[str, Callable[[Manifest], Any]] = {
     "DPDP-SEC8-OBLIGATIONS-001": lambda m: m.has_security_safeguards,
     "DPDP-SEC8-OBLIGATIONS-002": lambda m: m.has_breach_process,
     "DPDP-SEC8-OBLIGATIONS-003": lambda m: m.retention_defined,
+    "DPDP-SEC8-RETENTION-CLASS-001": lambda m: m.retention_defined,
     "DPDP-SEC13-GRIEVANCE-001": lambda m: m.has_grievance_contact,
     "DPDP-SEC8-PROCESSOR-001": lambda m: m.processors_listed,
+    # EU AI Act posture predicates (manifest-declared; secondary-sourced, pending legal review).
+    "EUAI-ART5-PROHIBITED-001": lambda m: m.avoids_prohibited_practices,
+    "EUAI-ART4-LITERACY-001": lambda m: m.has_ai_literacy_program,
+    "EUAI-ART50-TRANSPARENCY-001": lambda m: m.has_art50_transparency,
+    "EUAI-ART9-RISK-MGMT-001": lambda m: m.has_risk_management_system,
+    "EUAI-ART10-DATA-GOV-001": lambda m: m.has_data_governance,
+    "EUAI-ART11-TECHDOC-001": lambda m: m.has_technical_documentation,
+    "EUAI-ART11-TECHDOC-002": lambda m: m.has_technical_documentation,
+    "EUAI-ART18-DATA-GOV-002": lambda m: m.has_recordkeeping_logs,
+    "EUAI-ART20-RECORD-KEEPING-001": lambda m: m.has_recordkeeping_logs,
+    "EUAI-ART13-TRANSPARENCY-001": lambda m: m.has_transparency_info,
+    "EUAI-ART14-HUMAN-OVERSIGHT-001": lambda m: m.has_human_oversight,
+    "EUAI-ART15-ACCURACY-001": lambda m: m.has_accuracy_robustness,
+    "EUAI-ART16-QUALITY-MGMT-001": lambda m: m.has_quality_management_system,
+    "EUAI-ART6-CLASSIFICATION-001": lambda m: m.has_risk_classification,
+    "EUAI-ART43-CONFORMITY-001": lambda m: m.has_conformity_assessment,
+    "EUAI-ART49-REGISTRATION-001": lambda m: m.registered_eu_database,
+    "EUAI-ART72-POSTMARKET-001": lambda m: m.has_postmarket_monitoring,
+    "EUAI-ART53-GPAI-001": lambda m: m.has_gpai_documentation,
 }
 
 _SEVERITY_RANK = {"Critical": 0, "Major": 1, "Minor": 2, "unknown": 3}
@@ -87,15 +107,39 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
             })
 
     scored = len(ready) + len(gaps)
+    jurisdiction = pack.get("jurisdiction", "DPDP_INDIA")
+
+    # EU now has posture predicates, so the score is a real (manifest-declared) readiness
+    # percentage — same "unknown = gap" honesty as DPDP. EU rules remain secondary-sourced and
+    # PENDING legal review (flagged in the disclaimer), so the number is gated, not authoritative.
+    scoring_available = True
     score = round(100 * len(ready) / scored) if scored else 0
 
     # Order gaps by severity so the teaser (top-3) shows the most important first.
     gaps.sort(key=lambda g: _SEVERITY_RANK.get(g["severity"], 9))
+    if jurisdiction == "EU_AI_ACT":
+        disclaimer = (
+            "Readiness self-assessment, not legal advice and not a determination of "
+            "compliance. EU AI Act prohibited-practices (Art. 5), literacy (Art. 4) and GPAI "
+            "duties are in force; high-risk and Art. 50 transparency duties are deferred "
+            "('prepare by' items, some PROVISIONAL pending the Digital Omnibus). EU rules here "
+            "are secondary-sourced and PENDING professional legal review. Verify against "
+            "primary sources and consult a qualified practitioner."
+        )
+    else:
+        disclaimer = (
+            "Readiness self-assessment, not legal advice and not a determination of "
+            "compliance. DPDP operational obligations become enforceable ~13 May 2027; "
+            "gaps are 'prepare by' items. Verify against primary sources and consult a "
+            "qualified practitioner."
+        )
 
     return {
-        "jurisdiction": pack.get("jurisdiction", "DPDP_INDIA"),
+        "jurisdiction": jurisdiction,
         "pack_id": pack.get("pack_id"),
         "readiness_score": score,
+        "scoring_available": scoring_available,
+        "obligations_identified": scored,
         "summary": {
             "ready": len(ready),
             "gaps": len(gaps),
@@ -105,12 +149,7 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
         "ready": ready,
         "gaps": gaps,
         "not_applicable": not_applicable,
-        "disclaimer": (
-            "Readiness self-assessment, not legal advice and not a determination of "
-            "compliance. DPDP operational obligations become enforceable ~13 May 2027; "
-            "gaps are 'prepare by' items. Verify against primary sources and consult a "
-            "qualified practitioner."
-        ),
+        "disclaimer": disclaimer,
     }
 
 

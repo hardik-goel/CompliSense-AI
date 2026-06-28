@@ -80,6 +80,8 @@ def ensure_indexes() -> None:
     teams.create_index([("id", ASCENDING)], unique=True, name="uniq_team_id")
     team_members.create_index([("team_id", ASCENDING), ("user_id", ASCENDING)], name="member_by_team_user")
     team_members.create_index([("user_id", ASCENDING)], name="members_by_user")
+    get_collection("gap_states").create_index(
+        [("project_id", ASCENDING), ("rule_id", ASCENDING)], unique=True, name="uniq_gap_state")
 
     audit_logs.create_index([("audit_id", ASCENDING)], unique=True, name="uniq_audit_id")
     audit_logs.create_index([("timestamp", DESCENDING)], name="audit_by_time")

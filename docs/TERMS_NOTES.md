@@ -54,3 +54,26 @@ of compliance. Terms must foreclose that reading.
 
 > Guiding test for any output or term: *"Could a reasonable user mistake this for a
 > guarantee of legal compliance?"* If yes, reframe until the answer is no.
+
+---
+
+## DPDP-grade privacy notice for the public readiness tool (counsel checklist)
+
+The public tool collects questionnaire answers and (for signed-in, consented users) stores an
+assessment — so CompliSense acts as a Data Fiduciary for that processing. The current
+`landing-page/app/privacy/page.tsx` is a generic website policy and is **not sufficient**. A
+DPDP-grade notice for the tool must, at minimum (for counsel to draft/finalise):
+
+1. **Identity & contact** of the Data Fiduciary + published **Grievance Officer** contact.
+2. **Itemised personal data** collected (questionnaire answers; account email for signed-in).
+3. **Purpose** of processing (compute a readiness score; store an assessment on consent).
+4. **Legal basis / consent** — explicit, itemised, withdrawable as easily as given.
+5. **Retention** — anonymous answers ephemeral (not stored); consented assessments retained
+   per account until deletion request.
+6. **Data-principal rights** — access, correction, erasure, grievance, nominate.
+7. **Sub-processors / cross-border** — hosting (Render/Vercel), DB (MongoDB Atlas), and the
+   Anthropic LLM path for the copilot; any transfer outside India.
+8. **No third-party trackers** (first-party analytics only; non-PII funnel events).
+
+Until published, the tool relies on the inline "answers not stored for anonymous visitors"
+notice + this checklist. Do not represent the generic website policy as the tool's DPDP notice.

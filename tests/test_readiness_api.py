@@ -47,13 +47,29 @@ def test_authenticated_gets_full_report():
     assert body["authenticated"] is True
 
 
-def test_bad_pack_rejected():
+def test_unknown_pack_rejected():
     from fastapi import HTTPException
     try:
-        _run(score_endpoint(ScoreRequest(answers=GOOD_ANSWERS, pack_id="euai_core_v1"), user=None))
+        _run(score_endpoint(ScoreRequest(answers=GOOD_ANSWERS, pack_id="uk_core_v1"), user=None))
         assert False, "expected HTTPException"
     except HTTPException as e:
         assert e.status_code == 400
+
+
+def test_eu_pack_scores_posture():
+    # EU AI Act now has posture predicates -> a real (manifest-declared) score.
+    base = {"has_ai_system": True, "eu_role": "provider", "provides_to_eu": True}
+    empty = _run(score_endpoint(ScoreRequest(answers=base, pack_id="euai_extended_v1"), user=None))
+    assert empty["jurisdiction"] == "EU_AI_ACT" and empty["scoring_available"] is True
+    assert isinstance(empty["readiness_score"], int)
+    assert empty["obligations_identified"] >= 1
+    # Declaring posture raises the score (unknown -> ready).
+    strong = _run(score_endpoint(ScoreRequest(answers={
+        **base, "has_risk_management_system": True, "has_human_oversight": True,
+        "has_technical_documentation": True, "has_quality_management_system": True,
+        "avoids_prohibited_practices": True, "has_ai_literacy_program": True,
+    }, pack_id="euai_extended_v1"), user=None))
+    assert strong["readiness_score"] > empty["readiness_score"]
 
 
 def test_score_is_honest_zero_for_empty_posture():

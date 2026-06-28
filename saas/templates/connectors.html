@@ -206,7 +206,8 @@
       el.innerHTML = `<h3 class="h6 act-review mb-2">Gaps — get grounded remediation help</h3>` +
         gaps.map(g => `<div class="border-bottom py-2" style="border-color:#2a2f3a!important">
           <div class="d-flex justify-content-between align-items-start gap-2">
-            <div><strong>${esc(g.title)}</strong> <span class="muted small">${esc(g.rule_id)} · ${esc(g.rule_citation || g.act_citation || "")}</span></div>
+            <div><strong>${esc(g.title)}</strong> <span class="muted small">${esc(g.rule_id)} · ${esc(g.rule_citation || g.act_citation || "")}</span>${
+              g.verification && g.verification !== "primary_source_verified" ? `<span class="act-review small"> · ⚠ ${esc(g.verification.replace(/_/g, " "))}</span>` : ""}</div>
             <div class="text-nowrap">
               <button class="btn btn-sm btn-outline-light" data-cop="explain" data-rule="${esc(g.rule_id)}">Explain</button>
               <button class="btn btn-sm btn-outline-light" data-cop="draft" data-rule="${esc(g.rule_id)}">Draft policy</button>
