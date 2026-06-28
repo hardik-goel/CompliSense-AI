@@ -264,7 +264,10 @@
         }
 
         function apiUrl(path) {
-            return `${API_BASE_URL}${path}`;
+            // Same-origin: the auth/API routes are served by the app that served this page.
+            // A relative path avoids cross-origin / DNS / CORS failures (e.g. an unconfigured
+            // api.* subdomain) both locally and in production.
+            return path;
         }
 
         function apiFetch(path, options = {}) {
