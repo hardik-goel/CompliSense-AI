@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from agent.collectors.base import DEFAULT_MIN_CONFIDENCE, Candidate, stage_candidates
-from agent.collectors.classifier import AnthropicClassifier
+from agent.collectors.classifier import default_classifier
 from agent.collectors.local_folder import crawl
 
 
@@ -35,12 +35,9 @@ def collect_candidates(candidates: List[Candidate], out_dir: str, llm: Optional[
 
 
 def _resolve_llm(no_llm: bool):
-    if no_llm:
-        return None
-    llm = AnthropicClassifier()
-    if not llm.available():
-        print("No ANTHROPIC_API_KEY — using the deterministic classifier (filename + keywords).")
-        return None
+    llm = default_classifier(no_llm=no_llm)
+    if llm is None and not no_llm:
+        print("No LLM key (OPENROUTER_API_KEY / ANTHROPIC_API_KEY) — using the deterministic classifier.")
     return llm
 
 

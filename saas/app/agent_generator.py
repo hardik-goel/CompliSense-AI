@@ -165,9 +165,8 @@ OUT = "./collected_artefacts"
 
 
 def _llm():
-    from agent.collectors.classifier import AnthropicClassifier
-    llm = AnthropicClassifier()
-    return llm if llm.available() else None
+    from agent.collectors.classifier import default_classifier
+    return default_classifier()  # OpenRouter (OPENROUTER_API_KEY) > Anthropic (ANTHROPIC_API_KEY) > none
 
 
 def _fetch(s):
@@ -210,7 +209,7 @@ def main():
         return 0
     llm = _llm()
     if llm is None:
-        print("No ANTHROPIC_API_KEY — using the deterministic classifier (filename + keywords).")
+        print("No LLM key (OPENROUTER_API_KEY / ANTHROPIC_API_KEY) — using the deterministic classifier.")
     from agent.collectors.base import stage_candidates
     collected = []
     for s in sources:
