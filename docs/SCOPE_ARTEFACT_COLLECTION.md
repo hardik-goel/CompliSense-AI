@@ -1,8 +1,9 @@
 # Scope — Artefact Collection (pull existing documents from sources)
 
-> Status: **6.1 BUILT** (agent-side local-folder collector + LLM classifier). Decisions taken:
-> agent-side/local · local-folder first · LLM classifier now (deterministic fallback). Remaining
-> phases 6.2–6.6 (S3/GCS/Azure/GitHub/Drive + hosted config UI) still open — see §6.
+> Status: **ALL PHASES BUILT (6.1–6.6)**, agent-side, injected clients, deterministic-fallback
+> LLM classifier, PDF/DOCX extraction. Sources: local · S3 · GCS · Azure Blob · GitHub · Notion ·
+> Google Drive · SharePoint. Hosted "declare sources" config (non-secret) + UI + bundle wiring
+> (`collect_sources.py`). Decisions taken: agent-side/local · local-folder first · LLM-now.
 
 ## 1. What it is (vs. what exists today)
 Today's Tier-1 connectors are **read-only metadata**: they read cloud *configuration* (encryption
@@ -56,9 +57,15 @@ an optional later upgrade (reads content → cost + privacy → keep local + opt
 - Caps on file count/size; pattern-filter before download.
 
 ## 6. Phasing
-- **6.1** ✅ Collector framework + classifier (agent-side) + recursive **local-folder** collector
-  → stages + labels files. LLM classifier (Claude, local; deterministic fallback). Ships in the
-  agent bundle (`agent/collectors/`, `python -m agent.collectors.collect`).
+- **6.1** ✅ Collector framework + classifier (agent-side) + recursive **local-folder** collector.
+- **PDF/DOCX** ✅ text extraction (`extract.py`, pypdf + python-docx, lazy).
+- **6.2** ✅ **S3** read collector (+ least-priv read policy in `s3.py`).
+- **6.3** ✅ **GCS** + **Azure Blob** collectors.
+- **6.4** ✅ **GitHub** repo-file collector.
+- **6.6** ✅ Doc stores: **Notion / Google Drive / SharePoint** (token-based, injectable).
+- **6.5** ✅ Hosted **declare-sources** config (non-secret, secret-rejecting validator) + project
+  storage + API + UI panel + bundle wiring (`collect_sources.py` reads the config, creds local).
+  All sources have injected-client unit tests (no creds/network).
 - **6.2** **S3** read collector + least-privilege read policy.
 - **6.3** GCS + Azure Blob collectors.
 - **6.4** GitHub repo-file collector.

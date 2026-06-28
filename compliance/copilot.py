@@ -154,3 +154,41 @@ def default_llm(max_tokens: int = 2000) -> LLM:
         return "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
 
     return _call
+
+
+def openrouter_llm(max_tokens: int = 2000) -> LLM:
+    """LLM client for OpenAI-format gateways (OpenRouter). Raw HTTP; for testing with free credits.
+
+    Uses OPENROUTER_API_KEY (or OPENAI_API_KEY), OPENROUTER_MODEL (default a free model), and
+    OPENAI_BASE_URL (default OpenRouter). Production default stays Anthropic.
+    """
+    import os
+
+    api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+    base_url = (os.getenv("OPENAI_BASE_URL") or "https://openrouter.ai/api/v1").rstrip("/")
+    model = os.getenv("OPENROUTER_MODEL") or "nvidia/nemotron-3-super-120b-a12b:free"
+
+    def _call(system: str, user: str) -> str:
+        import requests  # lazy
+        r = requests.post(
+            f"{base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={"model": model, "max_tokens": max_tokens,
+                  "messages": [{"role": "system", "content": system},
+                               {"role": "user", "content": user}]},
+            timeout=120,
+        )
+        body = r.json()
+        if "choices" not in body:
+            raise RuntimeError(f"LLM gateway error: {body.get('error', body)}")
+        return body["choices"][0]["message"]["content"]
+
+    return _call
+
+
+def default_llm_from_env(max_tokens: int = 2000) -> LLM:
+    """Pick the LLM client from env: OpenRouter (OPENROUTER_API_KEY) > Anthropic."""
+    import os
+    if os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY"):
+        return openrouter_llm(max_tokens)
+    return default_llm(max_tokens)

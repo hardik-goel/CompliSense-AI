@@ -100,6 +100,9 @@ app.include_router(gaps_router)
 from saas.app.artefacts_api import router as artefacts_router  # noqa: E402
 app.include_router(artefacts_router)
 
+from saas.app.collection_api import router as collection_router  # noqa: E402
+app.include_router(collection_router)
+
 
 @app.on_event("startup")
 async def startup_event():

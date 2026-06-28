@@ -46,38 +46,95 @@ def deterministic_classify(filename: str, sample: str) -> Classification:
     return Classification(best_id, round(confidence, 2), best_reason, "deterministic")
 
 
-class AnthropicClassifier:
-    """LLM classifier — lazy Anthropic SDK, model claude-opus-4-8, handles refusal."""
+def _classify_prompt(filename: str, sample: str) -> str:
+    catalog = "\n".join(f"- {t['id']}: {t['title']}" for t in ARTEFACT_TYPES)
+    return (
+        "You classify a document into ONE compliance-artefact type, or 'none' if it is not a "
+        "compliance artefact. Reply with JSON only: "
+        '{"artefact_id": "<id-or-none>", "confidence": <0..1>, "reason": "<short>"}.\n\n'
+        f"Types:\n{catalog}\n\n"
+        f"Filename: {filename}\n"
+        f"Content sample (truncated):\n{sample[:3000]}\n"
+    )
 
-    def __init__(self, model: str = "claude-opus-4-8", api_key: Optional[str] = None):
+
+class AnthropicClassifier:
+    """LLM classifier — lazy Anthropic SDK, model claude-opus-4-8, handles refusal.
+
+    Honors ANTHROPIC_BASE_URL for genuinely Anthropic-compatible proxies (NOT OpenAI-format
+    gateways like OpenRouter — use OpenAICompatibleClassifier for those).
+    """
+
+    def __init__(self, model: str = "claude-opus-4-8", api_key: Optional[str] = None,
+                 base_url: Optional[str] = None):
         self.model = model
         self._api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self._base_url = base_url or os.getenv("ANTHROPIC_BASE_URL")
 
     def available(self) -> bool:
         return bool(self._api_key)
 
     def classify(self, filename: str, sample: str) -> Classification:
         import anthropic  # lazy
-
-        catalog = "\n".join(f"- {t['id']}: {t['title']}" for t in ARTEFACT_TYPES)
-        prompt = (
-            "You classify a document into ONE compliance-artefact type, or 'none' if it is not a "
-            "compliance artefact. Reply with JSON only: "
-            '{"artefact_id": "<id-or-none>", "confidence": <0..1>, "reason": "<short>"}.\n\n'
-            f"Types:\n{catalog}\n\n"
-            f"Filename: {filename}\n"
-            f"Content sample (truncated):\n{sample[:3000]}\n"
-        )
-        client = anthropic.Anthropic(api_key=self._api_key)
+        kwargs = {"api_key": self._api_key}
+        if self._base_url:
+            kwargs["base_url"] = self._base_url
+        client = anthropic.Anthropic(**kwargs)
         resp = client.messages.create(
             model=self.model, max_tokens=400,
             thinking={"type": "adaptive"},
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": _classify_prompt(filename, sample)}],
         )
         if getattr(resp, "stop_reason", None) == "refusal":
             return deterministic_classify(filename, sample)
         text = "".join(getattr(b, "text", "") for b in resp.content if getattr(b, "type", "") == "text")
         return _parse_llm(text, filename, sample)
+
+
+class OpenAICompatibleClassifier:
+    """LLM classifier for OpenAI-format gateways (OpenRouter, local servers, etc.).
+
+    Raw HTTP (no SDK) against {base_url}/chat/completions. Use for testing with OpenRouter's free
+    credits. Production default stays Anthropic.
+    """
+
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None,
+                 model: Optional[str] = None):
+        self._api_key = api_key or os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+        self.base_url = (base_url or os.getenv("OPENAI_BASE_URL")
+                         or "https://openrouter.ai/api/v1").rstrip("/")
+        self.model = model or os.getenv("OPENROUTER_MODEL") or "anthropic/claude-3.5-haiku"
+
+    def available(self) -> bool:
+        return bool(self._api_key)
+
+    def classify(self, filename: str, sample: str) -> Classification:
+        import requests  # lazy
+        r = requests.post(
+            f"{self.base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+            json={"model": self.model, "max_tokens": 400,
+                  "messages": [{"role": "user", "content": _classify_prompt(filename, sample)}]},
+            timeout=60,
+        )
+        try:
+            text = r.json()["choices"][0]["message"]["content"]
+        except Exception:
+            # error body (rate-limit / model unavailable / etc.) — fall back, don't crash.
+            return deterministic_classify(filename, sample)
+        return _parse_llm(text, filename, sample)
+
+
+def default_classifier(no_llm: bool = False):
+    """Pick an LLM classifier from env: OpenRouter > Anthropic > none. Returns None if no key."""
+    if no_llm:
+        return None
+    if os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY"):
+        c = OpenAICompatibleClassifier()
+        if c.available():
+            return c
+    a = AnthropicClassifier()
+    return a if a.available() else None
 
 
 def _parse_llm(text: str, filename: str, sample: str) -> Classification:
