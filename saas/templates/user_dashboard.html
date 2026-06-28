@@ -473,7 +473,10 @@
         const API_BASE_URL = {{ api_base_url|tojson }};
 
         function appUrl(path) {
-            return `${APP_BASE_URL}${path}`;
+            // Same-origin in-app navigation: stays on whatever host served the page
+            // (localhost for dev, the app host in prod). The prod host-split is handled
+            // server-side by the redirect middleware.
+            return path;
         }
 
         function apiUrl(path) {

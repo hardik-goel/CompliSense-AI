@@ -86,10 +86,19 @@ pip install -r requirements.txt
 
 ```bash
 source 3.11_venv/bin/activate
+export ENVIRONMENT=development
+export MONGO_URI="mongodb://127.0.0.1:27017"   # or your Atlas URI
+export MONGO_DB=complisense
 export DEFAULT_RULEPACK_ID=dpdp_india_core_v1
+export JWT_SECRET=dev-local-secret ADMIN_API_TOKEN=dev-local-admin
+export SECURE_COOKIES=false COOKIE_DOMAIN=""    # host-only cookie so login works on localhost
 python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 # open http://127.0.0.1:8000/  ·  catalog: curl http://127.0.0.1:8000/api/rulepacks
 ```
+
+> **Localhost login tip:** leave `COOKIE_DOMAIN=""`. The production default is
+> `.complisenseai.com`, which the browser rejects on `localhost` — so login appears to fail
+> ("Network error"). The app's API calls are same-origin, so no `API_BASE_URL` is needed locally.
 
 ### Run the landing page (Next.js, :3000)
 

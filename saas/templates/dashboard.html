@@ -260,7 +260,10 @@
         const SUPPORT_EMAIL = {{ support_email|tojson }};
 
         function appUrl(path) {
-            return `${APP_BASE_URL}${path}`;
+            // Same-origin in-app navigation: stays on whatever host served the page
+            // (localhost for dev, the app host in prod). The prod host-split is handled
+            // server-side by the redirect middleware.
+            return path;
         }
 
         function apiUrl(path) {
@@ -521,7 +524,7 @@
         }
 
         function getHelp() {
-            showAlert(`Contact support at ${SUPPORT_EMAIL} or visit ${APP_BASE_URL}/about for product help.`, 'info');
+            showAlert(`Contact support at ${SUPPORT_EMAIL} or visit /about for product help.`, 'info');
         }
 
         // Load stats and check auth when page loads
