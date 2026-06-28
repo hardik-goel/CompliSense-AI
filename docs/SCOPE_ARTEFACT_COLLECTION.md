@@ -1,6 +1,8 @@
 # Scope — Artefact Collection (pull existing documents from sources)
 
-> Status: SCOPE / proposal (not built). Decision needed before build — see §7.
+> Status: **6.1 BUILT** (agent-side local-folder collector + LLM classifier). Decisions taken:
+> agent-side/local · local-folder first · LLM classifier now (deterministic fallback). Remaining
+> phases 6.2–6.6 (S3/GCS/Azure/GitHub/Drive + hosted config UI) still open — see §6.
 
 ## 1. What it is (vs. what exists today)
 Today's Tier-1 connectors are **read-only metadata**: they read cloud *configuration* (encryption
@@ -54,8 +56,9 @@ an optional later upgrade (reads content → cost + privacy → keep local + opt
 - Caps on file count/size; pattern-filter before download.
 
 ## 6. Phasing
-- **6.1** Collector framework + classifier (pure, agent-side) + recursive **local-folder**
-  collector → stages + labels files. (Testable, no creds.)
+- **6.1** ✅ Collector framework + classifier (agent-side) + recursive **local-folder** collector
+  → stages + labels files. LLM classifier (Claude, local; deterministic fallback). Ships in the
+  agent bundle (`agent/collectors/`, `python -m agent.collectors.collect`).
 - **6.2** **S3** read collector + least-privilege read policy.
 - **6.3** GCS + Azure Blob collectors.
 - **6.4** GitHub repo-file collector.

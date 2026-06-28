@@ -111,6 +111,15 @@ RUN (3 steps)
   Example:
        python run_scan.py --project-path ./my_artefacts --output-dir ./output
 
+NO ARTEFACTS YET? COLLECT THEM FROM A FOLDER (optional, runs locally)
+  Point this at a folder/repo where your docs already live; it finds and copies the likely
+  compliance artefacts into ./collected_artefacts, then you scan that.
+       python -m agent.collectors.collect --source-path ./my_repo --out ./collected_artefacts
+       python run_scan.py --project-path ./collected_artefacts --output-dir ./output
+  Smarter classification uses Claude: set ANTHROPIC_API_KEY first (your key, called locally;
+  file contents never leave your machine). Without a key it uses filename + keyword matching.
+  Add --no-llm to force the offline classifier.
+
 OUTPUT (in OUTPUT_FOLDER)
   compliance_findings.json   - per-rule status + citations
   compliance_report.pdf      - readable report (when generated)
@@ -165,6 +174,7 @@ PyYAML==6.0.3
 requests==2.32.5
 rule-engine==4.5.3
 weasyprint==66.0
+anthropic==0.69.0
 """
         (target_dir / "requirements.txt").write_text(requirements, encoding="utf-8")
         return "source"
