@@ -141,6 +141,7 @@ validates all four rulepacks. Regenerate/download the agent ZIP from the SaaS af
 | Evidence export | `GET /projects/{id}/evidence`, `GET /projects/{id}/evidence/export.html` |
 | Teams / roles | `POST /teams`, `POST /teams/{id}/members` (viewer/engineer/dpo/admin/owner), `POST /projects/{id}/team` |
 | Gap governance | `POST /projects/{id}/gaps/{rule_id}/assign`, `POST /projects/{id}/gaps/{rule_id}/signoff` (DPO/admin), `GET /projects/{id}/gaps` |
+| Artefact generator | `GET /projects/{id}/artefacts/needed`, `POST .../artefacts/{art}/draft` (consent), `.../approve`, `GET .../artefacts/export.zip` |
 | Teaser | `GET /teaser.html` (animated product teaser) |
 
 Scheduled sweeps run as Render cron jobs: `monitoring_cron` (overdue/regression alerts) and
