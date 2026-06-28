@@ -221,6 +221,7 @@ export default function HomePage() {
             <img src="/logo.png" alt="CompliSense-AI" className="brand-logo" />
           </Link>
           <nav className="site-nav">
+            <a href="#teaser">Watch</a>
             <a href="#platform">Platform</a>
             <a href="#solutions">Solutions</a>
             <a href="#pricing">Pricing</a>
@@ -265,6 +266,10 @@ export default function HomePage() {
                 zIndex: 999,
               }}
             >
+              <a href="#teaser" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Watch
+              </a>
               <a href="#platform" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
                 Platform
@@ -490,10 +495,10 @@ export default function HomePage() {
             }}
           >
             <iframe
-              src="https://www.youtube.com/embed/4wWrPl-T2C0?rel=0&modestbranding=1"
+              src="https://www.youtube.com/embed/4wWrPl-T2C0?autoplay=1&mute=1&loop=1&playlist=4wWrPl-T2C0&controls=1&rel=0&modestbranding=1&playsinline=1"
               title="CompliSense-AI — product teaser"
               loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
             />
