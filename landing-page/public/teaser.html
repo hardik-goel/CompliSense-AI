@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CompliSense-AI — Teaser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  :root{
+    --bg:#080a10; --ink:#f5f6fb; --muted:#9aa3b8; --accent:#7c8cff; --accent2:#3ee6a6;
+    --warn:#ffc24b; --danger:#ff7a7a; --card:rgba(26,31,46,.55); --border:rgba(255,255,255,.10);
+    --font:'Sora',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#000;overflow:hidden;font-family:var(--font)}
+  .frame{position:fixed;inset:0;display:grid;place-items:center;background:#000}
+  .stage{position:relative;width:min(100vw,177.78vh);height:min(56.25vw,100vh);
+    background:var(--bg);color:var(--ink);overflow:hidden;isolation:isolate;perspective:1400px}
+
+  /* animated gradient-mesh bg + grain + spotlight + vignette */
+  .mesh{position:absolute;inset:-25%;z-index:0;filter:blur(70px) saturate(150%)}
+  .blob{position:absolute;width:60%;height:60%;border-radius:50%;mix-blend-mode:screen;opacity:.6}
+  .b1{background:radial-gradient(circle,#5b6cff,transparent 60%);top:-10%;left:-8%;animation:d1 17s ease-in-out infinite}
+  .b2{background:radial-gradient(circle,#21d3a0,transparent 60%);bottom:-14%;right:-10%;animation:d2 21s ease-in-out infinite}
+  .b3{background:radial-gradient(circle,#a05cff,transparent 60%);top:28%;left:38%;animation:d3 24s ease-in-out infinite}
+  @keyframes d1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20%,14%) scale(1.2)}}
+  @keyframes d2{0%,100%{transform:translate(0,0) scale(1.1)}50%{transform:translate(-18%,-12%) scale(1)}}
+  @keyframes d3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-14%,16%) scale(1.25)}}
+  .grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:gr .5s steps(2) infinite}
+  @keyframes gr{to{transform:translate(-6px,4px)}}
+  .vig{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(135% 115% at 50% 35%,transparent 52%,rgba(0,0,0,.62))}
+
+  /* hard-cut flash + wipe panel */
+  .flash{position:absolute;inset:0;z-index:8;background:#fff;opacity:0;pointer-events:none;mix-blend-mode:overlay}
+  .wipe{position:absolute;inset:0;z-index:7;pointer-events:none;
+    background:linear-gradient(120deg,var(--accent),var(--accent2));transform:translateX(-101%) skewX(-8deg)}
+
+  .scene{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:0 6%;
+    visibility:hidden;transform-style:preserve-3d;will-change:transform,opacity,filter}
+  .kicker{color:var(--accent);font-weight:700;letter-spacing:.34em;text-transform:uppercase;font-size:1.05vw;margin-bottom:1.8vh}
+  .big{font-weight:800;line-height:1.02;font-size:5.8vw;letter-spacing:-.028em}
+  .xl{font-size:7.6vw}
+  .sub{color:var(--muted);font-size:2vw;font-weight:400;margin-top:2.6vh;max-width:80%;margin-inline:auto}
+  .accent{color:var(--accent)} .green{color:var(--accent2)} .warn{color:var(--warn)}
+  .ch{display:inline-block;white-space:pre}
+  .line{display:inline-block;overflow:hidden;vertical-align:top}
+  .gradtext{background:linear-gradient(110deg,#8aa0ff,#3ee6a6,#a98bff,#8aa0ff);background-size:280% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 6s linear infinite}
+  @keyframes flow{to{background-position:280% 0}}
+  .mark{font-weight:800;font-size:7.8vw;letter-spacing:-.035em;position:relative;filter:drop-shadow(0 0 40px rgba(124,140,255,.4))}
+
+  .ring-wrap{display:flex;align-items:center;gap:4.5vw}
+  .ring{position:relative;width:31vh;height:31vh;filter:drop-shadow(0 0 30px rgba(124,140,255,.5))}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .aura{position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle,rgba(124,140,255,.4),transparent 65%);animation:pulse 2.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(.9);opacity:.5}50%{transform:scale(1.06);opacity:.95}}
+  .ring .num{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:7.4vh;letter-spacing:-.03em}
+  .ring .lab{position:absolute;left:0;right:0;bottom:-3.6vh;text-align:center;color:var(--muted);font-size:1.5vh;letter-spacing:.2em;text-transform:uppercase}
+  .badges{display:flex;flex-direction:column;gap:1.7vh;text-align:left}
+  .badge{display:flex;align-items:center;gap:1.2vw;font-weight:600;font-size:2.1vh;background:var(--card);
+    border:1px solid var(--border);border-radius:1.4vh;padding:1.5vh 1.9vw;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .dot{width:1.2vh;height:1.2vh;border-radius:50%;box-shadow:0 0 12px currentColor}
+
+  .cards{display:flex;gap:1.8vw;perspective:1100px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:1.8vh;padding:2.4vh 1.9vw;text-align:left;width:25vw;
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 22px 64px rgba(0,0,0,.5)}
+  .card .t{font-weight:700;font-size:2.1vh}.card .c{color:var(--muted);font-size:1.5vh;margin-top:.9vh}
+  .pill{display:inline-block;margin-top:1.6vh;font-size:1.35vh;font-weight:700;padding:.6vh 1.1vw;border-radius:99px}
+  .pill.amber{background:rgba(255,194,75,.16);color:var(--warn)}.pill.green{background:rgba(62,230,166,.16);color:var(--accent2)}.pill.red{background:rgba(255,122,122,.16);color:var(--danger)}
+
+  .words{display:flex;flex-wrap:wrap;gap:1.3vw;justify-content:center;max-width:86%;margin-inline:auto}
+  .chip{font-weight:700;font-size:2.8vw;padding:1.1vh 1.7vw;border-radius:99px;border:1px solid var(--border);
+    background:var(--card);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .chip.key{background:linear-gradient(120deg,rgba(124,140,255,.28),rgba(62,230,166,.2));border-color:rgba(124,140,255,.45)}
+
+  .cta-btn{position:relative;overflow:hidden;margin-top:3.2vh;display:inline-block;color:#fff;font-weight:700;font-size:2vw;
+    padding:1.8vh 3.2vw;border-radius:99px;background:linear-gradient(120deg,#6b7bff,#8a5cff);box-shadow:0 16px 60px rgba(124,140,255,.55)}
+  .cta-btn::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+    background:linear-gradient(110deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-20deg);animation:sheen 2.4s ease-in-out infinite}
+  @keyframes sheen{0%{left:-60%}55%,100%{left:130%}}
+  .url{margin-top:2.6vh;color:var(--muted);font-size:1.8vw;letter-spacing:.05em}
+
+  .bar{position:absolute;left:0;bottom:0;height:.5vh;width:0;z-index:5;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .legal{position:absolute;left:0;right:0;bottom:2.4vh;z-index:5;text-align:center;color:#5a6276;font-size:1.05vh;letter-spacing:.07em}
+  .ctrl{position:fixed;right:14px;bottom:12px;display:flex;gap:8px;z-index:9}
+  .ctrl button{background:#1b2030;color:#cfd5e3;border:1px solid #2a3040;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer}
+  .hint{position:fixed;left:14px;bottom:12px;color:#4a5266;font-size:11px;z-index:9}
+</style>
+</head>
+<body>
+<div class="frame"><div class="stage" id="stage">
+  <div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div><div class="vig"></div>
+  <div class="wipe" id="wipe"></div><div class="flash" id="flash"></div>
+
+  <section class="scene" data-s="1"><div>
+    <div class="kicker">Regulatory readiness</div>
+    <div class="big"><span class="line"><span class="ttl">Compliance shouldn't</span></span><br>
+      <span class="line"><span class="ttl">feel like <span class="accent">guesswork.</span></span></span></div>
+  </div></section>
+
+  <section class="scene" data-s="2"><div>
+    <div class="big"><span class="hl">“Are we ready for <span class="accent">DPDP</span>?</span></div>
+    <div class="big"><span class="hl">For the <span class="green">EU AI Act</span>?”</span></div>
+    <div class="sub fade">Most teams can't answer. Confidently.</div>
+  </div></section>
+
+  <section class="scene" data-s="3"><div><div class="mark gradtext" id="logo">CompliSense-AI</div></div></section>
+
+  <section class="scene" data-s="4"><div class="xl big">
+    <span class="line"><span class="ttl">Readiness.</span></span><br>
+    <span class="line"><span class="ttl" style="color:var(--muted)">Not guesswork.</span></span>
+  </div></section>
+
+  <section class="scene" data-s="5"><div class="ring-wrap">
+    <div class="ring">
+      <div class="aura"></div>
+      <svg viewBox="0 0 120 120" width="100%" height="100%">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c8cff"/><stop offset="1" stop-color="#3ee6a6"/></linearGradient></defs>
+        <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
+        <circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="url(#g)" stroke-width="9" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+      </svg>
+      <div class="num" id="scoreNum">0%</div><div class="lab">DPDP readiness</div>
+    </div>
+    <div class="badges">
+      <div class="badge bd"><span class="dot" style="color:var(--accent2)"></span>India DPDP — fully scored</div>
+      <div class="badge bd"><span class="dot" style="color:var(--accent)"></span>EU AI Act — role-gated</div>
+      <div class="badge bd"><span class="dot" style="color:var(--warn)"></span>Every gap, cited</div>
+    </div>
+  </div></section>
+
+  <section class="scene" data-s="6"><div>
+    <div class="kicker">Honest findings</div>
+    <div class="cards">
+      <div class="card cd"><div class="t">Breach response register</div><div class="c">DPDP Rules 2025, Rule 7</div><span class="pill amber">Prepare by 2027</span></div>
+      <div class="card cd"><div class="t">Security safeguards</div><div class="c">Verified from your AWS account</div><span class="pill green">Ready</span></div>
+      <div class="card cd"><div class="t">Children's data</div><div class="c">DPDP Act 2023, s.9</div><span class="pill red">Gap</span></div>
+    </div>
+    <div class="sub fade">Readiness items — never “violations.”</div>
+  </div></section>
+
+  <section class="scene" data-s="7"><div>
+    <div class="kicker">One platform</div>
+    <div class="words">
+      <span class="chip ch2">Scan</span><span class="chip ch2">Monitor drift</span>
+      <span class="chip key ch2">Connect AWS · GCP · Azure</span><span class="chip ch2">Infer PII</span>
+      <span class="chip ch2">Watch the law</span><span class="chip key ch2">Remediate</span><span class="chip ch2">Export evidence</span>
+    </div>
+  </div></section>
+
+  <section class="scene" data-s="8"><div>
+    <div class="big"><span class="hl">Grounded. <span class="accent">Cited.</span></span></div>
+    <div class="sub fade">Readiness guidance — <strong>not legal advice.</strong></div>
+  </div></section>
+
+  <section class="scene" data-s="9"><div>
+    <div class="mark gradtext" style="font-size:5vw" id="cta">Know where you stand.</div>
+    <div class="cta-btn" id="ctaBtn">Get your readiness score — free</div>
+    <div class="url" id="ctaUrl">complisenseai.com/readiness</div>
+  </div></section>
+
+  <div class="bar" id="bar"></div>
+  <div class="legal">Readiness self-assessment · not legal advice · rulepacks pending professional legal review</div>
+</div></div>
+
+<div class="hint">Fullscreen (F11), then screen-record this window at 1080p (QuickTime / OBS).</div>
+<div class="ctrl"><button id="replay">↻ Replay</button></div>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  // split helper: chars of an element into spans
+  function chars(el){const t=el.textContent;el.textContent='';return [...t].map(c=>{const s=document.createElement('span');s.className='ch';s.textContent=c;el.appendChild(s);return s;});}
+  function show(n){$$('.scene').forEach(s=>s.style.visibility=(s.dataset.s===String(n)?'visible':'hidden'));}
+
+  const arc=$('#arc'), scoreNum=$('#scoreNum'); const C=2*Math.PI*52;
+
+  // hard-cut color flash
+  function flash(tl,t,color){tl.set('#flash',{background:color||'#fff'},t).to('#flash',{opacity:.9,duration:.06},t).to('#flash',{opacity:0,duration:.18},t+0.06);}
+  // diagonal wipe transition
+  function wipe(tl,t){tl.set('#wipe',{x:'-101%',skewX:-8},t).to('#wipe',{x:'0%',duration:.22,ease:'power3.in'},t).to('#wipe',{x:'101%',duration:.26,ease:'power3.out'},t+0.22);}
+
+  function build(){
+    if(!window.gsap){show(1);return;}
+    gsap.set('#flash',{opacity:0}); gsap.set('#wipe',{x:'-101%'});
+    arc.style.strokeDashoffset=C; scoreNum.textContent='0%';
+    const tl=gsap.timeline({repeat:-1, defaults:{ease:'power3.out'}, onRepeat:()=>{arc.style.strokeDashoffset=C;scoreNum.textContent='0%';}});
+
+    // progress bar across the whole 30s
+    tl.fromTo('#bar',{width:'0%'},{width:'100%',duration:30,ease:'none'},0);
+
+    // ── S1 (0.0): line-mask reveal + per-word rise, then camera push-out ──
+    tl.add(()=>show(1),0);
+    $$('[data-s="1"] .ttl').forEach((ttl,i)=>{
+      const cs=chars(ttl);
+      tl.from(cs,{yPercent:120,opacity:0,rotationX:-60,transformOrigin:'50% 100%',stagger:0.02,duration:.7,ease:'back.out(1.7)'},0.2+i*0.35);
+    });
+    tl.fromTo('[data-s="1"] .kicker',{opacity:0,y:20},{opacity:1,y:0,duration:.5},0.1);
+    tl.to('[data-s="1"]',{z:480,scale:1.25,opacity:0,filter:'blur(14px)',duration:.5,ease:'power2.in'},2.8);
+
+    // ── S2: slide in from right + skew, headlines pop, flash cut ──
+    flash(tl,3.1,'#7c8cff'); wipe(tl,3.0);
+    tl.add(()=>show(2),3.2);
+    tl.fromTo('[data-s="2"]',{xPercent:60,opacity:0,skewX:6},{xPercent:0,opacity:1,skewX:0,duration:.6,ease:'power4.out'},3.25);
+    tl.from('[data-s="2"] .hl',{scale:.6,opacity:0,filter:'blur(8px)',stagger:0.12,duration:.55,ease:'back.out(1.6)'},3.4);
+    tl.fromTo('[data-s="2"] .fade',{opacity:0,y:24},{opacity:1,y:0,duration:.5},4.0);
+    tl.to('[data-s="2"]',{scale:.85,opacity:0,filter:'blur(10px)',duration:.4,ease:'power2.in'},6.0);
+
+    // ── S3: logo punch + RGB glitch ──
+    flash(tl,6.45,'#fff');
+    tl.add(()=>show(3),6.5);
+    tl.from('#logo',{scale:.2,opacity:0,duration:.7,ease:'elastic.out(1,.55)'},6.5);
+    // glitch: jitter x + red/cyan text-shadow a few frames
+    [0,.07,.14,.21].forEach((d,i)=>{tl.set('#logo',{x:(i%2?-8:8),textShadow:'3px 0 rgba(255,0,80,.7),-3px 0 rgba(0,230,255,.7)'},6.95+d).set('#logo',{x:0,textShadow:'none'},6.99+d);});
+    tl.to('[data-s="3"]',{scale:1.4,opacity:0,filter:'blur(12px)',duration:.45,ease:'power2.in'},8.4);
+
+    // ── S4: clip-path mask reveal of each line ──
+    wipe(tl,8.55);
+    tl.add(()=>show(4),8.7);
+    $$('[data-s="4"] .ttl').forEach((ttl,i)=>{
+      tl.fromTo(ttl,{clipPath:'inset(0 100% 0 0)',x:-30},{clipPath:'inset(0 0% 0 0)',x:0,duration:.6,ease:'power4.out'},8.8+i*0.28);
+    });
+    tl.to('[data-s="4"]',{z:500,scale:1.3,opacity:0,filter:'blur(12px)',duration:.45,ease:'power2.in'},10.6);
+
+    // ── S5: push from depth, ring draws + count, badges fly in ──
+    flash(tl,11.0,'#3ee6a6');
+    tl.add(()=>show(5),11.0);
+    tl.from('[data-s="5"] .ring',{z:-500,opacity:0,scale:.7,duration:.7,ease:'power4.out'},11.0);
+    tl.to({v:0},{v:73,duration:3.0,ease:'power2.out',onUpdate(){const v=Math.round(this.targets()[0].v);scoreNum.textContent=v+'%';arc.style.strokeDashoffset=(C*(1-v/100)).toFixed(1);}},11.4);
+    tl.from('[data-s="5"] .bd',{x:80,opacity:0,stagger:0.14,duration:.55,ease:'back.out(1.5)'},11.6);
+    tl.to('[data-s="5"]',{scale:.85,opacity:0,filter:'blur(10px)',duration:.4,ease:'power2.in'},16.0);
+
+    // ── S6: glass cards flip up in 3D ──
+    wipe(tl,16.15);
+    tl.add(()=>show(6),16.3);
+    tl.fromTo('[data-s="6"] .kicker',{opacity:0,y:20},{opacity:1,y:0,duration:.4},16.3);
+    tl.from('[data-s="6"] .cd',{rotationX:90,y:60,opacity:0,transformOrigin:'50% 100%',stagger:0.14,duration:.7,ease:'back.out(1.5)'},16.45);
+    tl.fromTo('[data-s="6"] .fade',{opacity:0,y:20},{opacity:1,y:0,duration:.5},18.6);
+    tl.to('[data-s="6"]',{z:480,scale:1.25,opacity:0,filter:'blur(12px)',duration:.45,ease:'power2.in'},19.7);
+
+    // ── S7: chips blast in from center, elastic ──
+    flash(tl,20.05,'#a05cff');
+    tl.add(()=>show(7),20.0);
+    tl.from('[data-s="7"] .kicker',{opacity:0,y:20,duration:.4},20.05);
+    tl.from('[data-s="7"] .ch2',{scale:0,rotation:()=>gsap.utils.random(-25,25),opacity:0,stagger:0.08,duration:.6,ease:'elastic.out(1,.6)'},20.2);
+    tl.to('[data-s="7"]',{scale:.85,opacity:0,filter:'blur(10px)',duration:.4,ease:'power2.in'},23.4);
+
+    // ── S8: trust line scale-in ──
+    wipe(tl,23.55);
+    tl.add(()=>show(8),23.7);
+    tl.from('[data-s="8"] .hl',{scale:.6,opacity:0,filter:'blur(8px)',duration:.6,ease:'back.out(1.6)'},23.75);
+    tl.fromTo('[data-s="8"] .fade',{opacity:0,y:20},{opacity:1,y:0,duration:.5},24.2);
+    tl.to('[data-s="8"]',{scale:1.3,opacity:0,filter:'blur(10px)',duration:.4,ease:'power2.in'},26.0);
+
+    // ── S9: CTA punch + hold, then whip-pan out to loop ──
+    flash(tl,26.3,'#fff');
+    tl.add(()=>show(9),26.3);
+    tl.from('#cta',{y:60,opacity:0,duration:.6,ease:'back.out(1.6)'},26.35);
+    tl.from('#ctaBtn',{scale:.5,opacity:0,duration:.6,ease:'elastic.out(1,.6)'},26.6);
+    tl.from('#ctaUrl',{opacity:0,y:20,duration:.5},26.9);
+    tl.to('.stage > .scene, .bar',{},29.4); // hold
+    tl.to('[data-s="9"]',{xPercent:-60,opacity:0,filter:'blur(14px)',duration:.6,ease:'power3.in'},29.4);
+
+    return tl;
+  }
+
+  let tl=build();
+  $('#replay').addEventListener('click',()=>{if(tl)tl.restart();});
+})();
+</script>
+</body>
+</html>
