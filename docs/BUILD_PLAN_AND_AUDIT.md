@@ -203,6 +203,19 @@ cited rules. Build the spine before the product on top of it.
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-28 — **Final audit + remediation + EU parity + docs.** Ran a read-only Phase A–F audit
+  (`AUDIT_REPORT.md`), then applied approved fixes: copilot draft "DRAFT—REQUIRES LEGAL REVIEW"
+  marker, disclaimers on SaaS scan-report HTML, dashboard.py readiness reframe, verification
+  surfaced (public + SaaS), DATA_HANDLING covers all flows + TERMS_NOTES DPDP-notice checklist,
+  auth on /agent/results+/heartbeat, env-driven server/ key path, untracked .env/dist/.coverage,
+  dropped unused deps. Built: DPDP Rule 8(1) class-erasure rule; **EU AI Act scored end-to-end**
+  (EU manifest role-gating + 16 posture questions + predicates; honest "unknown=gap", gated behind
+  legal review); named **DPO/engineer** roles + per-gap **assignment & sign-off** (`gaps_api.py`),
+  audited role-changes/exports, rulepack+governance in the evidence pack; EU added to the public
+  tool (regulation selector). Marketing: 30s product teaser (`landing-page/public/teaser.html`) +
+  homepage YouTube embed + "Watch" nav. Docs: README refreshed + new `docs/CAPABILITIES.md`
+  one-pager. Full suite **261 passed**; landing TSX clean.
+
 - 2026-06-27 — **Phase 8 done — COMPLETE. 🎉 ALL PHASES 0–8 DONE.** Regulator-ready evidence
   exports + multi-team roles. 8.1 `saas/app/rbac.py` (pure): roles viewer<member<admin<owner,
   `ACTION_MIN_ROLE` matrix, `can()` fail-closed. 8.2 `saas/app/teams.py`: `teams`/`team_members`
