@@ -465,6 +465,42 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PRODUCT TEASER VIDEO */}
+      <section className="content-section" id="teaser">
+        <div className="container" style={{ textAlign: "center" }}>
+          <span className="label-caption">See it in 30 seconds</span>
+          <h2 style={{ marginTop: "8px", fontSize: "clamp(24px, 3vw, 38px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+            Readiness, not guesswork
+          </h2>
+          <p className="body-text" style={{ maxWidth: 640, margin: "10px auto 28px" }}>
+            A 30-second look at how CompliSense-AI turns DPDP &amp; EU AI Act obligations into a
+            clear, cited readiness picture.
+          </p>
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: 960,
+              margin: "0 auto",
+              aspectRatio: "16 / 9",
+              borderRadius: 16,
+              overflow: "hidden",
+              border: "1px solid #1B3A5C",
+              boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
+            }}
+          >
+            <iframe
+              src="https://www.youtube.com/embed/4wWrPl-T2C0?rel=0&modestbranding=1"
+              title="CompliSense-AI — product teaser"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* LOGO / SOCIAL PROOF BAR */}
       <section className="logo-bar">
         <div className="container" style={{ textAlign: "center" }}>
