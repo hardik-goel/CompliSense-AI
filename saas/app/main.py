@@ -88,6 +88,12 @@ app.include_router(regwatch_router)
 from saas.app.copilot_api import router as copilot_router  # noqa: E402
 app.include_router(copilot_router)
 
+from saas.app.teams import router as teams_router  # noqa: E402
+app.include_router(teams_router)
+
+from saas.app.evidence_api import router as evidence_router  # noqa: E402
+app.include_router(evidence_router)
+
 
 @app.on_event("startup")
 async def startup_event():

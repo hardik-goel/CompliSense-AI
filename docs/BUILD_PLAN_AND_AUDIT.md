@@ -190,12 +190,32 @@ cited rules. Build the spine before the product on top of it.
     consent-gated, sends only non-PII facts (discovered_manifest) + rule, audited, `data_sent`
     transparency; LLM failure → 502.
   - [x] 7.3 UI — per-gap Explain/Draft buttons + consent in the readiness panel (`connectors.html`).
-- [ ] **Phase 8** Regulator-ready evidence exports + multi-team roles
+- [x] **Phase 8** Regulator-ready evidence exports + multi-team roles
+  - [x] 8.1 RBAC core (`saas/app/rbac.py`) — viewer/member/admin/owner + action→min-role matrix (fail-closed).
+  - [x] 8.2 Teams API (`saas/app/teams.py`) — create/list teams, invite (active|pending) +
+    role management, attach project to team, `resolve_project_role` + `get_project_with_role`.
+  - [x] 8.3 Evidence assembler (`compliance/evidence.py`) — grounded pack: readiness+citations,
+    posture history, alerts, discovery/PII summaries, confirmed manifest, disclaimer (summaries only).
+  - [x] 8.4 Evidence export API (`saas/app/evidence_api.py`) — `GET /projects/{id}/evidence`
+    (JSON) + `/evidence/export.html` (download), role-gated (viewer+); "Export evidence" link.
 
 ---
 
 ## C. PROGRESS LOG (append one line per completed feature)
 
+- 2026-06-27 — **Phase 8 done — COMPLETE. 🎉 ALL PHASES 0–8 DONE.** Regulator-ready evidence
+  exports + multi-team roles. 8.1 `saas/app/rbac.py` (pure): roles viewer<member<admin<owner,
+  `ACTION_MIN_ROLE` matrix, `can()` fail-closed. 8.2 `saas/app/teams.py`: `teams`/`team_members`
+  collections; create/list teams, invite (resolves email→user or pending) + update/remove role
+  (manage_members-gated, can't remove owner), attach project to team; `resolve_project_role`
+  (owner via user_id, else team role) + `get_project_with_role(project,user,action)` (404 no-leak
+  for non-members). 8.3 `compliance/evidence.py` (pure): `build_evidence_pack` → grounded
+  snapshot (readiness+gaps with citations, posture history, open alerts, connector/PII summaries,
+  confirmed manifest, deduped citations, disclaimer; summaries only — no creds/raw/PII values).
+  8.4 `saas/app/evidence_api.py`: `GET /projects/{id}/evidence` (JSON) + `/evidence/export.html`
+  (downloadable doc), role-gated viewer+; computes readiness from merged manifest. Indexes +
+  routers wired; "Export evidence" link on connectors page. Tests: +19 (test_rbac 4, test_teams 7,
+  test_evidence 5, test_evidence_api 3). Full suite: **244 passed, 0 failed.**
 - 2026-06-27 — **Phase 7 done — COMPLETE (LLM Remediation Copilot).** Grounded, read-only,
   consent-gated. 7.1 `compliance/copilot.py`: `SYSTEM_PROMPT` enforces answer-only-from-context
   + readiness framing + not-legal-advice + may-draft-text-never-mutate-systems + says-so-when-
