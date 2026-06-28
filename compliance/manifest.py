@@ -222,6 +222,118 @@ QUESTIONS: List[Dict[str, Any]] = [
         "help": "Some EU AI Act duties carry open-source carve-outs (scope subject to legal review).",
         "optional": True,
     },
+    {
+        "id": "avoids_prohibited_practices",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you confirm your AI does NOT use any prohibited practice (Art. 5: manipulative/exploitative techniques, social scoring, untargeted scraping for facial DBs, etc.)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_ai_literacy_program",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you have an AI-literacy programme for staff operating AI systems (Art. 4)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_art50_transparency",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you disclose AI interaction and label AI-generated/deepfake content where required (Art. 50)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_risk_management_system",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you operate a documented risk-management system for the AI system (Art. 9)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_data_governance",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you have documented training/validation/test data governance (Art. 10)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_technical_documentation",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you maintain up-to-date technical documentation for the AI system (Art. 11)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_recordkeeping_logs",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Does the system keep automatic logs / records over its lifecycle (Art. 18 & 20)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_transparency_info",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you provide instructions-for-use / transparency information to deployers (Art. 13)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_human_oversight",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Have you designed effective human-oversight measures (Art. 14)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_accuracy_robustness",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you have accuracy, robustness and cybersecurity measures (Art. 15)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_quality_management_system",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you operate a quality-management system (Art. 16)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_risk_classification",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Have you classified whether the system is high-risk per Art. 6 / Annex III?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_conformity_assessment",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Have you completed (or planned) conformity assessment + CE marking (Art. 43)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "registered_eu_database",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Is the system registered in the EU database where required (Art. 49)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_postmarket_monitoring",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you operate a post-market monitoring system (Art. 72)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_gpai_documentation",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "(GPAI providers) Do you keep model documentation, a copyright policy and a training-content summary (Arts. 53-55)?",
+        "type": "bool",
+        "optional": True,
+    },
 ]
 
 QUESTION_IDS = {q["id"] for q in QUESTIONS}
@@ -253,11 +365,28 @@ class Manifest:
     has_grievance_contact: bool = False
     grievance_email: Optional[str] = None
     processors_listed: bool = False
-    # EU AI Act facts
+    # EU AI Act facts (applicability)
     has_ai_system: bool = False
     eu_role: str = "none"
     provides_to_eu: bool = False
     is_open_source: bool = False
+    # EU AI Act posture (readiness)
+    avoids_prohibited_practices: bool = False
+    has_ai_literacy_program: bool = False
+    has_art50_transparency: bool = False
+    has_risk_management_system: bool = False
+    has_data_governance: bool = False
+    has_technical_documentation: bool = False
+    has_recordkeeping_logs: bool = False
+    has_transparency_info: bool = False
+    has_human_oversight: bool = False
+    has_accuracy_robustness: bool = False
+    has_quality_management_system: bool = False
+    has_risk_classification: bool = False
+    has_conformity_assessment: bool = False
+    registered_eu_database: bool = False
+    has_postmarket_monitoring: bool = False
+    has_gpai_documentation: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

@@ -56,15 +56,20 @@ def test_unknown_pack_rejected():
         assert e.status_code == 400
 
 
-def test_eu_pack_returns_obligations_not_a_fake_score():
-    # EU AI Act: no numeric score (would be fake) — obligations surfaced instead.
-    body = _run(score_endpoint(ScoreRequest(
-        answers={"has_ai_system": True, "eu_role": "provider", "provides_to_eu": True},
-        pack_id="euai_extended_v1"), user=None))
-    assert body["jurisdiction"] == "EU_AI_ACT"
-    assert body["scoring_available"] is False
-    assert body["readiness_score"] is None
-    assert body["obligations_identified"] >= 1  # eu_provider rules now apply
+def test_eu_pack_scores_posture():
+    # EU AI Act now has posture predicates -> a real (manifest-declared) score.
+    base = {"has_ai_system": True, "eu_role": "provider", "provides_to_eu": True}
+    empty = _run(score_endpoint(ScoreRequest(answers=base, pack_id="euai_extended_v1"), user=None))
+    assert empty["jurisdiction"] == "EU_AI_ACT" and empty["scoring_available"] is True
+    assert isinstance(empty["readiness_score"], int)
+    assert empty["obligations_identified"] >= 1
+    # Declaring posture raises the score (unknown -> ready).
+    strong = _run(score_endpoint(ScoreRequest(answers={
+        **base, "has_risk_management_system": True, "has_human_oversight": True,
+        "has_technical_documentation": True, "has_quality_management_system": True,
+        "avoids_prohibited_practices": True, "has_ai_literacy_program": True,
+    }, pack_id="euai_extended_v1"), user=None))
+    assert strong["readiness_score"] > empty["readiness_score"]
 
 
 def test_score_is_honest_zero_for_empty_posture():

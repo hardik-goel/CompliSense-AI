@@ -95,3 +95,10 @@
 - **New rule `DPDP-SEC8-RETENTION-CLASS-001`** (Rule 8(1) Third-Schedule 3-year inactivity erasure,
   gated to `third_schedule_class_only`). Cited to DPDP Rules 2025 Rule 8(1) + Third Schedule;
   verify the erasure-period framing against primary text.
+
+- **EU posture scoring is now LIVE (self-attested).** 16 EU posture questions were added to the
+  manifest and mapped to EU rule predicates (`compliance/readiness.py`), so EU packs now return a
+  real readiness percentage (same "unknown = gap" honesty as DPDP). Caveats for counsel: the score
+  is **manifest self-attestation** (not independently verified), the rule→question mapping is an
+  engineering interpretation, and all EU rules remain `secondary_source_only` pending primary-text
+  verification. The score is gated by the EU disclaimer ("PENDING professional legal review").
