@@ -1234,6 +1234,37 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* RESOURCES TEASER */}
+      <section className="content-section">
+        <div className="container">
+          <div className="section-header" style={{ textAlign: "center" }} data-animate>
+            <p className="label-caption">RESOURCES</p>
+            <h2 style={{ margin: "12px 0" }}>Guides, without the consulting markup.</h2>
+            <p className="body-text">Practical walkthroughs of the frameworks we build for.</p>
+          </div>
+          <div className="resource-grid" data-animate>
+            <a href="/resources/dpdp-readiness-guide" className="resource-card">
+              <div className="resource-card-tags"><span className="resource-tag">DPDP</span></div>
+              <h3 className="resource-card-title">DPDP Readiness: A Practical Guide</h3>
+              <p className="resource-card-desc">What India&apos;s DPDP Act requires, and a step-by-step readiness path for lean teams.</p>
+            </a>
+            <a href="/resources/eu-ai-act-checklist" className="resource-card">
+              <div className="resource-card-tags"><span className="resource-tag">EU AI Act</span></div>
+              <h3 className="resource-card-title">The EU AI Act Compliance Checklist</h3>
+              <p className="resource-card-desc">Classify your AI systems by risk tier and see the obligations each one triggers.</p>
+            </a>
+            <a href="/resources/dpdp-vs-gdpr" className="resource-card">
+              <div className="resource-card-tags"><span className="resource-tag">Comparison</span></div>
+              <h3 className="resource-card-title">DPDP vs GDPR</h3>
+              <p className="resource-card-desc">How much of your GDPR programme carries over to DPDP — and where the gaps are.</p>
+            </a>
+          </div>
+          <div style={{ textAlign: "center", marginTop: "1.5rem" }} data-animate>
+            <a href="/resources" className="btn-ghost">View all resources &rarr;</a>
+          </div>
+        </div>
+      </section>
+
       {/* PRICING SECTION */}
       <section className="content-section" id="pricing">
         <div className="container">
