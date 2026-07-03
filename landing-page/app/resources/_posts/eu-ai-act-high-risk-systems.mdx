@@ -1,0 +1,59 @@
+---
+title: "EU AI Act High-Risk Systems: Which AI Falls In, and What It Demands"
+description: "The high-risk tier carries almost all of the EU AI Act's obligations. Which systems land there, the two ways a system qualifies, and the duties that follow."
+date: "2026-07-01"
+updated: "2026-07-03"
+author: "CompliSense-AI"
+tags: ["EU AI Act", "High-Risk", "AI Governance", "Risk"]
+published: true
+---
+
+Under the EU AI Act, almost all of the substantive obligations attach to one tier: **high-risk**. Get the classification right and you know your workload. Get it wrong — by assuming a system is low-risk when it isn't — and you're operating a regulated system without the controls the law requires. This guide covers which systems fall into high-risk and what that triggers.
+
+## The two routes into high-risk
+
+A system becomes high-risk one of two ways.
+
+**Route 1 — Safety component of a regulated product.** If the AI is a safety component of a product already covered by EU product-safety legislation (or is itself such a product) and that product requires third-party conformity assessment, the AI is high-risk. Think AI in medical devices, machinery, vehicles, or similar regulated hardware.
+
+**Route 2 — Listed use case.** The Act names specific areas where AI use is treated as high-risk because of its impact on people's rights and life chances. These include:
+
+- **Biometrics** — remote biometric identification and certain biometric categorisation.
+- **Critical infrastructure** — AI as a safety component in the management of things like utilities and traffic.
+- **Education** — systems that determine access, admissions, or evaluate learning outcomes.
+- **Employment** — recruitment, screening, promotion, and termination decisions.
+- **Essential services** — access to public benefits, credit scoring and creditworthiness, and risk pricing in life and health insurance.
+- **Law enforcement** — certain uses affecting individuals' rights.
+- **Migration, asylum, and border control** — specified uses.
+- **Administration of justice and democratic processes** — systems assisting judicial decisions and similar.
+
+If your system operates in one of these areas and materially influences the outcome, treat it as high-risk unless you have a clear, documented reason it qualifies for a narrow exception.
+
+## What high-risk actually demands
+
+Once a system is high-risk, a stack of obligations applies. Each is an evidence requirement — you must be able to show it, not just assert it:
+
+- **Risk management system** across the lifecycle — continuous, not one-time.
+- **Data governance** — training, validation, and testing data that's relevant, representative, and checked for bias.
+- **Technical documentation** — detailed and kept current as the system changes.
+- **Automatic logging** — event records enabling traceability.
+- **Transparency and instructions for deployers** — so operators understand capabilities and limits.
+- **Human oversight** — designed in, so a person can monitor, interpret, and override.
+- **Accuracy, robustness, cybersecurity** — appropriate and maintained.
+- **Conformity assessment** before market, plus **registration** in the EU database, and a **quality management system** for providers.
+
+## The classification trap
+
+The most expensive mistake is misclassifying to avoid the workload — deciding a hiring tool "just ranks" candidates rather than screens them, or that a credit model is "only advisory." Regulators look at real-world function, not the label. A system that materially shapes a decision about a person in a listed area is high-risk regardless of how it's described internally.
+
+The second trap is drift. A system classified correctly at launch can move as its purpose expands — a tool built for one use gets pointed at a regulated one. Classification isn't a one-time stamp; it needs a trigger to re-check when purpose or data changes.
+
+## The self-check
+
+- Does any system operate in a listed high-risk area, or as a safety component of a regulated product?
+- For each high-risk system, is its technical documentation current and its human oversight real?
+- What triggers a re-classification when a system's use changes?
+
+## Where CompliSense-AI fits
+
+The hard part isn't the list — it's keeping each system correctly classified and evidenced as it evolves. CompliSense-AI maintains the AI inventory with each system's risk classification, ties high-risk systems to their documentation, logs, and owner, and flags when a change should trigger re-assessment. Start with the [EU AI Act checklist](/resources/eu-ai-act-checklist), or see the management-system angle in [ISO 42001 explained](/resources/iso-42001-explained).

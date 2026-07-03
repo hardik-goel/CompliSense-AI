@@ -1,0 +1,55 @@
+---
+title: "The DPDP Consent Manager: What It Is and Why It Matters"
+description: "India's DPDP Act introduces a Consent Manager — a registered intermediary for giving, managing, and withdrawing consent. What it is, who needs to care, and how to prepare."
+date: "2026-07-02"
+updated: "2026-07-03"
+author: "CompliSense-AI"
+tags: ["DPDP", "Consent Manager", "Consent", "India"]
+published: true
+---
+
+One of the more distinctive features of India's Digital Personal Data Protection Act (DPDP) has no direct equivalent in GDPR: the **Consent Manager**. If your DPDP planning is modelled on European frameworks, this is a concept you can't copy across — it's genuinely new, and understanding it early saves rework later.
+
+## What a Consent Manager is
+
+A Consent Manager is a registered intermediary — accountable to the Data Protection Board of India — that acts as a single point through which a Data Principal can **give, review, manage, and withdraw** their consent across the different Data Fiduciaries they interact with.
+
+Think of it as a consent dashboard that sits between individuals and the organisations processing their data. Instead of each person tracking dozens of separate consent decisions across dozens of services, the Consent Manager gives them one interoperable, auditable place to see and control those decisions.
+
+Two properties matter most:
+
+- **It is registered and accountable.** A Consent Manager isn't just any consent tool — it's an entity registered with the Board, subject to conditions on how it operates.
+- **It is interoperable and transparent.** It's designed so consent is portable and legible to the individual, not locked inside one company's system.
+
+## Why DPDP includes it
+
+DPDP places heavy weight on consent as a basis for processing — and consent is only meaningful if withdrawing it is as easy as giving it. In practice, that's where many consent regimes fail: granting is a single tap, but withdrawal is buried, per-service, and exhausting.
+
+The Consent Manager is the Act's structural answer. By providing a neutral, standardised layer for consent, it aims to make withdrawal and review genuinely practical, shifting real control toward the individual rather than leaving it nominal.
+
+## What this means for you as a Data Fiduciary
+
+If you rely on consent as your basis for processing personal data, the Consent Manager framework affects how that consent is obtained and honoured:
+
+- **Consent has to be machine-readable and revocable in a standard way.** Your systems need to accept consent signals — including withdrawals — and act on them, not just record a one-time checkbox.
+- **Withdrawal must actually propagate.** When consent is withdrawn through a Consent Manager, your processing based on that consent has to stop. That requires an operational link between the consent state and what your systems are permitted to do.
+- **You need an auditable record.** For each processing activity based on consent, you should be able to show the consent existed, what it covered, and its current status.
+
+The practical shift is from treating consent as a static record captured at signup to treating it as a **live state** that can change at any time and must be respected when it does.
+
+## How to prepare now
+
+1. **Map where you rely on consent.** For each processing purpose, know whether consent is your basis — and if so, where that consent currently lives.
+2. **Make consent state actionable.** Ensure a withdrawal can flow through to stop the relevant processing, not just update a field nobody reads.
+3. **Keep consent auditable.** Maintain a defensible record of consent granted, scope, and current status per Data Principal.
+4. **Watch the operational detail.** Consent Manager registration and interoperability specifics are set through the Act's rules and Board guidance — build your consent architecture to plug into a standard layer rather than assuming your own bespoke flow is sufficient.
+
+## The self-check
+
+- Which of your processing purposes rely on consent as their basis?
+- If a person withdrew consent today, would your systems actually stop the processing — automatically?
+- Can you produce, per individual, a record of what they consented to and its current state?
+
+## Where CompliSense-AI fits
+
+Consent stops being a checkbox and becomes a live state you must honour continuously — that's an operational problem, not a legal one. CompliSense-AI keeps consent tied to the processing it authorises, so a withdrawal maps to the activities that must stop, and the record stays auditable. Pair this with the [DPDP readiness guide](/resources/dpdp-readiness-guide) for the full picture, and check your standing with the free [readiness tool](/readiness).
