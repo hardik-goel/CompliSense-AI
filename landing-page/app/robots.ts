@@ -6,6 +6,9 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://complisenseai.com/sitemap.xml",
+    sitemap: [
+      "https://complisenseai.com/sitemap.xml",
+      "https://complisenseai.com/resources/feed.xml",
+    ],
   };
 }
