@@ -2582,3 +2582,82 @@ p.body-text, .faq-item p {
 @media (max-width: 600px) {
   .fc-tiers { display: none; }
 }
+
+/* ============================================================
+   RESOURCES — listing grid + article prose
+   ============================================================ */
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  padding: 2.5rem 0 5rem;
+}
+
+.resource-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+.resource-card:hover {
+  border-color: var(--border-bright);
+  background: var(--surface-elevated);
+  transform: translateY(-2px);
+}
+
+.resource-card-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.resource-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent-hover);
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid var(--border-bright);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+.resource-card-title { font-size: 1.25rem; line-height: 1.3; margin: 0; color: var(--text-primary); }
+.resource-card-desc { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.55; margin: 0; }
+.resource-card-meta {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: auto; padding-top: 0.5rem;
+  font-size: 0.82rem; color: var(--text-muted);
+}
+
+/* Article */
+.resource-article { max-width: 760px; padding-top: 2.5rem; padding-bottom: 5rem; }
+.resource-crumbs {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;
+}
+.resource-crumbs a { color: var(--text-secondary); }
+.resource-crumbs a:hover { color: var(--accent-hover); }
+
+.resource-article-head { border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; margin-bottom: 2rem; }
+.resource-article-head h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.2; margin: 1rem 0 1rem; }
+
+.prose { color: var(--text-secondary); font-size: 1.05rem; line-height: 1.75; }
+.prose h2 { color: var(--text-primary); font-size: 1.55rem; line-height: 1.3; margin: 2.5rem 0 1rem; }
+.prose h3 { color: var(--text-primary); font-size: 1.2rem; margin: 2rem 0 0.75rem; }
+.prose p { margin: 0 0 1.25rem; }
+.prose ul, .prose ol { margin: 0 0 1.5rem; padding-left: 1.4rem; }
+.prose li { margin-bottom: 0.6rem; }
+.prose strong { color: var(--text-primary); font-weight: 600; }
+.prose a { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 2px; }
+.prose a:hover { color: var(--accent); }
+.prose code {
+  background: var(--surface-elevated); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.1rem 0.4rem; font-size: 0.9em;
+}
+
+.resource-article-cta {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1rem;
+  margin-top: 3.5rem; padding: 2rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+}
+.resource-article-cta p { margin: 0; color: var(--text-primary); font-weight: 500; }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import ProductShowcase from "./components/ProductShowcase";
@@ -10,6 +11,62 @@ import { AiGovernanceViz, RiskViz, PolicyViz, AuditViz, VendorViz, DpdpViz } fro
 
 // WebGL hero centerpiece — client-only, lazy-loaded so it never blocks first paint
 const ParticleSphere = dynamic(() => import("./components/ParticleSphere"), { ssr: false });
+
+// FAQ structured data — mirrors the visible "Common questions." section verbatim (Google requires match)
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What does CompliSense-AI replace?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "It replaces fragmented compliance operations spread across spreadsheets, shared drives, email threads, and consulting-heavy manual processes.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Who is this built for?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "The platform is designed for startups, SMBs, and mid-market teams that need an operational compliance system without building an internal platform from scratch.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is this a SaaS dashboard or do I need to install something?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Both. The dashboard is fully cloud-hosted at app.complisenseai.com. The local agent (optional) runs on your machine to collect evidence from your file system — raw data never leaves your environment.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How is CompliSense-AI different from a compliance consultant?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Consultants leave when the retainer ends. CompliSense-AI is an operational system — it runs continuously, tracks changes, maintains evidence, and keeps your programme current between audits.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Which regulations do you support today?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "DPDP India (core and extended), EU AI Act (core and extended). ISO 42001 alignment is on the roadmap. Adding a new market takes a new rulepack, not a product rebuild.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How does the platform connect to the live product?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "The marketing site lives at complisenseai.com. The customer application is accessible via the Launch App button above, and API traffic is isolated for security.",
+      },
+    },
+  ],
+};
 import { 
   ShieldCheck, 
   Cpu, 
@@ -205,6 +262,9 @@ export default function HomePage() {
 
   return (
     <main className="site-shell">
+      <Script id="faq-schema" type="application/ld+json">
+        {JSON.stringify(faqSchema)}
+      </Script>
       {/* ANNOUNCEMENT BANNER */}
       {showBanner && (
         <div className="announcement-banner">
@@ -226,6 +286,7 @@ export default function HomePage() {
             <a href="#solutions">Solutions</a>
             <a href="/showcase">Showcase</a>
             <a href="/readiness">Readiness Score</a>
+            <a href="/resources">Resources</a>
             <a href="#pricing">Pricing</a>
             <a href="#about">About</a>
             <Link href="/readiness">DPDP Score</Link>
@@ -295,6 +356,10 @@ export default function HomePage() {
               <a href="/readiness" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
                 DPDP Readiness Score
+              </a>
+              <a href="/resources" onClick={() => setMobileMenuOpen(false)}
+                 style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
+                Resources
               </a>
               <a href="#contact" onClick={() => setMobileMenuOpen(false)}
                  style={{padding:'12px 0', color:'#94A3B8', fontSize:'15px', borderBottom:'1px solid #1B3A5C', textDecoration:'none'}}>
@@ -1487,6 +1552,7 @@ export default function HomePage() {
               <a href="#solutions">Solutions</a>
               <a href="/readiness">Free Readiness Score</a>
               <a href="/showcase">Showcase</a>
+              <a href="/resources">Resources</a>
               <a href="#impact">Impact</a>
               <a href="/changelog" style={{ fontSize: "13px", color: "#64748B", textDecoration: "none" }}>Changelog</a>
               <a href={appUrl} target="_blank" rel="noopener noreferrer">Launch App</a>

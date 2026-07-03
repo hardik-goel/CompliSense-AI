@@ -65,17 +65,43 @@ export const metadata: Metadata = {
 
 const organizationSchema = {
   "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${siteUrl}/#organization`,
+  name: "CompliSense-AI",
+  url: siteUrl,
+  logo: `${siteUrl}/logo.png`,
+  description,
+  email: "support@complisenseai.com",
+  sameAs: [] as string[],
+};
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": `${siteUrl}/#website`,
+  name: "CompliSense-AI",
+  url: siteUrl,
+  description,
+  publisher: { "@id": `${siteUrl}/#organization` },
+  inLanguage: "en",
+};
+
+const softwareSchema = {
+  "@context": "https://schema.org",
   "@type": "SoftwareApplication",
+  "@id": `${siteUrl}/#software`,
   name: "CompliSense-AI",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   url: siteUrl,
   description,
-  provider: {
-    "@type": "Organization",
-    name: "CompliSense-AI",
-    url: siteUrl,
-    email: "support@complisenseai.com",
+  publisher: { "@id": `${siteUrl}/#organization` },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "GBP",
+    description: "Free tier — full EU AI Act & DPDP core, 10 scans/month, no credit card.",
+    url: `${siteUrl}/#pricing`,
   },
   featureList: [
     "DPDP compliance automation",
@@ -93,6 +119,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Script id="organization-schema" type="application/ld+json">
           {JSON.stringify(organizationSchema)}
+        </Script>
+        <Script id="website-schema" type="application/ld+json">
+          {JSON.stringify(websiteSchema)}
+        </Script>
+        <Script id="software-schema" type="application/ld+json">
+          {JSON.stringify(softwareSchema)}
         </Script>
         {children}
       </body>
