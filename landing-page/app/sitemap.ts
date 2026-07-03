@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllPosts } from "./resources/lib/posts";
+import { getAllPosts, getAllTags } from "./resources/lib/posts";
 
 const siteUrl = "https://complisenseai.com";
 
@@ -25,5 +25,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...postRoutes];
+  const tagRoutes: MetadataRoute.Sitemap = getAllTags().map((t) => ({
+    url: `${siteUrl}/resources/tags/${t.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.5,
+  }));
+
+  return [...staticRoutes, ...postRoutes, ...tagRoutes];
 }

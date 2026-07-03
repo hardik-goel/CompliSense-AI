@@ -1,42 +1,45 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
-import { getAllPosts, getAllTags } from "./lib/posts";
+import { notFound } from "next/navigation";
+import { getAllTags, getPostsByTag } from "../../lib/posts";
 
 const siteUrl = "https://complisenseai.com";
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.complisenseai.com";
 
-const title = "Resources — Compliance Guides for DPDP & the EU AI Act";
-const description =
-  "Practical, no-fluff guides on DPDP readiness, EU AI Act compliance, and building operational compliance programmes for startups and mid-market teams.";
+export function generateStaticParams() {
+  return getAllTags().map((t) => ({ tag: t.slug }));
+}
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: {
-    canonical: `${siteUrl}/resources`,
-    types: { "application/rss+xml": `${siteUrl}/resources/feed.xml` },
-  },
-  openGraph: {
+export function generateMetadata({ params }: { params: { tag: string } }): Metadata {
+  const result = getPostsByTag(params.tag);
+  if (!result) return { title: "Not found" };
+
+  const title = `${result.tag} — CompliSense-AI Resources`;
+  const description = `Compliance guides tagged ${result.tag}: ${result.posts
+    .map((p) => p.title)
+    .slice(0, 3)
+    .join("; ")}.`;
+  const url = `${siteUrl}/resources/tags/${params.tag}`;
+
+  return {
     title,
     description,
-    url: `${siteUrl}/resources`,
-    siteName: "CompliSense-AI",
-    type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "CompliSense-AI Resources" }],
-  },
-  twitter: { card: "summary_large_image", title, description, images: ["/twitter-image"] },
-};
+    alternates: { canonical: url },
+    openGraph: { title, description, url, siteName: "CompliSense-AI", type: "website" },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 function formatDate(iso: string): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
 }
 
-export default function ResourcesPage() {
-  const posts = getAllPosts();
-  const tags = getAllTags();
+export default function TagPage({ params }: { params: { tag: string } }) {
+  const result = getPostsByTag(params.tag);
+  if (!result) notFound();
+  const { tag, posts } = result;
 
   const breadcrumbSchema = {
     "@context": "https://schema.org",
@@ -44,12 +47,13 @@ export default function ResourcesPage() {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
       { "@type": "ListItem", position: 2, name: "Resources", item: `${siteUrl}/resources` },
+      { "@type": "ListItem", position: 3, name: tag, item: `${siteUrl}/resources/tags/${params.tag}` },
     ],
   };
 
   return (
     <main className="legal-page">
-      <Script id="resources-breadcrumb-schema" type="application/ld+json">
+      <Script id="tag-breadcrumb-schema" type="application/ld+json">
         {JSON.stringify(breadcrumbSchema)}
       </Script>
 
@@ -71,36 +75,27 @@ export default function ResourcesPage() {
 
       <section className="legal-hero">
         <div className="container">
-          <p className="section-kicker">Resources</p>
-          <h1>Compliance guides, without the consulting markup.</h1>
+          <p className="section-kicker">
+            <Link href="/resources" style={{ color: "inherit" }}>
+              Resources
+            </Link>{" "}
+            / Tag
+          </p>
+          <h1>{tag}</h1>
           <p className="legal-subtitle">
-            Practical walkthroughs of the frameworks we build for — DPDP, the EU AI Act, and the operational habits
-            that keep a compliance programme current between audits.
+            {posts.length} {posts.length === 1 ? "guide" : "guides"} tagged &ldquo;{tag}&rdquo;.
           </p>
         </div>
       </section>
 
-      {tags.length > 0 && (
-        <section className="container">
-          <div className="resource-tagcloud">
-            {tags.map((t) => (
-              <Link key={t.slug} href={`/resources/tags/${t.slug}`} className="resource-tag resource-tag-link">
-                {t.tag} <span className="resource-tag-count">{t.count}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
       <section className="container">
         <div className="resource-grid">
-          {posts.length === 0 && <p className="legal-subtitle">New guides are on the way.</p>}
           {posts.map((post) => (
             <Link key={post.slug} href={`/resources/${post.slug}`} className="resource-card">
               <div className="resource-card-tags">
-                {post.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="resource-tag">
-                    {tag}
+                {post.tags.slice(0, 3).map((t) => (
+                  <span key={t} className="resource-tag">
+                    {t}
                   </span>
                 ))}
               </div>

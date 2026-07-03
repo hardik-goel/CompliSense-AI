@@ -3,7 +3,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import { getAllSlugs, getPost } from "../lib/posts";
+import { getAllSlugs, getPost, tagSlug } from "../lib/posts";
 
 const siteUrl = "https://complisenseai.com";
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.complisenseai.com";
@@ -33,9 +33,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       modifiedTime: post.updated ?? post.date,
       authors: [post.author],
       tags: post.tags,
-      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: post.title }],
+      // og:image comes from the colocated opengraph-image.tsx (per-post) via file convention.
     },
-    twitter: { card: "summary_large_image", title: post.title, description: post.description, images: ["/twitter-image"] },
+    twitter: { card: "summary_large_image", title: post.title, description: post.description },
   };
 }
 
@@ -109,9 +109,9 @@ export default function ResourcePost({ params }: { params: { slug: string } }) {
         <header className="resource-article-head">
           <div className="resource-card-tags">
             {post.tags.map((tag) => (
-              <span key={tag} className="resource-tag">
+              <Link key={tag} href={`/resources/tags/${tagSlug(tag)}`} className="resource-tag resource-tag-link">
                 {tag}
-              </span>
+              </Link>
             ))}
           </div>
           <h1>{post.title}</h1>

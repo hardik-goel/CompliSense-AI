@@ -71,3 +71,38 @@ export function getPost(slug: string): Post | null {
   const post = parseFile(file);
   return post.published ? post : null;
 }
+
+/** URL-safe slug for a tag label, e.g. "EU AI Act" -> "eu-ai-act". */
+export function tagSlug(tag: string): string {
+  return tag
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export interface TagInfo {
+  tag: string; // display label
+  slug: string; // url slug
+  count: number;
+}
+
+/** All tags across published posts, with post counts, sorted by count desc. */
+export function getAllTags(): TagInfo[] {
+  const byLabel = new Map<string, number>();
+  for (const post of getAllPosts()) {
+    for (const tag of post.tags) {
+      byLabel.set(tag, (byLabel.get(tag) ?? 0) + 1);
+    }
+  }
+  return Array.from(byLabel.entries())
+    .map(([tag, count]) => ({ tag, slug: tagSlug(tag), count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+/** Published posts carrying a tag (matched by slug), newest first. Returns label + posts. */
+export function getPostsByTag(slug: string): { tag: string; posts: Post[] } | null {
+  const posts = getAllPosts().filter((p) => p.tags.some((t) => tagSlug(t) === slug));
+  if (posts.length === 0) return null;
+  const tag = posts[0].tags.find((t) => tagSlug(t) === slug) ?? slug;
+  return { tag, posts };
+}
