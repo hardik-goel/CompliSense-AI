@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Script from "next/script";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import ProductShowcase from "./components/ProductShowcase";
@@ -67,8 +66,24 @@ const faqSchema = {
     },
   ],
 };
-import { 
-  ShieldCheck, 
+
+// VideoObject for the homepage teaser — makes the embedded YouTube video
+// eligible for a video rich result in Google Search.
+const videoSchema = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: "CompliSense-AI — Product Teaser",
+  description:
+    "A 30-second look at how CompliSense-AI turns DPDP and EU AI Act obligations into a clear, cited readiness picture.",
+  thumbnailUrl: ["https://i.ytimg.com/vi/4wWrPl-T2C0/maxresdefault.jpg"],
+  uploadDate: "2026-06-28",
+  duration: "PT30S",
+  embedUrl: "https://www.youtube.com/embed/4wWrPl-T2C0",
+  contentUrl: "https://www.youtube.com/watch?v=4wWrPl-T2C0",
+  publisher: { "@id": "https://complisenseai.com/#organization" },
+};
+import {
+  ShieldCheck,
   Cpu, 
   BarChart3, 
   FileText, 
@@ -262,9 +277,14 @@ export default function HomePage() {
 
   return (
     <main className="site-shell">
-      <Script id="faq-schema" type="application/ld+json">
-        {JSON.stringify(faqSchema)}
-      </Script>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
+      />
       {/* ANNOUNCEMENT BANNER */}
       {showBanner && (
         <div className="announcement-banner">

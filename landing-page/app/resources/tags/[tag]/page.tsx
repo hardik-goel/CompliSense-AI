@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { notFound } from "next/navigation";
 import { getAllTags, getPostsByTag } from "../../lib/posts";
 
@@ -53,9 +52,10 @@ export default function TagPage({ params }: { params: { tag: string } }) {
 
   return (
     <main className="legal-page">
-      <Script id="tag-breadcrumb-schema" type="application/ld+json">
-        {JSON.stringify(breadcrumbSchema)}
-      </Script>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
 
       <header className="site-header">
         <div className="container header-inner">

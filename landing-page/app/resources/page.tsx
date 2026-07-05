@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { getAllPosts, getAllTags } from "./lib/posts";
 
 const siteUrl = "https://complisenseai.com";
@@ -49,9 +48,10 @@ export default function ResourcesPage() {
 
   return (
     <main className="legal-page">
-      <Script id="resources-breadcrumb-schema" type="application/ld+json">
-        {JSON.stringify(breadcrumbSchema)}
-      </Script>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
 
       <header className="site-header">
         <div className="container header-inner">

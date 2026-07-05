@@ -1,4 +1,3 @@
-import Script from "next/script";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
@@ -74,7 +73,7 @@ const organizationSchema = {
   logo: `${siteUrl}/logo.png`,
   description,
   email: "support@complisenseai.com",
-  sameAs: [] as string[],
+  sameAs: ["https://www.linkedin.com/company/complisense-ai/"] as string[],
 };
 
 const websiteSchema = {
@@ -119,15 +118,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <Script id="organization-schema" type="application/ld+json">
-          {JSON.stringify(organizationSchema)}
-        </Script>
-        <Script id="website-schema" type="application/ld+json">
-          {JSON.stringify(websiteSchema)}
-        </Script>
-        <Script id="software-schema" type="application/ld+json">
-          {JSON.stringify(softwareSchema)}
-        </Script>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+        />
         {children}
         <Analytics />
         <SpeedInsights />

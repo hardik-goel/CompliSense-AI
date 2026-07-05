@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { getAllSlugs, getPost, tagSlug } from "../lib/posts";
@@ -76,12 +75,14 @@ export default function ResourcePost({ params }: { params: { slug: string } }) {
 
   return (
     <main className="legal-page">
-      <Script id="article-schema" type="application/ld+json">
-        {JSON.stringify(articleSchema)}
-      </Script>
-      <Script id="article-breadcrumb-schema" type="application/ld+json">
-        {JSON.stringify(breadcrumbSchema)}
-      </Script>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
 
       <header className="site-header">
         <div className="container header-inner">
