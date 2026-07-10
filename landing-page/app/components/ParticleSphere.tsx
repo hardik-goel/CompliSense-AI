@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
 import type { Points as ThreePoints } from "three";
@@ -32,6 +32,47 @@ function usePrefersReducedMotion() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   return reduced;
+}
+
+/**
+ * three.js throws synchronously out of the WebGLRenderer constructor when a GL
+ * context cannot be created, which happens in headless Chrome, on blocklisted
+ * GPUs, and when a browser caps live contexts. Because that throw lands during
+ * render, it escapes to the nearest error boundary — and with none present it
+ * unmounted the whole page. Probe before mounting the Canvas.
+ */
+function useWebGLSupported(): boolean | null {
+  const [supported, setSupported] = useState<boolean | null>(null);
+  useEffect(() => {
+    let ok = false;
+    try {
+      const probe = document.createElement("canvas");
+      const gl = (probe.getContext("webgl2") ||
+        probe.getContext("webgl")) as WebGLRenderingContext | null;
+      ok = Boolean(gl);
+      // Contexts are a scarce per-page resource; hand this one straight back.
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      ok = false;
+    }
+    setSupported(ok);
+  }, []);
+  return supported;
+}
+
+/** Last line of defence: a lost context mid-session must not take the page down. */
+class CanvasErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    // The sphere is decorative (the host element is aria-hidden), so the
+    // correct degraded state is simply nothing.
+    return this.state.failed ? null : this.props.children;
+  }
 }
 
 function Swarm({ reduced }: { reduced: boolean }) {
@@ -86,15 +127,21 @@ function Swarm({ reduced }: { reduced: boolean }) {
 
 export default function ParticleSphere() {
   const reduced = usePrefersReducedMotion();
+  const webglSupported = useWebGLSupported();
+
+  if (!webglSupported) return null;
+
   return (
-    <Canvas
-      camera={{ position: [0, 0, 5], fov: 50 }}
-      dpr={[1, 2]}
-      gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
-      style={{ pointerEvents: "none" }}
-      frameloop={reduced ? "demand" : "always"}
-    >
-      <Swarm reduced={reduced} />
-    </Canvas>
+    <CanvasErrorBoundary>
+      <Canvas
+        camera={{ position: [0, 0, 5], fov: 50 }}
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
+        style={{ pointerEvents: "none" }}
+        frameloop={reduced ? "demand" : "always"}
+      >
+        <Swarm reduced={reduced} />
+      </Canvas>
+    </CanvasErrorBoundary>
   );
 }

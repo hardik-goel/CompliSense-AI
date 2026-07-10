@@ -1596,6 +1596,18 @@ export default function HomePage() {
                   </svg>
                 </a>
               </div>
+              <a
+                href="https://saasbrowser.com/en/saas/1540934/complisense-ai"
+                target="_blank"
+                rel="noopener"
+                style={{ display: "inline-block", marginTop: "16px" }}
+              >
+                <img
+                  src="https://static-files.saasbrowser.com/saas-browser-badge-12.svg"
+                  alt="CompliSense AI - SaaS database"
+                  width="200"
+                />
+              </a>
             </div>
             <div className="footer-col">
               <strong>Product</strong>

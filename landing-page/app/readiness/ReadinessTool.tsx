@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import questionnaire from "./questionnaire.json";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.complisenseai.com";
@@ -16,6 +17,19 @@ type Question = {
   help?: string;
   optional?: boolean;
 };
+
+/**
+ * The questionnaire is a fixed set of questions, so it ships in the bundle
+ * rather than costing a round-trip to a free-tier Render service that can
+ * cold-start for ~30s. Kept in sync with `compliance.manifest.QUESTIONS` by
+ * `tests/test_manifest.py::test_static_questionnaire_json_matches_source`;
+ * regenerate via `python scripts/export_questionnaire.py`. Scoring still calls
+ * the API.
+ */
+const QUESTIONS = questionnaire.questions as Question[];
+
+/** Show a "still waking up" note rather than letting a slow call look broken. */
+const SLOW_SCORE_NOTICE_MS = 3000;
 
 type Gap = {
   rule_id: string;
@@ -49,20 +63,28 @@ function prettyLabel(value: string): string {
 }
 
 export default function ReadinessTool() {
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const questions = QUESTIONS;
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [scoringSlow, setScoringSlow] = useState(false);
   const [result, setResult] = useState<ScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [packId, setPackId] = useState<string>("dpdp_india_core_v1");
+  const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Nudge the scoring service awake while the visitor reads the questions, so
+  // the cold start overlaps with the time they were going to spend anyway.
   useEffect(() => {
-    fetch(`${API_BASE}/api/v1/readiness/questionnaire`)
-      .then((r) => r.json())
-      .then((d) => setQuestions(d.questions || []))
-      .catch(() => setError("Could not load the questionnaire. Please try again later."))
-      .finally(() => setLoading(false));
+    const controller = new AbortController();
+    fetch(`${API_BASE}/api/health`, {
+      signal: controller.signal,
+      mode: "no-cors", // response is unused; this only wakes the instance
+    }).catch(() => {});
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => () => {
+    if (slowTimer.current) clearTimeout(slowTimer.current);
   }, []);
 
   function setAnswer(id: string, value: unknown) {
@@ -82,6 +104,8 @@ export default function ReadinessTool() {
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
+    setScoringSlow(false);
+    slowTimer.current = setTimeout(() => setScoringSlow(true), SLOW_SCORE_NOTICE_MS);
     try {
       const res = await fetch(`${API_BASE}/api/v1/readiness/score`, {
         method: "POST",
@@ -93,12 +117,11 @@ export default function ReadinessTool() {
     } catch {
       setError("Could not score your answers. Please try again later.");
     } finally {
+      if (slowTimer.current) clearTimeout(slowTimer.current);
+      setScoringSlow(false);
       setSubmitting(false);
     }
   }
-
-  if (loading) return <p className="body-text">Loading questionnaire…</p>;
-  if (error && !result) return <p className="body-text">{error}</p>;
 
   if (result) {
     return (
@@ -210,16 +233,16 @@ export default function ReadinessTool() {
               ) : null}
 
               {q.type === "bool" && (
-                <div>
+                <div className="option-group">
                   {["yes", "no"].map((opt) => (
-                    <label key={opt} style={{ marginRight: "1rem", fontWeight: 400 }}>
+                    <label key={opt} className="option-chip">
                       <input
                         type="radio"
                         name={q.id}
                         checked={answers[q.id] === (opt === "yes")}
                         onChange={() => setAnswer(q.id, opt === "yes")}
-                      />{" "}
-                      {prettyLabel(opt)}
+                      />
+                      <span>{prettyLabel(opt)}</span>
                     </label>
                   ))}
                 </div>
@@ -243,15 +266,15 @@ export default function ReadinessTool() {
               )}
 
               {q.type === "multi" && (
-                <div>
+                <div className="option-group">
                   {(q.options || []).map((opt) => (
-                    <label key={opt} style={{ marginRight: "1rem", fontWeight: 400, display: "inline-block" }}>
+                    <label key={opt} className="option-chip">
                       <input
                         type="checkbox"
                         checked={Array.isArray(answers[q.id]) && (answers[q.id] as string[]).includes(opt)}
                         onChange={() => toggleMulti(q.id, opt)}
-                      />{" "}
-                      {prettyLabel(opt)}
+                      />
+                      <span>{prettyLabel(opt)}</span>
                     </label>
                   ))}
                 </div>
@@ -280,11 +303,25 @@ export default function ReadinessTool() {
         </fieldset>
       ))}
 
-      {error ? <p className="body-text">{error}</p> : null}
+      {error ? (
+        <p className="form-error" role="alert">
+          {error}{" "}
+          <button type="button" className="link-button" onClick={handleSubmit}>
+            Retry
+          </button>
+        </p>
+      ) : null}
 
       <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>
         {submitting ? "Scoring…" : "Get my DPDP Readiness Score"}
       </button>
+
+      {submitting && scoringSlow ? (
+        <p className="form-notice" role="status">
+          Waking up the scoring service — this can take up to 30 seconds on the first
+          request of the day. Your answers are safe; hang tight.
+        </p>
+      ) : null}
       <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, marginTop: "0.75rem" }}>
         Your answers are processed to generate your score and are <strong>not stored</strong> for
         anonymous visitors. This is a readiness self-assessment, not legal advice.

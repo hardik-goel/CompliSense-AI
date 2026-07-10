@@ -2670,3 +2670,161 @@ p.body-text, .faq-item p {
 .resource-tag-link { text-decoration: none; transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease; }
 .resource-tag-link:hover { border-color: var(--accent); background: rgba(37, 99, 235, 0.2); color: var(--text-primary); }
 .resource-tag-count { color: var(--text-muted); font-weight: 500; }
+
+/* ── Readiness tool form ───────────────────────────────────────────────────────
+   The public /readiness questionnaire previously rendered raw browser-default
+   controls against the dark theme. Controls stay native (keyboard + screen
+   reader semantics intact); only their painting is overridden. */
+
+.readiness-form fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 2rem;
+}
+
+.readiness-form legend {
+  padding: 0;
+  margin-bottom: 0.85rem;
+}
+
+.readiness-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.readiness-form .field > label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.readiness-form select,
+.readiness-form input[type="text"],
+.readiness-form input[type="number"] {
+  width: 100%;
+  max-width: 32rem;
+  padding: 0.65rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.readiness-form select {
+  appearance: none;
+  padding-right: 2.4rem;
+  cursor: pointer;
+  /* chevron drawn in --text-secondary */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+}
+
+/* Native dropdown popups paint with the OS palette; force the dark surface. */
+.readiness-form select option {
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.readiness-form select:hover,
+.readiness-form input[type="text"]:hover,
+.readiness-form input[type="number"]:hover {
+  border-color: var(--border-bright);
+}
+
+.readiness-form select:focus-visible,
+.readiness-form input[type="text"]:focus-visible,
+.readiness-form input[type="number"]:focus-visible {
+  outline: none;
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.28);
+}
+
+.readiness-form input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Radio + checkbox groups, rendered as selectable chips. */
+.option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.option-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.option-chip:hover {
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+}
+
+.option-chip input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Progressive: browsers without :has() still show the native checked control. */
+.option-chip:has(input:checked) {
+  border-color: var(--accent-hover);
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.option-chip:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.28);
+}
+
+/* Submit feedback states. */
+.form-notice,
+.form-error {
+  max-width: 32rem;
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  border-radius: 8px;
+}
+
+.form-notice {
+  color: var(--text-secondary);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.form-error {
+  color: #FCA5A5;
+  background-color: rgb(239 68 68 / 0.08);
+  border: 1px solid rgb(239 68 68 / 0.35);
+}
+
+.link-button {
+  padding: 0;
+  font: inherit;
+  color: var(--accent-hover);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}

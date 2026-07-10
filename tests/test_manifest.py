@@ -95,3 +95,18 @@ def test_eu_gpai_provider_and_open_source_flag():
     p = manifest_to_profile(build_manifest(
         {"has_ai_system": True, "eu_role": "gpai_provider", "provides_to_eu": True, "is_open_source": True}))
     assert p["eu_roles"] == ["eu_gpai_provider"] and p["is_open_source"] is True
+
+
+# ── Static questionnaire shipped to the landing page must not drift ────────────
+
+def test_static_questionnaire_json_matches_source():
+    """`landing-page` renders the questionnaire from a bundled JSON copy so the
+    free tool does not block on a cold backend. Regenerate with:
+        python scripts/export_questionnaire.py
+    """
+    import json
+    from pathlib import Path
+
+    static = Path(__file__).resolve().parents[1] / "landing-page/app/readiness/questionnaire.json"
+    assert static.exists(), f"missing {static}; run scripts/export_questionnaire.py"
+    assert json.loads(static.read_text())["questions"] == get_questionnaire()
