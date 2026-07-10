@@ -1,18 +1,60 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ShieldCheck, FileText, Check, Cpu, Package, ClipboardList } from "lucide-react";
+
+const STEPS = ["Connect", "Scan", "Review", "Export"] as const;
+
+/** Long enough to actually read a panel before it moves on. */
+const DWELL_MS = 6000;
 
 export default function ProductShowcase({ showCaption = true }: { showCaption?: boolean }) {
   const [showcaseStep, setShowcaseStep] = useState(0); // 0: Connect, 1: Scan, 2: Review, 3: Export
+  // A manual selection ends autoplay for the session; hover/focus only suspends it.
+  const [autoplay, setAutoplay] = useState(true);
+  const [suspended, setSuspended] = useState(false);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!autoplay || suspended || reduced) return;
     const timer = setInterval(() => {
-      setShowcaseStep((prev) => (prev + 1) % 4);
-    }, 3600);
+      setShowcaseStep((prev) => (prev + 1) % STEPS.length);
+    }, DWELL_MS);
     return () => clearInterval(timer);
+  }, [autoplay, suspended]);
+
+  const selectStep = useCallback((i: number) => {
+    setShowcaseStep(i);
+    setAutoplay(false);
   }, []);
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>, i: number) => {
+      const last = STEPS.length - 1;
+      let next: number | null = null;
+      if (e.key === "ArrowRight") next = i === last ? 0 : i + 1;
+      else if (e.key === "ArrowLeft") next = i === 0 ? last : i - 1;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = last;
+      if (next === null) return;
+      e.preventDefault();
+      selectStep(next);
+      tabRefs.current[next]?.focus();
+    },
+    [selectStep],
+  );
+
+  const scene = (i: number) => ({
+    id: `showcase-panel-${i}`,
+    role: "tabpanel" as const,
+    "aria-labelledby": `showcase-tab-${i}`,
+    "aria-hidden": showcaseStep !== i,
+    className: `scene ${showcaseStep === i ? "active" : ""}`,
+  });
 
   return (
     <>
@@ -29,9 +71,13 @@ export default function ProductShowcase({ showCaption = true }: { showCaption?: 
           <div className="chrome-live"><span className="live-dot"></span> Live</div>
         </div>
 
-        <div className="showcase-stage">
+        <div
+          className="showcase-stage"
+          onMouseEnter={() => setSuspended(true)}
+          onMouseLeave={() => setSuspended(false)}
+        >
           {/* SCENE 0 — CONNECT */}
-          <div className={`scene ${showcaseStep === 0 ? "active" : ""}`}>
+          <div {...scene(0)}>
             <div className="scene-head">
               <span className="scene-kicker">Step 01 · Connect</span>
               <h4>Import your workspace</h4>
@@ -61,7 +107,7 @@ export default function ProductShowcase({ showCaption = true }: { showCaption?: 
           </div>
 
           {/* SCENE 1 — SCAN */}
-          <div className={`scene ${showcaseStep === 1 ? "active" : ""}`}>
+          <div {...scene(1)}>
             <div className="scene-head">
               <span className="scene-kicker">Step 02 · Scan</span>
               <h4>Run against live rulepacks</h4>
@@ -82,7 +128,7 @@ export default function ProductShowcase({ showCaption = true }: { showCaption?: 
           </div>
 
           {/* SCENE 2 — REVIEW */}
-          <div className={`scene ${showcaseStep === 2 ? "active" : ""}`}>
+          <div {...scene(2)}>
             <div className="scene-head">
               <span className="scene-kicker">Step 03 · Review</span>
               <h4>Findings, scored and owned</h4>
@@ -108,7 +154,7 @@ export default function ProductShowcase({ showCaption = true }: { showCaption?: 
           </div>
 
           {/* SCENE 3 — EXPORT */}
-          <div className={`scene ${showcaseStep === 3 ? "active" : ""}`}>
+          <div {...scene(3)}>
             <div className="scene-head">
               <span className="scene-kicker">Step 04 · Export</span>
               <h4>Audit package, ready to defend</h4>
@@ -125,13 +171,30 @@ export default function ProductShowcase({ showCaption = true }: { showCaption?: 
         </div>
 
         {/* STEP RAIL */}
-        <div className="showcase-rail">
-          {["Connect", "Scan", "Review", "Export"].map((label, i) => (
+        <div
+          className="showcase-rail"
+          role="tablist"
+          aria-label="Product walkthrough steps"
+          onMouseEnter={() => setSuspended(true)}
+          onMouseLeave={() => setSuspended(false)}
+        >
+          {STEPS.map((label, i) => (
             <button
               key={label}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
+              id={`showcase-tab-${i}`}
+              type="button"
+              role="tab"
+              aria-selected={showcaseStep === i}
+              aria-controls={`showcase-panel-${i}`}
+              tabIndex={showcaseStep === i ? 0 : -1}
               className={`rail-step ${showcaseStep === i ? "active" : ""} ${showcaseStep > i ? "done" : ""}`}
-              onClick={() => setShowcaseStep(i)}
-              aria-label={`Show ${label} step`}
+              onClick={() => selectStep(i)}
+              onKeyDown={(e) => onKeyDown(e, i)}
+              onFocus={() => setSuspended(true)}
+              onBlur={() => setSuspended(false)}
             >
               <span className="rail-num">{i + 1}</span>
               <span className="rail-label">{label}</span>

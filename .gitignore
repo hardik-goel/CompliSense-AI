@@ -18,6 +18,7 @@ dist/
 htmlcov/
 .next/
 node_modules/
+*.tsbuildinfo
 3.11_venv/
 .pyinstaller-cache/
 CODEBASE_FLOW_EU_DPDP.md

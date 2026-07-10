@@ -1,0 +1,341 @@
+{
+  "questions": [
+    {
+      "id": "entity_type",
+      "section": "About your organisation",
+      "text": "What best describes your organisation?",
+      "type": "single",
+      "options": [
+        "individual",
+        "startup",
+        "enterprise",
+        "government_body",
+        "other"
+      ],
+      "help": "Determines baseline Data Fiduciary status."
+    },
+    {
+      "id": "offers_in_india",
+      "section": "About your organisation",
+      "text": "Do you offer goods or services to individuals in India (or process their data)?",
+      "type": "bool",
+      "help": "DPDP applies within India and extraterritorially to those serving Indian users (Act s.3)."
+    },
+    {
+      "id": "sector",
+      "section": "About your organisation",
+      "text": "Which sector best fits your product?",
+      "type": "single",
+      "options": [
+        "ecommerce",
+        "social_media",
+        "online_gaming",
+        "healthcare",
+        "edtech",
+        "fintech",
+        "saas",
+        "other"
+      ],
+      "help": "Some sectors carry extra obligations or exemptions."
+    },
+    {
+      "id": "registered_users",
+      "section": "About your organisation",
+      "text": "Roughly how many registered users do you have in India?",
+      "type": "number",
+      "help": "Used only to check Third-Schedule class triggers (e-commerce/social >=2cr, gaming >=50L)."
+    },
+    {
+      "id": "notified_as_sdf",
+      "section": "About your organisation",
+      "text": "Has the Central Government notified you as a Significant Data Fiduciary (SDF)?",
+      "type": "bool",
+      "help": "SDF duties (DPIA, audit, India DPO) apply ONLY to notified SDFs. Most startups are NOT SDFs."
+    },
+    {
+      "id": "is_state_instrumentality",
+      "section": "About your organisation",
+      "text": "Are you a State or an instrumentality of the State?",
+      "type": "bool",
+      "help": "Certain State processing follows the Second Schedule standards (Rule 5)."
+    },
+    {
+      "id": "acts_as_consent_manager",
+      "section": "About your organisation",
+      "text": "Do you operate as a registered Consent Manager?",
+      "type": "bool",
+      "help": "Consent Manager obligations (Rule 4) apply only if you act as one."
+    },
+    {
+      "id": "processes_children_data",
+      "section": "Data you handle",
+      "text": "Do you knowingly process personal data of children (under 18)?",
+      "type": "bool",
+      "help": "Triggers verifiable parental consent (Rule 10) + Act s.9 bans, subject to Fourth-Schedule exemptions."
+    },
+    {
+      "id": "cross_border_transfer",
+      "section": "Data you handle",
+      "text": "Do you transfer personal data outside India?",
+      "type": "bool",
+      "help": "Permitted subject to future Central-Govt restrictions (Rule 15)."
+    },
+    {
+      "id": "pii_categories",
+      "section": "Data you handle",
+      "text": "Which categories of personal data do you collect?",
+      "type": "multi",
+      "options": [
+        "name",
+        "email",
+        "phone",
+        "financial",
+        "health",
+        "biometric",
+        "location",
+        "government_id",
+        "children_data",
+        "none"
+      ],
+      "help": "Itemised personal data must be listed in your notice (Rule 3)."
+    },
+    {
+      "id": "storage_locations",
+      "section": "Data you handle",
+      "text": "Where does that data live?",
+      "type": "multi",
+      "options": [
+        "aws",
+        "gcp",
+        "azure",
+        "render",
+        "on_prem",
+        "third_party_saas",
+        "notebooks",
+        "unsure"
+      ],
+      "help": "Used to map where personal data may reside (informs security & processor checks)."
+    },
+    {
+      "id": "has_privacy_notice",
+      "section": "Your current posture",
+      "text": "Do you have a standalone, plain-language privacy notice?",
+      "type": "bool",
+      "maps_to_rule": "DPDP-SEC5-NOTICE-001"
+    },
+    {
+      "id": "consent_mechanism",
+      "section": "Your current posture",
+      "text": "How do you obtain consent?",
+      "type": "single",
+      "options": [
+        "explicit_optin",
+        "pre_ticked_or_implied",
+        "none"
+      ],
+      "maps_to_rule": "DPDP-SEC6-CONSENT-001"
+    },
+    {
+      "id": "has_withdrawal_mechanism",
+      "section": "Your current posture",
+      "text": "Can users withdraw consent as easily as they gave it?",
+      "type": "bool",
+      "maps_to_rule": "DPDP-SEC6-CONSENT-001"
+    },
+    {
+      "id": "has_security_safeguards",
+      "section": "Your current posture",
+      "text": "Do you have documented security safeguards (encryption, access control, logging)?",
+      "type": "bool",
+      "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-001"
+    },
+    {
+      "id": "has_breach_process",
+      "section": "Your current posture",
+      "text": "Do you have a personal-data-breach response process / register?",
+      "type": "bool",
+      "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-002"
+    },
+    {
+      "id": "retention_defined",
+      "section": "Your current posture",
+      "text": "Have you defined data retention and erasure periods?",
+      "type": "bool",
+      "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-003"
+    },
+    {
+      "id": "has_grievance_contact",
+      "section": "Your current posture",
+      "text": "Do you publish a grievance/contact point for data questions?",
+      "type": "bool",
+      "maps_to_rule": "DPDP-SEC13-GRIEVANCE-001"
+    },
+    {
+      "id": "grievance_email",
+      "section": "Your current posture",
+      "text": "What is the published grievance contact email? (optional)",
+      "type": "text",
+      "optional": true
+    },
+    {
+      "id": "processors_listed",
+      "section": "Your current posture",
+      "text": "Do you maintain an inventory of processors/vendors with data-processing contracts?",
+      "type": "bool",
+      "maps_to_rule": "DPDP-SEC8-PROCESSOR-001"
+    },
+    {
+      "id": "has_ai_system",
+      "section": "EU AI Act (if applicable)",
+      "text": "Do you build, deploy, import, or distribute an AI system?",
+      "type": "bool",
+      "help": "Gates whether EU AI Act obligations apply at all.",
+      "optional": true
+    },
+    {
+      "id": "eu_role",
+      "section": "EU AI Act (if applicable)",
+      "text": "What is your role for that AI system?",
+      "type": "single",
+      "options": [
+        "none",
+        "provider",
+        "deployer",
+        "importer",
+        "distributor",
+        "gpai_provider",
+        "gpai_downstream"
+      ],
+      "help": "EU AI Act obligations are role-gated (provider duties differ from deployer duties).",
+      "optional": true
+    },
+    {
+      "id": "provides_to_eu",
+      "section": "EU AI Act (if applicable)",
+      "text": "Is the AI system placed on the EU market or is its output used in the EU?",
+      "type": "bool",
+      "help": "The EU AI Act applies extraterritorially when output is used in the EU (Art. 2).",
+      "optional": true
+    },
+    {
+      "id": "is_open_source",
+      "section": "EU AI Act (if applicable)",
+      "text": "Is the AI model/system released under a free and open-source licence?",
+      "type": "bool",
+      "help": "Some EU AI Act duties carry open-source carve-outs (scope subject to legal review).",
+      "optional": true
+    },
+    {
+      "id": "avoids_prohibited_practices",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you confirm your AI does NOT use any prohibited practice (Art. 5: manipulative/exploitative techniques, social scoring, untargeted scraping for facial DBs, etc.)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_ai_literacy_program",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you have an AI-literacy programme for staff operating AI systems (Art. 4)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_art50_transparency",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you disclose AI interaction and label AI-generated/deepfake content where required (Art. 50)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_risk_management_system",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you operate a documented risk-management system for the AI system (Art. 9)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_data_governance",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you have documented training/validation/test data governance (Art. 10)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_technical_documentation",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you maintain up-to-date technical documentation for the AI system (Art. 11)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_recordkeeping_logs",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Does the system keep automatic logs / records over its lifecycle (Art. 18 & 20)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_transparency_info",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you provide instructions-for-use / transparency information to deployers (Art. 13)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_human_oversight",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Have you designed effective human-oversight measures (Art. 14)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_accuracy_robustness",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you have accuracy, robustness and cybersecurity measures (Art. 15)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_quality_management_system",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you operate a quality-management system (Art. 16)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_risk_classification",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Have you classified whether the system is high-risk per Art. 6 / Annex III?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_conformity_assessment",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Have you completed (or planned) conformity assessment + CE marking (Art. 43)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "registered_eu_database",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Is the system registered in the EU database where required (Art. 49)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_postmarket_monitoring",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "Do you operate a post-market monitoring system (Art. 72)?",
+      "type": "bool",
+      "optional": true
+    },
+    {
+      "id": "has_gpai_documentation",
+      "section": "EU AI Act posture (if applicable)",
+      "text": "(GPAI providers) Do you keep model documentation, a copyright policy and a training-content summary (Arts. 53-55)?",
+      "type": "bool",
+      "optional": true
+    }
+  ]
+}
