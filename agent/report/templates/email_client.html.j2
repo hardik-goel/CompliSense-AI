@@ -1,0 +1,84 @@
+{#- Client-facing readiness email. Email-client-safe: inline styles, table layout, no
+    external CSS/JS, ~600px. Tone: encouraging coach; the deadline + severity carry urgency.
+    All values are escaped by autoescape (Jinja HTML env). -#}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;margin:0;padding:24px 0;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827;">
+
+      {#- 2. Header: hero score + one encouraging line -#}
+      <tr><td style="padding:28px 32px 8px 32px;">
+        {% if scoring_available %}
+        <div style="font-size:13px;color:#6b7280;letter-spacing:.06em;text-transform:uppercase;">Your DPDP readiness</div>
+        <div style="font-size:48px;font-weight:800;line-height:1.1;color:#4f46e5;">{{ score }}%</div>
+        <p style="font-size:15px;color:#374151;margin:8px 0 0;">
+          You're {{ score }}% ready. Here's the short path to close the rest before the {{ deadline }} deadline.
+        </p>
+        {% else %}
+        <div style="font-size:24px;font-weight:800;color:#4f46e5;">Your applicable obligations</div>
+        <p style="font-size:15px;color:#374151;margin:8px 0 0;">Here's what to prepare before the {{ deadline }} deadline.</p>
+        {% endif %}
+        <p style="font-size:12.5px;color:#6b7280;margin:8px 0 0;">{{ phase_note }}</p>
+      </td></tr>
+
+      {#- 3. What you've already got right -#}
+      {% if passes %}
+      <tr><td style="padding:20px 32px 0 32px;">
+        <div style="font-size:16px;font-weight:700;color:#065f46;">✓ What you've already got right</div>
+        <ul style="margin:8px 0 0;padding-left:20px;font-size:14px;color:#374151;">
+          {% for p in passes %}<li style="margin-bottom:4px;">{{ p.title }}</li>{% endfor %}
+        </ul>
+      </td></tr>
+      {% endif %}
+
+      {#- 4. What to close before the deadline (a to-do list, never "violations") -#}
+      <tr><td style="padding:20px 32px 0 32px;">
+        <div style="font-size:16px;font-weight:700;color:#92400e;">What to close before {{ deadline }}</div>
+        {% if gaps %}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+          {% for g in gaps %}
+          <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;">
+            <div style="font-size:14px;font-weight:600;color:#111827;">
+              {{ g.title }} <span style="font-weight:400;color:#6b7280;">· {{ g.severity }}</span>
+            </div>
+            <div style="font-size:13px;color:#374151;margin-top:2px;">{{ g.close_hint }}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;word-break:break-word;">{{ g.citation }}</div>
+          </td></tr>
+          {% endfor %}
+        </table>
+        {% else %}
+        <p style="font-size:14px;color:#374151;margin:8px 0 0;">Nothing to close in the areas you answered — nicely done.</p>
+        {% endif %}
+      </td></tr>
+
+      {#- 5. Not applicable to you (shows precision) -#}
+      {% if nas %}
+      <tr><td style="padding:20px 32px 0 32px;">
+        <div style="font-size:16px;font-weight:700;color:#374151;">Not applicable to you</div>
+        <ul style="margin:8px 0 0;padding-left:20px;font-size:13px;color:#6b7280;">
+          {% for n in nas %}<li style="margin-bottom:4px;">{{ n.title }} — {{ n.why }}</li>{% endfor %}
+        </ul>
+      </td></tr>
+      {% endif %}
+
+      {#- 6. Single primary CTA -#}
+      <tr><td align="center" style="padding:28px 32px 8px 32px;">
+        <a href="{{ cta_url }}" style="background:#4f46e5;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 28px;border-radius:8px;display:inline-block;">
+          Book a 20-minute call — we'll walk through closing these
+        </a>
+      </td></tr>
+
+      {#- 7. Footer disclaimer (required) + deletion contact -#}
+      <tr><td style="padding:16px 32px 28px 32px;">
+        <p style="font-size:11px;color:#9ca3af;line-height:1.6;margin:0;">
+          This is a readiness assessment, not legal advice, and not a determination of compliance.
+          Rules current as of {{ rules_current_as_of }}. CompliSense-AI creates no attorney-client relationship.
+        </p>
+        <p style="font-size:11px;color:#9ca3af;line-height:1.6;margin:8px 0 0;">
+          To unsubscribe or have your data deleted, email
+          <a href="mailto:{{ unsubscribe_contact }}" style="color:#9ca3af;">{{ unsubscribe_contact }}</a>.
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>

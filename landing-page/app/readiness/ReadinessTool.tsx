@@ -16,6 +16,7 @@ type Question = {
   options?: string[];
   help?: string;
   optional?: boolean;
+  tier?: "core" | "deep";
 };
 
 /**
@@ -48,6 +49,7 @@ type ScoreResponse = {
   jurisdiction?: string;
   summary: { ready: number; gaps: number; applicable: number; not_applicable: number };
   top_gaps?: Gap[];
+  gaps?: Gap[];
   gaps_locked?: number;
   disclaimer: string;
   incomplete_questions: string[];
@@ -62,6 +64,17 @@ function prettyLabel(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Sentinel stored when a user picks "Not sure". Non-empty (so it counts as answered),
+ *  but recognised by no scoring predicate — the backend treats it as an honest unknown
+ *  (which surfaces as a "needs review" gap rather than a fabricated Yes/No). */
+const NOT_SURE = "not_sure";
+
+/** EU AI Act questions live in sections prefixed "EU AI Act". Everything else is DPDP.
+ *  We show only the questions relevant to the regulation the visitor picked. */
+function isEuQuestion(q: Question): boolean {
+  return q.section.startsWith("EU AI Act");
+}
+
 export default function ReadinessTool() {
   const questions = QUESTIONS;
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
@@ -70,6 +83,11 @@ export default function ReadinessTool() {
   const [result, setResult] = useState<ScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [packId, setPackId] = useState<string>("dpdp_india_core_v1");
+  // Lead capture (email delivery of the full report) + DPDP consent for this form itself.
+  const [email, setEmail] = useState<string>("");
+  const [consent, setConsent] = useState<boolean>(false);
+  const [honeypot, setHoneypot] = useState<string>(""); // bots fill this; humans never see it
+  const [emailed, setEmailed] = useState<boolean>(false);
   const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Nudge the scoring service awake while the visitor reads the questions, so
@@ -101,19 +119,47 @@ export default function ReadinessTool() {
     });
   }
 
+  /** Mark the readiness test complete for this browser session so the gated "Book a Demo"
+   *  button (elsewhere on the site) unlocks and can pre-fill the lead context. */
+  function markReadinessComplete(score: number | null, withEmail: string) {
+    try {
+      sessionStorage.setItem("cs_readiness_done", "1");
+      if (score != null) sessionStorage.setItem("cs_readiness_score", String(score));
+      if (withEmail) sessionStorage.setItem("cs_readiness_email", withEmail);
+      window.dispatchEvent(new Event("cs-readiness-complete"));
+    } catch {
+      /* sessionStorage unavailable (private mode) — non-fatal */
+    }
+  }
+
   async function handleSubmit() {
+    const wantsEmail = email.trim().length > 0;
+    // Email delivery requires consent (DPDP for this form); the on-screen teaser does not.
+    if (wantsEmail && !consent) {
+      setError("Please tick the consent box so we can email your score.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setScoringSlow(false);
     slowTimer.current = setTimeout(() => setScoringSlow(true), SLOW_SCORE_NOTICE_MS);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/readiness/score`, {
+      // With an email + consent -> capture the lead and email the full report.
+      // Without an email -> ephemeral on-screen teaser only.
+      const endpoint = wantsEmail ? "/api/v1/readiness/lead" : "/api/v1/readiness/score";
+      const body = wantsEmail
+        ? { answers, pack_id: packId, email: email.trim(), consent, company_website: honeypot }
+        : { answers, pack_id: packId };
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, pack_id: packId }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      setResult(await res.json());
+      const data = await res.json();
+      setResult(data);
+      setEmailed(wantsEmail);
+      markReadinessComplete(data.readiness_score ?? null, wantsEmail ? email.trim() : "");
     } catch {
       setError("Could not score your answers. Please try again later.");
     } finally {
@@ -126,6 +172,12 @@ export default function ReadinessTool() {
   if (result) {
     return (
       <div className="readiness-result">
+        {emailed ? (
+          <p className="form-notice" role="status" style={{ marginBottom: "1rem" }}>
+            ✓ We’ve emailed your full readiness report{email ? ` to ${email}` : ""}. You can now
+            book a demo and we’ll walk through your specific gaps.
+          </p>
+        ) : null}
         <div className="panel" style={{ textAlign: "center", padding: "2rem" }}>
           {result.scoring_available === false ? (
             <>
@@ -155,21 +207,39 @@ export default function ReadinessTool() {
         <h3 style={{ marginTop: "1.5rem" }}>
           {result.scoring_available === false ? "Obligations to prepare for" : "Top gaps to address"}
         </h3>
-        {(result.top_gaps || []).map((g) => (
-          <div key={g.rule_id} className="security-item" data-animate style={{ marginBottom: "0.75rem" }}>
-            <strong className="author-name">
-              {g.title} <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>({g.severity})</span>
-            </strong>
-            <p className="body-text" style={{ fontSize: "0.82rem" }}>
-              {g.act_citation || g.rule_citation} — {g.framing}
-            </p>
-            {g.verification && g.verification !== "primary_source_verified" ? (
-              <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.75 }}>
-                ⚠ Source: {g.verification.replace(/_/g, " ")} — not yet primary-verified; treat as indicative.
+        {/* Render from top_gaps (anonymous teaser) OR gaps (signed-in full report) — a
+            detected gap must never render an empty list just because of which field carries it. */}
+        {(() => {
+          const gapsToShow = (result.top_gaps && result.top_gaps.length
+            ? result.top_gaps
+            : result.gaps) || [];
+          if (gapsToShow.length === 0) {
+            return (
+              <p className="body-text" style={{ opacity: 0.75 }}>
+                No gaps detected in the questions you answered.
               </p>
-            ) : null}
-          </div>
-        ))}
+            );
+          }
+          return gapsToShow.map((g) => (
+            <div key={g.rule_id} className="security-item" data-animate style={{ marginBottom: "0.75rem" }}>
+              <strong className="author-name">
+                {g.title} <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>({g.severity})</span>
+              </strong>
+              {/* Full citation — wrap so it can never clip mid-word (was truncating live). */}
+              <p
+                className="body-text"
+                style={{ fontSize: "0.82rem", whiteSpace: "normal", overflowWrap: "anywhere" }}
+              >
+                {g.act_citation || g.rule_citation} — {g.framing}
+              </p>
+              {g.verification && g.verification !== "primary_source_verified" ? (
+                <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.75 }}>
+                  ⚠ Source: {g.verification.replace(/_/g, " ")} — not yet primary-verified; treat as indicative.
+                </p>
+              ) : null}
+            </div>
+          ));
+        })()}
 
         {result.gaps_locked && result.gaps_locked > 0 ? (
           <div className="panel" style={{ padding: "1.25rem", textAlign: "center" }}>
@@ -193,11 +263,123 @@ export default function ReadinessTool() {
     );
   }
 
-  // Group questions by section for rendering.
-  const sections = questions.reduce<Record<string, Question[]>>((acc, q) => {
-    (acc[q.section] = acc[q.section] || []).push(q);
-    return acc;
-  }, {});
+  // Show only the questions relevant to the chosen regulation: DPDP hides the EU AI Act
+  // sections, and the EU AI Act check hides the DPDP-specific ones (and vice versa).
+  const isEuPack = packId.startsWith("euai");
+  const visibleQuestions = questions.filter((q) =>
+    isEuPack ? isEuQuestion(q) : !isEuQuestion(q)
+  );
+  // CORE = one-screen ~2-minute set; DEEP = optional, behind an expander.
+  const coreQuestions = visibleQuestions.filter((q) => q.tier !== "deep");
+  const deepQuestions = visibleQuestions.filter((q) => q.tier === "deep");
+
+  function groupBySection(qs: Question[]): [string, Question[]][] {
+    const map = qs.reduce<Record<string, Question[]>>((acc, q) => {
+      (acc[q.section] = acc[q.section] || []).push(q);
+      return acc;
+    }, {});
+    return Object.entries(map);
+  }
+
+  function renderField(q: Question) {
+    return (
+      <div className="field field-full" key={q.id} style={{ marginBottom: "1rem" }}>
+        <label htmlFor={q.id}>
+          {q.text}
+          {q.optional ? " (optional)" : ""}
+        </label>
+        {q.help ? (
+          <details className="q-help" style={{ margin: "0.2rem 0" }}>
+            <summary
+              style={{ fontSize: "0.72rem", opacity: 0.75, cursor: "pointer", userSelect: "none" }}
+            >
+              What does this mean? Where do I find it?
+            </summary>
+            <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.3rem 0 0" }}>
+              {q.help}
+            </p>
+          </details>
+        ) : null}
+
+        {q.type === "bool" && (
+          <div className="option-group">
+            {["yes", "no"].map((opt) => (
+              <label key={opt} className="option-chip">
+                <input
+                  type="radio"
+                  name={q.id}
+                  checked={answers[q.id] === (opt === "yes")}
+                  onChange={() => setAnswer(q.id, opt === "yes")}
+                />
+                <span>{prettyLabel(opt)}</span>
+              </label>
+            ))}
+            <label className="option-chip">
+              <input
+                type="radio"
+                name={q.id}
+                checked={answers[q.id] === NOT_SURE}
+                onChange={() => setAnswer(q.id, NOT_SURE)}
+              />
+              <span>Not sure</span>
+            </label>
+          </div>
+        )}
+
+        {q.type === "single" && (
+          <select
+            id={q.id}
+            value={(answers[q.id] as string) || ""}
+            onChange={(e) => setAnswer(q.id, e.target.value)}
+          >
+            <option value="" disabled>
+              Select…
+            </option>
+            {(q.options || []).map((opt) => (
+              <option key={opt} value={opt}>
+                {prettyLabel(opt)}
+              </option>
+            ))}
+            <option value={NOT_SURE}>Not sure / don&apos;t know</option>
+          </select>
+        )}
+
+        {q.type === "multi" && (
+          <div className="option-group">
+            {(q.options || []).map((opt) => (
+              <label key={opt} className="option-chip">
+                <input
+                  type="checkbox"
+                  checked={Array.isArray(answers[q.id]) && (answers[q.id] as string[]).includes(opt)}
+                  onChange={() => toggleMulti(q.id, opt)}
+                />
+                <span>{prettyLabel(opt)}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {q.type === "number" && (
+          <input
+            id={q.id}
+            type="number"
+            min={0}
+            value={(answers[q.id] as number) ?? ""}
+            onChange={(e) => setAnswer(q.id, e.target.value)}
+          />
+        )}
+
+        {q.type === "text" && (
+          <input
+            id={q.id}
+            type="text"
+            value={(answers[q.id] as string) || ""}
+            onChange={(e) => setAnswer(q.id, e.target.value)}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="readiness-form">
@@ -212,96 +394,90 @@ export default function ReadinessTool() {
           </select>
           <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.2rem 0" }}>
             DPDP returns a readiness score. EU AI Act returns the applicable obligations (no numeric
-            score yet — EU posture scoring is pending legal review). Answer the "EU AI Act (if
-            applicable)" questions for an EU check.
+            score yet — EU posture scoring is pending legal review).
           </p>
         </div>
       </fieldset>
-      {Object.entries(sections).map(([section, qs]) => (
+
+      {/* CORE questions — one screen, ~2 minutes. */}
+      {groupBySection(coreQuestions).map(([section, qs]) => (
         <fieldset key={section} style={{ border: "none", marginBottom: "1.5rem" }}>
           <legend className="section-kicker">{section}</legend>
-          {qs.map((q) => (
-            <div className="field field-full" key={q.id} style={{ marginBottom: "1rem" }}>
-              <label htmlFor={q.id}>
-                {q.text}
-                {q.optional ? " (optional)" : ""}
-              </label>
-              {q.help ? (
-                <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.2rem 0" }}>
-                  {q.help}
-                </p>
-              ) : null}
-
-              {q.type === "bool" && (
-                <div className="option-group">
-                  {["yes", "no"].map((opt) => (
-                    <label key={opt} className="option-chip">
-                      <input
-                        type="radio"
-                        name={q.id}
-                        checked={answers[q.id] === (opt === "yes")}
-                        onChange={() => setAnswer(q.id, opt === "yes")}
-                      />
-                      <span>{prettyLabel(opt)}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {q.type === "single" && (
-                <select
-                  id={q.id}
-                  value={(answers[q.id] as string) || ""}
-                  onChange={(e) => setAnswer(q.id, e.target.value)}
-                >
-                  <option value="" disabled>
-                    Select…
-                  </option>
-                  {(q.options || []).map((opt) => (
-                    <option key={opt} value={opt}>
-                      {prettyLabel(opt)}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {q.type === "multi" && (
-                <div className="option-group">
-                  {(q.options || []).map((opt) => (
-                    <label key={opt} className="option-chip">
-                      <input
-                        type="checkbox"
-                        checked={Array.isArray(answers[q.id]) && (answers[q.id] as string[]).includes(opt)}
-                        onChange={() => toggleMulti(q.id, opt)}
-                      />
-                      <span>{prettyLabel(opt)}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {q.type === "number" && (
-                <input
-                  id={q.id}
-                  type="number"
-                  min={0}
-                  value={(answers[q.id] as number) ?? ""}
-                  onChange={(e) => setAnswer(q.id, e.target.value)}
-                />
-              )}
-
-              {q.type === "text" && (
-                <input
-                  id={q.id}
-                  type="text"
-                  value={(answers[q.id] as string) || ""}
-                  onChange={(e) => setAnswer(q.id, e.target.value)}
-                />
-              )}
-            </div>
-          ))}
+          {qs.map((q) => renderField(q))}
         </fieldset>
       ))}
+
+      {/* DEEP questions — optional, collapsed. For EU this is the EU AI Act block; for DPDP
+          it's the extra precision questions. Unanswered deep questions score as unknown = gap. */}
+      {deepQuestions.length > 0 && (
+        <details className="deep-questions" style={{ marginBottom: "1.5rem" }}>
+          <summary className="section-kicker" style={{ cursor: "pointer", userSelect: "none" }}>
+            {isEuPack
+              ? "EU AI Act questions (answer these for an EU check)"
+              : `Add ${deepQuestions.length} more for a deeper, more precise score`}
+          </summary>
+          <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.5rem 0" }}>
+            Optional. Leaving these blank is fine — they simply score as “needs review” rather than
+            a pass, so answering more sharpens your score.
+          </p>
+          {groupBySection(deepQuestions).map(([section, qs]) => (
+            <fieldset key={section} style={{ border: "none", marginBottom: "1rem" }}>
+              <legend className="section-kicker" style={{ fontSize: "0.78rem" }}>{section}</legend>
+              {qs.map((q) => renderField(q))}
+            </fieldset>
+          ))}
+        </details>
+      )}
+
+      {/* Email capture (optional for the on-screen teaser; required to receive the FULL
+          report by email). Collecting this makes us a Data Fiduciary — so consent + a
+          privacy notice + a documented deletion path are mandatory (DPDP for ourselves). */}
+      <fieldset style={{ border: "none", marginBottom: "1rem" }}>
+        <legend className="section-kicker">Get the full report by email (optional)</legend>
+        <div className="field field-full">
+          <label htmlFor="lead_email">Work email</label>
+          <input
+            id="lead_email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {/* Honeypot: visually hidden + off-screen; real users never fill it. */}
+          <input
+            type="text"
+            name="company_website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+          />
+        </div>
+        {email.trim().length > 0 && (
+          <div className="field field-full" style={{ marginTop: "0.5rem" }}>
+            <label style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", fontSize: "0.82rem", fontWeight: 400 }}>
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                style={{ marginTop: "0.2rem" }}
+              />
+              <span>
+                I agree CompliSense may email my readiness score and contact me about a demo.{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">
+                  How we use this
+                </a>
+                : we store your email + answers to send the score and follow up about a demo,
+                retain it up to 12 months, and delete it on request — email{" "}
+                <a href="mailto:privacy@complisenseai.com">privacy@complisenseai.com</a>.
+              </span>
+            </label>
+          </div>
+        )}
+      </fieldset>
 
       {error ? (
         <p className="form-error" role="alert">
@@ -313,7 +489,13 @@ export default function ReadinessTool() {
       ) : null}
 
       <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>
-        {submitting ? "Scoring…" : "Get my DPDP Readiness Score"}
+        {submitting
+          ? "Scoring…"
+          : email.trim().length > 0
+          ? "Email me my full readiness report"
+          : isEuPack
+          ? "Check my EU AI Act readiness"
+          : "Get my DPDP Readiness Score"}
       </button>
 
       {submitting && scoringSlow ? (

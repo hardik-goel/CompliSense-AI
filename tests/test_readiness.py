@@ -105,3 +105,30 @@ def test_sdf_startup_includes_sdf_rule():
     report = score_manifest(m, PACK)
     scored_ids = {r["rule_id"] for r in report["ready"] + report["gaps"]}
     assert "DPDP-SEC10-SDF-001" in scored_ids
+
+
+def test_detected_gaps_are_delivered_and_citations_not_truncated():
+    """Regression (P3-T5): when N gaps are detected, N gap items are delivered (never zero),
+    and no citation string is truncated mid-token."""
+    # Well-prepared except breach process -> exactly one gap (the reported live case).
+    m = build_manifest({
+        "entity_type": "startup", "has_privacy_notice": True,
+        "consent_mechanism": "explicit_optin", "has_withdrawal_mechanism": True,
+        "has_security_safeguards": True, "has_breach_process": False,
+        "has_grievance_contact": True,
+    })
+    report = score_manifest(m, PACK)
+    n = report["summary"]["gaps"]
+    assert n >= 1
+    # The teaser list actually carries the detected gaps (not an empty list).
+    teaser = top_gaps(report, 3)
+    assert len(teaser) == min(n, 3) and len(teaser) > 0
+    assert any(g["rule_id"] == "DPDP-SEC8-OBLIGATIONS-002" for g in teaser)
+    # Every delivered gap carries a full, non-truncated citation.
+    for g in teaser:
+        cite = g["act_citation"] or g["rule_citation"]
+        assert cite
+        # A mid-word cut would end on a letter with no closing bracket/period and be shorter
+        # than the rule's real citation. Assert the citation is a complete, balanced string.
+        assert cite.count("(") == cite.count(")"), f"unbalanced/truncated citation: {cite!r}"
+        assert not cite.rstrip().endswith(("in", "of", "the", "and", "…", "..")), cite

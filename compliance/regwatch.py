@@ -14,34 +14,49 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
-# Seed watchlist (Phase 5.4): the primary legal sources we monitor for change, independent of
-# whether a rule currently cites them. These are unioned with the pack-derived sources so we
-# notice a change (e.g. a new MeitY notification) BEFORE a rule exists for it. A detected
-# change never edits a rulepack — it raises a human-gated proposal (see build_change_proposal).
-SEED_WATCHLIST: List[Dict[str, Any]] = [
-    {
-        "url": "https://www.meity.gov.in/documents/press-release",
-        "label": "MeitY press releases",
-        "jurisdiction": "DPDP_INDIA",
-    },
-    {
-        "url": "https://egazette.gov.in/(S(dpdp))/default.aspx",
-        "label": "e-Gazette (DPDP entries)",
-        "jurisdiction": "DPDP_INDIA",
-    },
-    {
-        "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
-        "label": "EUR-Lex AI Act consolidated text",
-        "jurisdiction": "EU_AI_ACT",
-    },
-    {
-        "url": "https://digital-strategy.ec.europa.eu/en/policies/ai-office",
-        "label": "European AI Office guidance index",
-        "jurisdiction": "EU_AI_ACT",
-    },
+# Watchlist config: the primary legal sources we monitor for change, independent of whether a
+# rule currently cites them. These are unioned with the pack-derived sources so we notice a
+# change (e.g. a new MeitY notification) BEFORE a rule exists for it. A detected change never
+# edits a rulepack — it raises a human-gated proposal (see build_change_proposal).
+#
+# The list is loaded from ``compliance/regwatch_sources.yaml`` (human-editable source of
+# truth). The hardcoded fallback below keeps the module importable if the file is missing.
+_SOURCES_CONFIG = Path(__file__).resolve().parent / "regwatch_sources.yaml"
+
+_SEED_WATCHLIST_FALLBACK: List[Dict[str, Any]] = [
+    {"url": "https://www.meity.gov.in/documents/press-release", "label": "MeitY press releases", "jurisdiction": "DPDP_INDIA"},
+    {"url": "https://egazette.gov.in/(S(dpdp))/default.aspx", "label": "e-Gazette (DPDP entries)", "jurisdiction": "DPDP_INDIA"},
+    {"url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj", "label": "EUR-Lex AI Act consolidated text", "jurisdiction": "EU_AI_ACT"},
+    {"url": "https://digital-strategy.ec.europa.eu/en/policies/ai-office", "label": "European AI Office guidance index", "jurisdiction": "EU_AI_ACT"},
 ]
+
+
+def load_watchlist(path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """Load the seed watchlist from ``regwatch_sources.yaml`` (fallback: hardcoded list).
+
+    Each returned entry has at least ``url``; ``label``/``jurisdiction`` when configured.
+    Bookkeeping fields (``content_hash``/``last_checked``) are ignored here — live values are
+    tracked per-sweep in the snapshots store.
+    """
+    p = path or _SOURCES_CONFIG
+    try:
+        import yaml  # lazy: keep core import light
+        data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        sources = data.get("sources") or []
+        cleaned = [
+            {"url": s["url"], "label": s.get("label"), "jurisdiction": s.get("jurisdiction")}
+            for s in sources if isinstance(s, dict) and s.get("url")
+        ]
+        return cleaned or list(_SEED_WATCHLIST_FALLBACK)
+    except Exception:
+        return list(_SEED_WATCHLIST_FALLBACK)
+
+
+# Backwards-compatible module-level list (some callers/tests import SEED_WATCHLIST directly).
+SEED_WATCHLIST: List[Dict[str, Any]] = load_watchlist()
 
 # Citation reference patterns, used to map a diff back to the rules it likely affects.
 # EU: "Art. 9", "Article 50(2)"; DPDP: "s.8", "Section 9", "Rule 8(1)".
@@ -246,4 +261,74 @@ def build_change_proposal(
             "Human review required. This proposal is a triage hint derived from a detected "
             "source change; it does not modify any rulepack."
         ),
+    }
+
+
+# Injectable LLM, same contract as the copilot: llm(system, user) -> assistant text.
+LLM = Callable[[str, str], str]
+
+_DRAFT_SYSTEM_PROMPT = (
+    "You are CompliSense's regulatory-change analyst. A watched legal source changed. Using "
+    "ONLY the diff excerpt and the list of potentially-affected rules provided, write a SHORT "
+    "plain-language summary of what appears to have changed and which rules a human should "
+    "re-verify. Use READINESS framing, never a determination of compliance. This is an "
+    "engineering triage hint, NOT legal advice, and it modifies NOTHING. If you cannot ground "
+    "a summary in the provided text, say so plainly."
+)
+
+DRAFT_PATCH_MARKER = (
+    "DRAFT PROPOSAL — auto-drafted from a detected source change, applied to NOTHING. "
+    "Requires human review + explicit approve+merge. Not legal advice."
+)
+
+
+def draft_change_proposal(proposal: Dict[str, Any], llm: Optional[LLM] = None) -> Dict[str, Any]:
+    """Automated DRAFT step (never applied): enrich a proposal with an LLM summary + draft patch.
+
+    Reuses the copilot's injectable LLM contract so tests run with a fake and no network. The
+    returned ``ChangeProposal`` carries ``{affected_rule_ids, proposed_action, summary,
+    draft_patch}``. ``draft_patch`` is a git-friendly YAML-serializable scaffold with a
+    ``suggested_edit`` block for a human to fill — it is applied to nothing.
+    """
+    diff = proposal.get("diff_summary", {})
+    affected = proposal.get("affected_rule_ids", [])
+    action = proposal.get("proposed_action", "review_only")
+    source = proposal.get("source", {})
+
+    summary = ""
+    if llm is not None:
+        excerpt = " | ".join(
+            (diff.get("added_sample") or [])[:6] + (diff.get("removed_sample") or [])[:6]
+        )
+        user = (
+            f"SOURCE: {source.get('label') or source.get('url')}\n"
+            f"POTENTIALLY AFFECTED RULES: {', '.join(affected) or 'none matched yet'}\n"
+            f"DIFF EXCERPT (added/removed lines):\n{excerpt or '(no textual diff captured)'}\n\n"
+            "Summarise what changed and which rules to re-verify."
+        )
+        try:
+            summary = (llm(_DRAFT_SYSTEM_PROMPT, user) or "").strip()
+        except Exception as exc:  # a drafting failure must never break detection
+            summary = f"(LLM draft unavailable: {type(exc).__name__})"
+
+    draft_patch = {
+        "marker": DRAFT_PATCH_MARKER,
+        "source": source,
+        "summary": summary,
+        "affected_rule_ids": affected,
+        "proposed_action": action,
+        "auto_applied": False,
+        "suggested_edit": {
+            "pack_id": None,
+            "rule_id": affected[0] if affected else None,
+            "field": None,          # e.g. enforcement_date, or "new_rule"
+            "current_value": None,
+            "proposed_value": None,
+        },
+    }
+    return {
+        "affected_rule_ids": affected,
+        "proposed_action": action,
+        "summary": summary,
+        "draft_patch": draft_patch,
     }

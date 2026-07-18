@@ -1,0 +1,9 @@
+# Lawful-guardian consent path (DPDP Act s.9 proviso) — DPDP-SEC9-GUARDIAN-001
+# Documents how verifiable consent is obtained via the lawful guardian of a Data
+# Principal who is a person with disability. Sibling to the children's policy
+# (child_data_policy.yaml); shares the Rule 10 guardian-verification machinery.
+# Fields below are top-level (the file_presence evaluator does not descend into sub-maps).
+guardian_verification_method: "govt_id_plus_guardianship_document_check_then_otp"
+disability_scope_notes: "covers Data Principals with disability who have a lawful guardian appointed under applicable law; determination recorded per case"
+consent_capture: "guardian_signs_consent_on_behalf_scope_and_purpose_logged_with_timestamp"
+withdrawal_by_guardian: "guardian_can_withdraw_via_same_channel_as_given_processing_stops_on_withdrawal"

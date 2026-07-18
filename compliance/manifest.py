@@ -99,6 +99,13 @@ QUESTIONS: List[Dict[str, Any]] = [
         "help": "Triggers verifiable parental consent (Rule 10) + Act s.9 bans, subject to Fourth-Schedule exemptions.",
     },
     {
+        "id": "handles_disability_guardian_data",
+        "section": "Data you handle",
+        "text": "Do you process personal data of persons with disability who act through a lawful guardian?",
+        "type": "bool",
+        "help": "Triggers the s.9-proviso lawful-guardian consent path (DPDP-SEC9-GUARDIAN-001). Mirrors the children's-data gate; the guardian rule also fires when you process children's data.",
+    },
+    {
         "id": "cross_border_transfer",
         "section": "Data you handle",
         "text": "Do you transfer personal data outside India?",
@@ -129,6 +136,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you have a standalone, plain-language privacy notice?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC5-NOTICE-001",
+        "help": "A separate, easy-to-read notice telling people what data you collect, why, and their rights (DPDP s.5 / Rule 3). Look for a 'Privacy Policy' / 'Privacy Notice' page linked in your website or app footer.",
     },
     {
         "id": "consent_mechanism",
@@ -137,6 +145,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "type": "single",
         "options": ["explicit_optin", "pre_ticked_or_implied", "none"],
         "maps_to_rule": "DPDP-SEC6-CONSENT-001",
+        "help": "How users agree to your data use. 'Explicit opt-in' = an unticked box or clear action they must take. Check your sign-up / cookie / onboarding screens.",
     },
     {
         "id": "has_withdrawal_mechanism",
@@ -144,6 +153,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Can users withdraw consent as easily as they gave it?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC6-CONSENT-001",
+        "help": "A way for users to say 'stop using my data' that is as simple as giving consent was (DPDP s.6). Look for an account setting, an unsubscribe/opt-out link, or a documented request process.",
     },
     {
         "id": "has_security_safeguards",
@@ -151,6 +161,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you have documented security safeguards (encryption, access control, logging)?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-001",
+        "help": "Written technical/organisational measures protecting personal data — e.g. encryption, role-based access, audit logs (DPDP s.8(5) / Rule 6). Ask your engineering/security lead or check your security policy / SOC2-ISO docs.",
     },
     {
         "id": "has_breach_process",
@@ -158,6 +169,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you have a personal-data-breach response process / register?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-002",
+        "help": "A documented plan for what happens if data is exposed — who is told, and a log of incidents (DPDP s.8(6) / Rule 7 requires notifying the Board and affected people). Check for an incident-response runbook or breach register.",
     },
     {
         "id": "retention_defined",
@@ -165,6 +177,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Have you defined data retention and erasure periods?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-003",
+        "help": "Rules for how long you keep personal data and when you delete it (DPDP s.8(7)-(8) / Rule 8). Check for a data-retention schedule or policy; if you 'keep everything forever', the answer is No.",
     },
     {
         "id": "has_grievance_contact",
@@ -172,13 +185,15 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you publish a grievance/contact point for data questions?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC13-GRIEVANCE-001",
+        "help": "A named contact / channel users can reach about their data (DPDP s.13 requires a response within ~90 days). Look for a 'Grievance Officer', DPO email, or contact form in your privacy notice.",
     },
     {
         "id": "grievance_email",
         "section": "Your current posture",
-        "text": "What is the published grievance contact email? (optional)",
+        "text": "What is the published grievance contact email?",
         "type": "text",
         "optional": True,
+        "help": "The email address you publish for data-protection questions and grievances. Find it in your privacy notice or website footer / contact page.",
     },
     {
         "id": "processors_listed",
@@ -186,6 +201,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you maintain an inventory of processors/vendors with data-processing contracts?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-PROCESSOR-001",
+        "help": "A list of third parties that handle personal data on your behalf (AWS, analytics, CRM, payroll…) with data-processing agreements in place (DPDP s.8(2) / Rule 6(f)). Check your vendor list / DPA folder.",
     },
     # --- EU AI Act facts (applicability only; EU posture scoring pending legal review) ---
     {
@@ -381,6 +397,31 @@ QUESTIONS: List[Dict[str, Any]] = [
     },
 ]
 
+# ── Question tiers: CORE (default, ~10 Qs, ~2 min) vs DEEP (optional expander) ──
+# CORE questions render on one screen and drive the score. DEEP questions live behind a
+# collapsed "Add more for a deeper score" expander — still present and answerable; when left
+# blank they score as "unknown = gap" (honest), never as a pass. The EU AI Act block is its
+# own separate expander (shown only for an EU regulation) regardless of tier.
+CORE_QUESTION_IDS = {
+    "entity_type",
+    "sector",
+    "registered_users",       # india_user_count
+    "notified_as_sdf",        # is_sdf
+    "processes_children_data",
+    "has_privacy_notice",
+    "consent_mechanism",      # consent_method
+    "has_security_safeguards",
+    "has_breach_process",
+    "has_grievance_contact",  # publishes_grievance_contact
+}
+
+for _q in QUESTIONS:
+    # EU AI Act questions are always "deep" (they live in their own regulation-gated expander).
+    if _q["section"].startswith("EU AI Act"):
+        _q["tier"] = "deep"
+    else:
+        _q["tier"] = "core" if _q["id"] in CORE_QUESTION_IDS else "deep"
+
 QUESTION_IDS = {q["id"] for q in QUESTIONS}
 
 
@@ -397,6 +438,7 @@ class Manifest:
     is_state_instrumentality: bool = False
     acts_as_consent_manager: bool = False
     processes_children_data: bool = False
+    handles_disability_guardian_data: bool = False
     cross_border_transfer: bool = False
     # Processing facts
     pii_categories: List[str] = field(default_factory=list)
@@ -523,6 +565,11 @@ def manifest_to_profile(manifest: Manifest) -> Dict[str, Any]:
     return {
         "is_significant_data_fiduciary": bool(manifest.notified_as_sdf),
         "processes_children_data": bool(manifest.processes_children_data),
+        # Guardian rule shares the children's gate: applicable when disability/guardian data
+        # OR children's data is handled (both use the Rule 10 guardian-verification machinery).
+        "handles_disability_guardian_data": bool(
+            manifest.handles_disability_guardian_data or manifest.processes_children_data
+        ),
         "is_third_schedule_class": is_third_schedule_class(manifest),
         "is_consent_manager": bool(manifest.acts_as_consent_manager),
         "is_state_instrumentality": bool(manifest.is_state_instrumentality),

@@ -1,0 +1,6 @@
+# EU AI Act Art. 22 — authorised representative for non-EU providers of high-risk AI.
+# Starter template for EUAI-ART22-AUTHREP-001 (targets Indian exporters). Not legal advice.
+representative_name: "legal name of the authorised representative established in the Union"
+written_mandate: "signed written mandate empowering the representative for the Art. 22 tasks"
+eu_establishment_address: "registered EU address of the authorised representative"
+mandate_tasks: "verify declaration of conformity + technical docs, cooperate with authorities, keep records"

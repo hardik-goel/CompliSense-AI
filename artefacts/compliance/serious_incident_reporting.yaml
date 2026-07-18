@@ -1,0 +1,7 @@
+# EU AI Act Art. 73 — serious-incident reporting procedure.
+# Starter template for EUAI-ART73-INCIDENT-001. Readiness artefact, not legal advice.
+incident_definition: "what qualifies as a serious incident for this system (per Art. 3 / Art. 73)"
+reporting_timeline: "internal timeline to report to the market surveillance authority within Art. 73 deadlines"
+authority_contacts: "named market surveillance authority contacts / channels per relevant member state"
+investigation_process: "how incidents are investigated and root-caused"
+corrective_action_log: "record of corrective actions taken and their status"

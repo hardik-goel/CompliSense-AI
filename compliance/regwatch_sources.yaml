@@ -1,0 +1,35 @@
+# Regwatch watchlist — the primary/secondary legal sources we monitor for change.
+#
+# The cron sweep fetches each url, computes a normalised content hash, and compares it to
+# the stored hash. On change it raises a human-gated ChangeProposal — it NEVER edits a
+# rulepack. `content_hash` and `last_checked` are seed/bookkeeping fields; the live values
+# are tracked per-sweep in the `regulatory_snapshots` collection (this file is the seed +
+# human-editable source of truth for WHAT to watch).
+#
+# Each entry: url, jurisdiction, label; optional content_hash + last_checked (seed only).
+sources:
+  - url: "https://www.meity.gov.in/documents/press-release"
+    jurisdiction: "DPDP_INDIA"
+    label: "MeitY press releases"
+    content_hash: null
+    last_checked: null
+  - url: "https://pib.gov.in/PressReleaseIframePage.aspx?PRID=0"
+    jurisdiction: "DPDP_INDIA"
+    label: "PIB press releases (MeitY)"
+    content_hash: null
+    last_checked: null
+  - url: "https://egazette.gov.in/(S(dpdp))/default.aspx"
+    jurisdiction: "DPDP_INDIA"
+    label: "e-Gazette (DPDP entries)"
+    content_hash: null
+    last_checked: null
+  - url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    jurisdiction: "EU_AI_ACT"
+    label: "EUR-Lex AI Act consolidated text"
+    content_hash: null
+    last_checked: null
+  - url: "https://digital-strategy.ec.europa.eu/en/policies/ai-office"
+    jurisdiction: "EU_AI_ACT"
+    label: "European AI Office guidance index"
+    content_hash: null
+    last_checked: null

@@ -26,6 +26,8 @@ from compliance.regwatch import (
     collect_watch_sources,
     content_hash,
     detect_change,
+    draft_change_proposal,
+    load_watchlist,
     merge_watch_sources,
     normalize_text,
 )
@@ -71,8 +73,12 @@ def _all_rules() -> list[dict[str, Any]]:
 
 
 def watch_sources() -> list[dict[str, Any]]:
-    """Watched sources = rulepack-cited URLs unioned with the seed watchlist."""
-    return merge_watch_sources(collect_watch_sources(_load_all_packs()))
+    """Watched sources = rulepack-cited URLs unioned with the config watchlist.
+
+    The seed watchlist is (re)loaded from ``compliance/regwatch_sources.yaml`` each call so
+    edits to that file take effect without a process restart.
+    """
+    return merge_watch_sources(collect_watch_sources(_load_all_packs()), load_watchlist())
 
 
 def _default_fetcher(url: str) -> str:
@@ -221,43 +227,90 @@ class ProposalReview(BaseModel):
     note: str = Field(default="", max_length=2000)
 
 
-def _write_proposal_patch(change: dict[str, Any], now: dt.datetime) -> Path:
-    """Write an approved proposal as a YAML patch stub. Returns the file path.
+_LIVE_RULEPACKS_DIR = _PROJECT_ROOT / "rulepacks"
 
-    The stub is a human-editable scaffold: it records the source, affected rules, proposed
-    action, and diff summary, with placeholder fields for the reviewer to fill. Applying it
-    to a rulepack is a manual, reviewed step — never automatic.
+
+def _guard_proposal_path(path: Path) -> Path:
+    """Hard guarantee: a proposal/draft file may ONLY be written under rulepacks/proposals/.
+
+    This is the structural enforcement of "no code path mutates a live rulepack". Any attempt
+    to resolve outside the proposals dir (e.g. a live ``rulepacks/*.yaml`` pack) raises.
+    """
+    resolved = path.resolve()
+    proposals = _PROPOSALS_DIR.resolve()
+    if proposals not in resolved.parents and resolved.parent != proposals:
+        raise ValueError(f"refusing to write outside proposals dir: {resolved}")
+    # Extra belt-and-braces: never target a live pack file name at the rulepacks/ root.
+    if resolved.parent == _LIVE_RULEPACKS_DIR.resolve():
+        raise ValueError("refusing to write a live rulepack file")
+    return resolved
+
+
+def _write_proposal_patch(change: dict[str, Any], now: dt.datetime, staged: bool = False) -> Path:
+    """Write a proposal as a YAML patch/draft stub under rulepacks/proposals/. Returns the path.
+
+    The stub is a human-editable scaffold: source, affected rules, proposed action, diff
+    summary, the LLM draft summary (if drafted), and placeholder fields for the reviewer.
+    Applying it to a rulepack is a manual, reviewed, PR-style step — never automatic.
     """
     import yaml  # lazy: keep module import light
 
     _PROPOSALS_DIR.mkdir(parents=True, exist_ok=True)
     change_id = change.get("change_id", "unknown")
     proposal = change.get("proposal") or {}
+    draft = proposal.get("draft") or {}
     patch = {
         "proposal_id": change_id,
-        "status": "approved_pending_manual_apply",
+        "status": "staged_pending_human_merge" if staged else "draft_pending_review",
         "generated_at": now.isoformat(),
         "auto_applied": False,
+        "requires_human_merge": True,
         "source": proposal.get("source", {"url": change.get("url")}),
         "affected_rule_ids": proposal.get("affected_rule_ids", change.get("rule_ids", [])),
         "proposed_action": proposal.get("proposed_action", "review_only"),
         "diff_summary": proposal.get("diff_summary", {}),
+        "llm_summary": draft.get("summary", ""),
         "reviewer_note": change.get("review_note", ""),
         "manual_edit_required": (
-            "Fill in the concrete rulepack edit below, then apply by hand. This file does "
-            "NOT modify any rulepack on its own."
+            "Fill in the concrete rulepack edit below, then apply via a reviewed PR. This "
+            "file does NOT modify any rulepack on its own."
         ),
-        "suggested_edit": {
-            "pack_id": None,
-            "rule_id": None,
-            "field": None,        # e.g. enforcement_date / new rule
-            "current_value": None,
-            "proposed_value": None,
-        },
+        "suggested_edit": (draft.get("draft_patch") or {}).get("suggested_edit", {
+            "pack_id": None, "rule_id": None, "field": None,
+            "current_value": None, "proposed_value": None,
+        }),
     }
-    path = _PROPOSALS_DIR / f"{change_id}.yaml"
+    path = _guard_proposal_path(_PROPOSALS_DIR / f"{change_id}.yaml")
     path.write_text(yaml.safe_dump(patch, sort_keys=False, allow_unicode=True), encoding="utf-8")
     return path
+
+
+def draft_pending_changes(llm=None, now: Optional[dt.datetime] = None) -> dict[str, Any]:
+    """Automated DRAFT pass (never applied): enrich each un-drafted pending change with an
+    LLM summary + draft patch, and write the draft stub to rulepacks/proposals/<id>.yaml.
+
+    ``llm`` is the injectable copilot-style callable (fake in tests, real in cron). Returns a
+    summary. This writes ONLY to the proposals staging dir — never a live rulepack.
+    """
+    now = now or dt.datetime.utcnow()
+    drafted: list[str] = []
+    for change in list(changes_collection().find({"status": "pending"})):
+        proposal = change.get("proposal")
+        if not proposal or proposal.get("draft"):
+            continue
+        draft = draft_change_proposal(proposal, llm=llm)
+        proposal = {**proposal, "draft": draft}
+        path = _write_proposal_patch({**change, "proposal": proposal}, now)
+        try:
+            rel = str(path.relative_to(_PROJECT_ROOT))
+        except ValueError:
+            rel = str(path)
+        changes_collection().update_one(
+            {"change_id": change["change_id"]},
+            {"$set": {"proposal": proposal, "draft_patch_path": rel}},
+        )
+        drafted.append(change["change_id"])
+    return {"drafted": len(drafted), "change_ids": drafted}
 
 
 @router.get("/proposals")
@@ -283,9 +336,11 @@ async def list_proposals(status: str = "pending", current_user: dict[str, Any] =
 
 @router.post("/proposals/{change_id}/review")
 async def review_proposal(change_id: str, body: ProposalReview, _admin: bool = Depends(require_admin)):
-    """Human-gated proposal decision. approve → writes a YAML patch stub; reject → archived.
+    """Human gate on a proposal. approve → PR-style STAGED patch (still needs a human merge);
+    reject → archived.
 
-    NEVER edits a live rulepack. Approval only scaffolds a patch file for manual application.
+    NEVER edits a live rulepack. Approval only stages a patch file under rulepacks/proposals/
+    for a reviewed merge; it does not apply anything.
     """
     decision = body.decision.strip().lower()
     if decision not in {"approved", "rejected"}:
@@ -297,31 +352,38 @@ async def review_proposal(change_id: str, body: ProposalReview, _admin: bool = D
         raise HTTPException(status_code=400, detail="Change has no proposal to review")
 
     now = dt.datetime.utcnow()
-    update: dict[str, Any] = {"status": decision, "review_note": body.note, "reviewed_at": now}
+    # PR-style lifecycle: approve -> staged (merged:false, awaits a human merge); reject -> archived.
+    lifecycle = "staged" if decision == "approved" else "archived"
+    update: dict[str, Any] = {
+        "status": lifecycle, "decision": decision, "review_note": body.note, "reviewed_at": now,
+    }
     patch_path: str | None = None
     if decision == "approved":
+        update["merged"] = False  # a human still has to merge the staged patch
         try:
-            path = _write_proposal_patch({**change, "review_note": body.note}, now)
+            path = _write_proposal_patch({**change, "review_note": body.note}, now, staged=True)
             try:
                 patch_path = str(path.relative_to(_PROJECT_ROOT))
             except ValueError:  # patch dir outside the repo (e.g. tests) — use absolute
                 patch_path = str(path)
         except Exception as exc:  # never 500 the review because file IO hiccupped
-            raise HTTPException(status_code=500, detail=f"Could not write patch: {exc}")
+            raise HTTPException(status_code=500, detail=f"Could not stage patch: {exc}")
         update["proposal_patch_path"] = patch_path
     changes_collection().update_one({"change_id": change_id}, {"$set": update})
 
     try:
         insert_audit_log({
-            "source": "regwatch_proposal_review", "status": decision, "timestamp": now,
-            "metadata": {"change_id": change_id, "url": change.get("url"),
+            "source": "regwatch_proposal_review", "status": lifecycle, "timestamp": now,
+            "metadata": {"change_id": change_id, "url": change.get("url"), "decision": decision,
                          "patch_path": patch_path, "note": body.note},
         })
     except Exception:
         pass
     return {
         "change_id": change_id,
-        "status": decision,
+        "status": lifecycle,
+        "decision": decision,
+        "merged": False if decision == "approved" else None,
         "proposal_patch_path": patch_path,
         "rules_to_review": change.get("proposal", {}).get("affected_rule_ids", []) if decision == "approved" else [],
     }

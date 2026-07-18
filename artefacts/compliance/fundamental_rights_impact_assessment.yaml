@@ -1,0 +1,7 @@
+# EU AI Act Art. 27 — fundamental rights impact assessment (FRIA) for applicable deployers.
+# Starter template for EUAI-ART27-FRIA-001. Readiness artefact, not legal advice.
+deployment_context: "description of the deployer's process where the high-risk system is used"
+affected_persons: "categories of persons/groups likely affected by the system's use"
+risks_to_fundamental_rights: "specific risks to fundamental rights identified for this context"
+mitigation_measures: "measures to address the risks, including human-oversight arrangements"
+authority_notification: "process to notify the market surveillance authority of the FRIA where required"

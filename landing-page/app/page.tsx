@@ -125,6 +125,61 @@ export default function HomePage() {
   // Days remaining until full DPDP compliance (13 May 2027). Computed client-side after
   // mount so server/client render match (no hydration mismatch), no date library needed.
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
+  // Demo gate: the public "Book a Demo" unlocks only after a readiness test is completed
+  // (or email captured) this session, so every booked call is pre-qualified. The readiness
+  // tool sets these session flags; a warm-inbound override (DIRECT_DEMO_URL) is env-only and
+  // never surfaced here.
+  const [readinessDone, setReadinessDone] = useState(false);
+  const [leadScore, setLeadScore] = useState<string | null>(null);
+  const [leadEmail, setLeadEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const readGate = () => {
+      try {
+        setReadinessDone(sessionStorage.getItem("cs_readiness_done") === "1");
+        setLeadScore(sessionStorage.getItem("cs_readiness_score"));
+        setLeadEmail(sessionStorage.getItem("cs_readiness_email"));
+      } catch {
+        /* sessionStorage unavailable — stay gated */
+      }
+    };
+    readGate();
+    window.addEventListener("cs-readiness-complete", readGate);
+    window.addEventListener("storage", readGate);
+    return () => {
+      window.removeEventListener("cs-readiness-complete", readGate);
+      window.removeEventListener("storage", readGate);
+    };
+  }, []);
+
+  // Once the readiness test is done, pass the lead context into the booking link so the
+  // call is pre-qualified (Calendly prefill + a note with the score).
+  const demoBookingUrl = readinessDone
+    ? `${calendlyUrl}?email=${encodeURIComponent(leadEmail || "")}&a1=${encodeURIComponent(
+        leadScore ? `Readiness score ${leadScore}%` : "Completed readiness test"
+      )}`
+    : calendlyUrl;
+
+  /** Public "Book a Demo" gate: before a readiness test is completed this session it points
+   *  to the 2-minute test (benefit framing, not a toll); after, it books with lead context. */
+  function GatedDemo({ className, label }: { className?: string; label: string }) {
+    if (!readinessDone) {
+      return (
+        <a
+          href="/readiness"
+          className={className}
+          title="See your 2-minute readiness score first — then book a demo and we'll walk through your specific gaps."
+        >
+          See your 2-minute readiness score first &rarr;
+        </a>
+      );
+    }
+    return (
+      <a href={demoBookingUrl} target="_blank" rel="noopener noreferrer" className={className}>
+        {label}
+      </a>
+    );
+  }
 
   useEffect(() => {
     const deadline = Date.UTC(2027, 4, 13); // month is 0-indexed: 4 = May
@@ -487,13 +542,15 @@ export default function HomePage() {
             <p className="hero-subtext body-text" data-animate>
               DPDP, AI governance, vendor reviews, and audit readiness — automated from one operating layer.
             </p>
+            <p className="hero-subtext body-text" data-animate style={{ fontSize: "0.95rem", opacity: 0.9 }}>
+              India&apos;s DPDP regime is already in force — the Data Protection Board is live and the clock to full
+              compliance (13 May 2027) is running.
+            </p>
             <div className="hero-actions" data-animate style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
               <a href="/readiness" className="btn-primary">
                 Check your DPDP readiness — free, 15 minutes &rarr;
               </a>
-              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
-                📅 Book a Demo
-              </a>
+              <GatedDemo className="btn-ghost" label="📅 Book a Demo" />
               <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
                 Launch App &rarr;
               </a>
@@ -530,6 +587,32 @@ export default function HomePage() {
                   — <strong style={{ color: "var(--warning)" }}>{daysToDeadline.toLocaleString()}</strong> days remaining
                 </span>
               )}
+            </div>
+
+            {/* DPDP is already in motion — three-phase enforcement timeline (accurate framing:
+                Phase 1 is LIVE now; substantive obligations are NOT enforced until Phase 3). */}
+            <div className="dpdp-phases" data-animate style={{ marginTop: "16px", textAlign: "left" }}>
+              <p className="section-kicker" style={{ marginBottom: "8px" }}>DPDP is already in motion</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px" }}>
+                <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.08)" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--success)" }}>Phase 1 · LIVE NOW</div>
+                  <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginTop: "4px", lineHeight: 1.5 }}>
+                    Data Protection Board operational · ₹250 cr penalty framework in law · complaints can be filed
+                  </div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.08)" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--warning)" }}>Phase 2 · Nov 2026</div>
+                  <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginTop: "4px", lineHeight: 1.5 }}>
+                    Enforcement powers + Consent Manager registration begin · deadline may compress to 12 months
+                  </div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444" }}>Phase 3 · 13 May 2027</div>
+                  <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginTop: "4px", lineHeight: 1.5 }}>
+                    Full compliance mandatory · no grace period
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="social-proof-bar" data-animate style={{ marginTop: "40px" }}>
@@ -890,6 +973,7 @@ export default function HomePage() {
           </div>
 
           {/* BY THE NUMBERS / CHARTS */}
+          {/* REVIEW: substantiate or revise these figures before public claims (counsel note). */}
           <div className="section-header" style={{ marginTop: "96px" }} data-animate>
             <p className="label-caption">BY THE NUMBERS</p>
             <h3>What teams measure after going live.</h3>
@@ -1682,6 +1766,12 @@ export default function HomePage() {
             CompliSense-AI provides compliance-<strong>readiness</strong> assessment and tooling, not legal advice.
             Results are informational, may not reflect the latest legal position, and do not constitute a legal
             determination of compliance. Consult a qualified data-protection practitioner before relying on these results.
+          </p>
+          <p className="body-text" style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "8px", textAlign: "center", lineHeight: 1.5 }}>
+            CompliSense-AI provides a regulatory-readiness assessment, not legal advice, and does not create any
+            attorney-client relationship. To the maximum extent permitted by law, CompliSense&apos;s liability is
+            limited as set out in our <Link href="/terms">Terms</Link>; we are not liable for any regulatory fine or
+            penalty imposed on you.
           </p>
         </div>
       </footer>

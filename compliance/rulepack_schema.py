@@ -52,6 +52,7 @@ APPLICABILITY_SCOPES = {
     "third_schedule_class_only",
     "consent_manager_only",
     "child_data_processing_only",
+    "disability_guardian_only",
     "state_instrumentality_only",
     # EU AI Act roles (Art. 3)
     "eu_provider",
