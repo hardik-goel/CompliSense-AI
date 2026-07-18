@@ -122,6 +122,16 @@ export default function HomePage() {
   const [showBanner, setShowBanner] = useState(true);
   const [activeTab, setActiveTab] = useState("DPDP");
   const [scanState, setScanState] = useState(1); // 1: Scanning, 2: Results
+  // Days remaining until full DPDP compliance (13 May 2027). Computed client-side after
+  // mount so server/client render match (no hydration mismatch), no date library needed.
+  const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
+
+  useEffect(() => {
+    const deadline = Date.UTC(2027, 4, 13); // month is 0-indexed: 4 = May
+    const today = new Date();
+    const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    setDaysToDeadline(Math.max(0, Math.round((deadline - todayUTC) / 86_400_000)));
+  }, []);
 
   useEffect(() => {
     const bannerDismissed = sessionStorage.getItem(" CS-Banner-Dismissed");
@@ -479,7 +489,7 @@ export default function HomePage() {
             </p>
             <div className="hero-actions" data-animate style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
               <a href="/readiness" className="btn-primary">
-                Get your free readiness score &rarr;
+                Check your DPDP readiness — free, 15 minutes &rarr;
               </a>
               <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
                 📅 Book a Demo
@@ -490,6 +500,36 @@ export default function HomePage() {
               <a href={`mailto:${supportEmail}?subject=CompliSense-AI%20Enquiry`} className="btn-ghost" style={{ fontSize: "13px", color: "#64748B", textDecoration: "underline", border: "none", padding: "0" }}>
                 or email us
               </a>
+            </div>
+
+            {/* DPDP compliance deadline — computed days-remaining counter (client-side, no dependency) */}
+            <div
+              className="dpdp-deadline"
+              data-animate
+              style={{
+                marginTop: "20px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "10px 16px",
+                borderRadius: "10px",
+                border: "1px solid rgba(245, 158, 11, 0.35)",
+                background: "rgba(245, 158, 11, 0.08)",
+                fontSize: "14px",
+                color: "var(--text-secondary)",
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "var(--warning)", fontWeight: 600 }}>
+                <ClipboardList size={15} />
+                Full DPDP compliance is due 13 May 2027
+              </span>
+              {daysToDeadline !== null && (
+                <span style={{ color: "var(--text-secondary)" }}>
+                  — <strong style={{ color: "var(--warning)" }}>{daysToDeadline.toLocaleString()}</strong> days remaining
+                </span>
+              )}
             </div>
 
             <div className="social-proof-bar" data-animate style={{ marginTop: "40px" }}>
