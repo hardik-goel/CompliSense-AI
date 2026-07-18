@@ -70,9 +70,17 @@ CompliSense-AI/
 ├── saas/             # FastAPI backend + Jinja templates
 ├── landing-page/     # Next.js marketing site + public readiness tool
 ├── docs/             # legal reference, sources, data handling, terms notes
+│   └── archive/      # superseded progress/fix/roadmap snapshots (historical, unmaintained)
 ├── main.py           # FastAPI entrypoint
 └── .env.example
 ```
+
+Superseded progress notes, fix logs, and early roadmaps have been moved to
+[`docs/archive/`](docs/archive/README.md) — kept for provenance, not maintained.
+The current, maintained docs are `README.md`, [`docs/CAPABILITIES.md`](docs/CAPABILITIES.md),
+[`docs/LEGAL_REFERENCE_DPDP_EUAI.md`](docs/LEGAL_REFERENCE_DPDP_EUAI.md),
+[`docs/SOURCES_ACT.md`](docs/SOURCES_ACT.md), [`docs/DATA_HANDLING.md`](docs/DATA_HANDLING.md),
+[`LEGAL_REVIEW_NEEDED.md`](LEGAL_REVIEW_NEEDED.md), and [`SECURITY.md`](SECURITY.md).
 
 ## Local setup
 

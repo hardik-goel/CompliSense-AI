@@ -27,6 +27,12 @@
     publication (~Nov 2026)**.
   - Rules **3, 5–16, 22, 23**: in force **eighteen months after publication (~13 May
     2027)** — this is the bulk of operational compliance.
+- **Phased dates at a glance (as of 2026-07-18):**
+  - Rules **notified 2025-11-14** (Gazette publication).
+  - **DPB operational** — the Data Protection Board machinery (Rules 1, 2, 17–21) is
+    in force from publication.
+  - **Consent-manager registration ~Nov 2026** (Rule 4, one year after publication).
+  - **Full operational compliance 2027-05-13** (Rules 3, 5–16, 22, 23).
 - **Framing for the product:** this is a "prepare for 13 May 2027" tool. NOT a
   "you are in violation today" tool. The core operational obligations are NOT yet
   enforceable. Say so everywhere.
@@ -244,18 +250,24 @@ Board's 6-month (extendable +3) inquiry window.
 - Entered into force **1 Aug 2024**. Phased application.
 - **Prohibited practices (Art. 5) + AI-literacy (Art. 4): in force since 2 Feb 2025.**
 - **GPAI model obligations (Arts. 51–55, Chapter V): in force since 2 Aug 2025.**
-- **Transparency (Art. 50): from 2 Aug 2026.**
-- **High-risk (Annex III) obligations:** ORIGINALLY 2 Aug 2026 — **BUT the "Digital
-  Omnibus" simplification (political agreement 7 May 2026, pending formal adoption)
-  DEFERS Annex III high-risk to 2 December 2027**, and Annex I product-embedded
-  high-risk to 2 Aug 2028.
-  - ⚠️ THIS IS A LIVE, MOVING TARGET. Sources as recent as Feb–Mar 2026 still cite
-    "2 Aug 2026" for high-risk; June-2026 sources cite the deferral to Dec 2027. The
-    Omnibus was "adopted 19 Nov 2025 / political agreement 7 May 2026 / pending formal
-    adoption expected before 2 Aug 2026." **CompliSense's EU rulepack MUST track this
-    and state the date as provisional. Do NOT hardcode 2 Aug 2026 as the high-risk
-    deadline without flagging the Omnibus deferral.** This is the single biggest
-    "are we accurate?" risk in the EU pack right now.
+- **Transparency (Art. 50): from 2 Aug 2026 — UNCHANGED, now IMMINENT.** The Omnibus did
+  NOT move this date. Art. 50(2) machine-readable marking for systems already on the
+  market (legacy) is scheduled for **2 Dec 2026**.
+- **High-risk (Annex III) obligations — Digital Omnibus on AI now FINAL:** the Digital
+  Omnibus on AI was **adopted by the European Parliament on 16 June 2026 and by the
+  Council on 29 June 2026, and is in force from July 2026**. It **CONFIRMS** the
+  deferral of Annex III stand-alone high-risk obligations (Arts 9–15, 17, 43, 49, 72) to
+  **2 December 2027**, and Annex I product-embedded high-risk to **2 August 2028**.
+  - As of 2026-07-18 these dates are treated as **`phased_confirmed`** in the v2 packs
+    (was `provisional_pending_amendment` in v1). They remain **secondary-sourced** —
+    verify against the consolidated OJ text before any unqualified public claim.
+- **New Art. 5 prohibition (Omnibus):** AI systems generating **non-consensual intimate
+  imagery (NCII) and CSAM** ("nudifiers") are prohibited from **2 December 2026**
+  (`EUAI-ART5-PROHIBITED-002`, secondary-sourced, pending legal review).
+- **Omnibus timeline (as of 2026-07-18):** EP adoption **16 Jun 2026** → Council adoption
+  **29 Jun 2026** → **in force Jul 2026**. Art. 50 transparency **2 Aug 2026**; Art. 50(2)
+  legacy marking + new NCII/CSAM prohibition **2 Dec 2026**; Annex III high-risk
+  **2 Dec 2027**; Annex I embedded high-risk **2 Aug 2028**.
 - **Penalties (Art. 99):** up to **€35M or 7%** global turnover (prohibited practices);
   **€15M or 3%** (high-risk non-compliance); **€7.5M or 1%** (incorrect info to
   authorities). SME/startup proportionate caps apply.
@@ -343,8 +355,9 @@ core launch)
 - DPDP **SDF / DPO** obligations must be applicability-gated; most startups are neither
   SDF nor DPO-required. Over-flagging would destroy credibility with the exact ICP.
 - DPDP enforcement is **~May 2027**, not now → "readiness," not "violation."
-- EU AI Act high-risk deadline **moved** (Omnibus): Aug 2026 → likely **Dec 2027**,
-  still pending formal adoption. A hardcoded date would already be wrong.
+- EU AI Act high-risk deadline **moved** (Omnibus): Aug 2026 → **2 Dec 2027**, now
+  CONFIRMED by the final Digital Omnibus on AI (EP 16 Jun 2026, Council 29 Jun 2026,
+  in force Jul 2026). v2 packs tag this `phased_confirmed` (secondary-sourced).
 
 ## Hard caveats
 - This doc is an engineering reference compiled from primary text + reputable analysis.
@@ -353,8 +366,9 @@ core launch)
   reproduced here).
 - DPDP figures (penalties) and a few Act-level specifics should be cross-checked
   against the **Act Schedule and ss.7–17** before any rule asserts them.
-- EU AI Act is mid-amendment (Digital Omnibus). Any date/obligation tagged here may
-  shift on formal adoption. Treat EU dates as provisional.
+- The Digital Omnibus on AI is now FINAL (in force Jul 2026), so the headline EU high-risk
+  dates are `phased_confirmed` rather than provisional. They remain **secondary-sourced** —
+  verify against the consolidated OJ text before any unqualified public claim.
 - **Required next step:** professional review by (a) an Indian data-protection
   practitioner for DPDP and (b) an EU AI Act specialist, before unqualified public
   compliance claims. Maintain `LEGAL_REVIEW_NEEDED.md` and a per-pack reviewer sign-off.

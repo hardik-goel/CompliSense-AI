@@ -4,31 +4,37 @@ All high-level documentation (other than the main `README.md`) is referenced her
 
 ## Core Product & Architecture Docs
 
-- `ANALYSIS_AND_ROADMAP.md` – Deep architectural analysis and roadmap.
-- `ARCHITECTURE_DECISION.md` – Current vs. original architecture, key choices.
-- `ARCHITECTURE_CLARIFICATION.md` – Additional clarifications on modules and flows.
-- `PHASE_STATUS.md` – Phase-by-phase status and checklists.
+- `../../ARCHITECTURE_DECISION.md` – Current vs. original architecture, key choices.
+- `../../ARCHITECTURE_CLARIFICATION.md` – Additional clarifications on modules and flows.
+- `../../CODEBASE_FLOW_EU_DPDP.md` – End-to-end DPDP/EU AI Act code flow.
 
 ## Usage & Client Guides
 
-- `CLIENT_ONBOARDING_GUIDE.md` – How clients use the tool; required artifacts.
-- `AGENT_ZIP_USAGE.md` – How to run the downloaded local agent zip.
-- `MODEL_PATH_GUIDE.md` – What `--project-path` means and how to choose it.
-- `HOSTING_GUIDE.md` – Hosting options and setup notes.
+- `../../CLIENT_ONBOARDING_GUIDE.md` – How clients use the tool; required artifacts.
+- `../../AGENT_ZIP_USAGE.md` – How to run the downloaded local agent zip.
+- `../../MODEL_PATH_GUIDE.md` – What `--project-path` means and how to choose it.
+- `../../HOSTING_GUIDE.md` – Hosting options and setup notes.
 
-## Fixes, Plans & Tiers
+## Plans & Tiers
 
-- `FIXES_SUMMARY.md` / `FIXES_AND_PHASE_COMPLETION.md` / `ALL_FIXES_AND_STATUS.md` – Bugfix and feature history.
-- `PLANS_AND_TIERS.md` – Free/Standard/Premium/Premium+ breakdown.
-- `VC_PITCH_AND_FAQ.md` – Investor-facing pitch, architecture, and FAQ.
+- `../../PLANS_AND_TIERS.md` – Free/Standard/Premium/Premium+ breakdown.
+- `../../VC_PITCH_AND_FAQ.md` – Investor-facing pitch, architecture, and FAQ.
 
-## Misc & Internal
+## Legal & Reference (kept current)
 
-- `REDUNDANT_FILES_TO_REMOVE.md` – Legacy files identified for cleanup.
-- `IMPLEMENTATION_PLAN.md` – Earlier implementation planning notes.
-- `COMPLETE_IMPLEMENTATION_SUMMARY.md` – Summary of completed work.
-- `QUICK_FIXES_SUMMARY.md` – Snapshot of recent fixes.
+- `../../README.md` – Start here.
+- `../../docs/CAPABILITIES.md` – Whole product on one page.
+- `../../docs/LEGAL_REFERENCE_DPDP_EUAI.md` – Source of truth for legal content + timelines.
+- `../../docs/SOURCES_ACT.md` – Primary-source citations (DRAFT).
+- `../../docs/DATA_HANDLING.md` – How the platform handles data.
+- `../../LEGAL_REVIEW_NEEDED.md` – Living professional-review checklist (generated).
+- `../../SECURITY.md` – Security posture and disclosure.
 
-> Over time, these individual docs can be physically moved into this `resources/docs` folder.
-> For now, this index serves as a single place to discover all non-README documentation.
+## Archived (historical — superseded, kept for provenance)
 
+Progress snapshots, fix logs, and early roadmaps now live under `docs/archive/`:
+`ALL_FIXES_AND_STATUS.md`, `FIXES_AND_PHASE_COMPLETION.md`, `FIXES_COMPLETE.md`,
+`FIXES_SUMMARY.md`, `QUICK_FIXES_SUMMARY.md`, `COMPLETE_IMPLEMENTATION_SUMMARY.md`,
+`PHASE_STATUS.md`, `IMPLEMENTATION_PLAN.md`, `ANALYSIS_AND_ROADMAP.md`,
+`DPDP_EXTENDED_V1_ROADMAP.md`, `AUDIT_REPORT.md`. These are point-in-time and are
+NOT maintained; trust the current docs above.
