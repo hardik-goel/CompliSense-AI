@@ -165,12 +165,14 @@ def test_approve_proposal_writes_patch_stub(monkeypatch, tmp_path):
                                      "proposed_action": "date_change", "diff_summary": {"added_count": 1},
                                      "auto_applied": False}})
     out = _run(R.review_proposal("c1", R.ProposalReview(decision="approved", note="looks right"), _admin=True))
-    assert out["status"] == "approved"
+    # PR-style staging: approve -> staged, still requires a human merge.
+    assert out["status"] == "staged" and out["decision"] == "approved" and out["merged"] is False
     patch_file = tmp_path / "proposals" / "c1.yaml"
     assert patch_file.exists()
     body = patch_file.read_text()
     assert "auto_applied: false" in body and "suggested_edit" in body
-    assert changes.docs[0]["status"] == "approved"
+    assert "staged_pending_human_merge" in body and "requires_human_merge: true" in body
+    assert changes.docs[0]["status"] == "staged" and changes.docs[0]["merged"] is False
 
 
 def test_reject_proposal_writes_no_file(monkeypatch, tmp_path):
@@ -179,9 +181,9 @@ def test_reject_proposal_writes_no_file(monkeypatch, tmp_path):
     changes.insert_one({"change_id": "c1", "url": "u", "status": "pending", "detected_at": NOW1,
                         "proposal": {"auto_applied": False}})
     out = _run(R.review_proposal("c1", R.ProposalReview(decision="rejected"), _admin=True))
-    assert out["status"] == "rejected" and out["proposal_patch_path"] is None
+    assert out["status"] == "archived" and out["proposal_patch_path"] is None
     assert not (tmp_path / "proposals").exists() or not list((tmp_path / "proposals").glob("*.yaml"))
-    assert changes.docs[0]["status"] == "rejected"
+    assert changes.docs[0]["status"] == "archived"
 
 
 def test_review_proposal_bad_decision(monkeypatch):
@@ -191,3 +193,70 @@ def test_review_proposal_bad_decision(monkeypatch):
     with pytest.raises(HTTPException) as e:
         _run(R.review_proposal("c1", R.ProposalReview(decision="maybe"), _admin=True))
     assert e.value.status_code == 400
+
+
+# ── Automated DRAFT pass (LLM) + no-live-mutation guarantee (Prompt 2 Task 7) ─
+
+def test_draft_pending_changes_uses_injected_llm_and_writes_stub(monkeypatch, tmp_path):
+    _, changes, _ = _patch(monkeypatch, {})
+    monkeypatch.setattr(R, "_PROPOSALS_DIR", tmp_path / "proposals")
+    changes.insert_one({"change_id": "c1", "url": "https://eur-lex/ai", "status": "pending",
+                        "detected_at": NOW1, "rule_ids": ["EUAI-ART50-TRANSPARENCY-001"],
+                        "proposal": {"source": {"url": "https://eur-lex/ai", "label": "EUR-Lex"},
+                                     "affected_rule_ids": ["EUAI-ART50-TRANSPARENCY-001"],
+                                     "proposed_action": "date_change",
+                                     "diff_summary": {"added_sample": ["Article 50 date confirmed"],
+                                                      "removed_sample": []},
+                                     "auto_applied": False}})
+    calls = []
+    fake_llm = lambda system, user: calls.append((system, user)) or "SUMMARY: Art 50 date reaffirmed; re-verify EUAI-ART50-TRANSPARENCY-001."
+    out = R.draft_pending_changes(llm=fake_llm, now=NOW2)
+    assert out["drafted"] == 1 and calls, "LLM should have been invoked"
+    # draft embedded on the change + stub written to proposals dir (never a live pack)
+    draft = changes.docs[0]["proposal"]["draft"]
+    assert draft["proposed_action"] == "date_change"
+    assert "SUMMARY" in draft["summary"]
+    assert draft["draft_patch"]["auto_applied"] is False
+    stub = tmp_path / "proposals" / "c1.yaml"
+    assert stub.exists() and "requires_human_merge: true" in stub.read_text()
+
+
+def test_draft_pass_is_idempotent(monkeypatch, tmp_path):
+    _, changes, _ = _patch(monkeypatch, {})
+    monkeypatch.setattr(R, "_PROPOSALS_DIR", tmp_path / "proposals")
+    changes.insert_one({"change_id": "c1", "url": "u", "status": "pending", "detected_at": NOW1,
+                        "proposal": {"affected_rule_ids": [], "proposed_action": "review_only",
+                                     "diff_summary": {}, "auto_applied": False}})
+    R.draft_pending_changes(llm=lambda s, u: "x", now=NOW1)
+    out2 = R.draft_pending_changes(llm=lambda s, u: "x", now=NOW2)
+    assert out2["drafted"] == 0  # already drafted -> skipped
+
+
+def test_guard_refuses_live_rulepack_path():
+    # The hard guarantee: a proposal write may never target a live rulepack file.
+    with pytest.raises(ValueError):
+        R._guard_proposal_path(R._LIVE_RULEPACKS_DIR / "dpdp_india_extended_v2.yaml")
+    with pytest.raises(ValueError):
+        R._guard_proposal_path(R._PROJECT_ROOT / "rulepacks" / "euai_core_v1.yaml")
+
+
+def test_full_cycle_never_mutates_live_rulepacks(monkeypatch, tmp_path):
+    import hashlib
+    live_dir = R._LIVE_RULEPACKS_DIR
+    packs = sorted(live_dir.glob("*.yaml"))
+    before = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in packs}
+
+    _, changes, _ = _patch(monkeypatch, {})
+    monkeypatch.setattr(R, "_PROPOSALS_DIR", tmp_path / "proposals")
+    changes.insert_one({"change_id": "c1", "url": "https://law/a", "status": "pending",
+                        "detected_at": NOW1, "rule_ids": ["R1"],
+                        "proposal": {"source": {"url": "https://law/a"}, "affected_rule_ids": ["R1"],
+                                     "proposed_action": "date_change", "diff_summary": {}, "auto_applied": False}})
+    # detect->draft->approve(stage) full path
+    R.draft_pending_changes(llm=lambda s, u: "summary", now=NOW1)
+    _run(R.review_proposal("c1", R.ProposalReview(decision="approved"), _admin=True))
+
+    after = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(live_dir.glob("*.yaml"))}
+    assert after == before, "live rulepack files must be byte-identical after the full cycle"
+    # everything written went to the proposals staging dir, not rulepacks/*
+    assert (tmp_path / "proposals" / "c1.yaml").exists()

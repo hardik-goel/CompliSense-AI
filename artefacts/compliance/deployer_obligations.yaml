@@ -1,0 +1,8 @@
+# EU AI Act Art. 26 — deployer obligations for high-risk AI systems.
+# Starter template for EUAI-ART26-DEPLOYER-001. Fields are top-level (the file_presence
+# evaluator does not descend into sub-maps). Readiness artefact, not legal advice.
+use_per_instructions: "system used strictly per the provider's instructions-for-use; deviations logged and reviewed"
+human_oversight_assignment: "named competent, trained overseers assigned with authority to intervene/override/halt"
+input_data_control: "deployer-controlled input data checked for relevance and representativeness before use"
+log_retention: "automatically generated logs retained for at least the Art. 26 minimum period and access-controlled"
+worker_notification: "workers and their representatives informed before a high-risk system is put into use in the workplace"

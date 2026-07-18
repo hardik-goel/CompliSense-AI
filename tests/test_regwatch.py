@@ -7,6 +7,8 @@ from compliance.regwatch import (
     content_hash,
     detect_change,
     diff_summary,
+    draft_change_proposal,
+    load_watchlist,
     match_rules_by_citation,
     merge_watch_sources,
     normalize_text,
@@ -106,3 +108,36 @@ def test_build_change_proposal_is_review_only_and_maps_rules():
     assert "EUAI-ART9" in proposal["affected_rule_ids"]
     assert "EUAI-ART50" in proposal["affected_rule_ids"]
     assert proposal["proposed_action"] in ("date_change", "new_rule_stub", "review_only")
+
+
+def test_load_watchlist_from_config():
+    # The shipped compliance/regwatch_sources.yaml drives the seed list.
+    wl = load_watchlist()
+    urls = {s["url"] for s in wl}
+    assert any("eur-lex.europa.eu" in u for u in urls)
+    assert any("meity.gov.in" in u for u in urls)
+    assert all("url" in s for s in wl)
+
+
+def test_draft_change_proposal_with_injected_llm():
+    proposal = {
+        "source": {"url": "https://eur-lex/ai", "label": "EUR-Lex"},
+        "affected_rule_ids": ["EUAI-ART50-TRANSPARENCY-001"],
+        "proposed_action": "date_change",
+        "diff_summary": {"added_sample": ["Article 50 confirmed 2 Aug 2026"], "removed_sample": []},
+    }
+    seen = {}
+    fake = lambda system, user: seen.update(system=system, user=user) or "Art 50 date reaffirmed."
+    draft = draft_change_proposal(proposal, llm=fake)
+    assert draft["affected_rule_ids"] == ["EUAI-ART50-TRANSPARENCY-001"]
+    assert draft["proposed_action"] == "date_change"
+    assert draft["summary"] == "Art 50 date reaffirmed."
+    assert draft["draft_patch"]["auto_applied"] is False
+    assert "Article 50" in seen["user"]  # diff excerpt reached the model
+
+
+def test_draft_change_proposal_without_llm_is_safe():
+    # No LLM injected -> still returns a well-formed draft (empty summary), never raises.
+    draft = draft_change_proposal({"affected_rule_ids": [], "proposed_action": "review_only",
+                                   "diff_summary": {}, "source": {}}, llm=None)
+    assert draft["summary"] == "" and draft["draft_patch"]["auto_applied"] is False
