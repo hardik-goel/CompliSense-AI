@@ -125,6 +125,61 @@ export default function HomePage() {
   // Days remaining until full DPDP compliance (13 May 2027). Computed client-side after
   // mount so server/client render match (no hydration mismatch), no date library needed.
   const [daysToDeadline, setDaysToDeadline] = useState<number | null>(null);
+  // Demo gate: the public "Book a Demo" unlocks only after a readiness test is completed
+  // (or email captured) this session, so every booked call is pre-qualified. The readiness
+  // tool sets these session flags; a warm-inbound override (DIRECT_DEMO_URL) is env-only and
+  // never surfaced here.
+  const [readinessDone, setReadinessDone] = useState(false);
+  const [leadScore, setLeadScore] = useState<string | null>(null);
+  const [leadEmail, setLeadEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const readGate = () => {
+      try {
+        setReadinessDone(sessionStorage.getItem("cs_readiness_done") === "1");
+        setLeadScore(sessionStorage.getItem("cs_readiness_score"));
+        setLeadEmail(sessionStorage.getItem("cs_readiness_email"));
+      } catch {
+        /* sessionStorage unavailable — stay gated */
+      }
+    };
+    readGate();
+    window.addEventListener("cs-readiness-complete", readGate);
+    window.addEventListener("storage", readGate);
+    return () => {
+      window.removeEventListener("cs-readiness-complete", readGate);
+      window.removeEventListener("storage", readGate);
+    };
+  }, []);
+
+  // Once the readiness test is done, pass the lead context into the booking link so the
+  // call is pre-qualified (Calendly prefill + a note with the score).
+  const demoBookingUrl = readinessDone
+    ? `${calendlyUrl}?email=${encodeURIComponent(leadEmail || "")}&a1=${encodeURIComponent(
+        leadScore ? `Readiness score ${leadScore}%` : "Completed readiness test"
+      )}`
+    : calendlyUrl;
+
+  /** Public "Book a Demo" gate: before a readiness test is completed this session it points
+   *  to the 2-minute test (benefit framing, not a toll); after, it books with lead context. */
+  function GatedDemo({ className, label }: { className?: string; label: string }) {
+    if (!readinessDone) {
+      return (
+        <a
+          href="/readiness"
+          className={className}
+          title="See your 2-minute readiness score first — then book a demo and we'll walk through your specific gaps."
+        >
+          See your 2-minute readiness score first &rarr;
+        </a>
+      );
+    }
+    return (
+      <a href={demoBookingUrl} target="_blank" rel="noopener noreferrer" className={className}>
+        {label}
+      </a>
+    );
+  }
 
   useEffect(() => {
     const deadline = Date.UTC(2027, 4, 13); // month is 0-indexed: 4 = May
@@ -491,9 +546,7 @@ export default function HomePage() {
               <a href="/readiness" className="btn-primary">
                 Check your DPDP readiness — free, 15 minutes &rarr;
               </a>
-              <a href={calendlyUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
-                📅 Book a Demo
-              </a>
+              <GatedDemo className="btn-ghost" label="📅 Book a Demo" />
               <a href={appUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
                 Launch App &rarr;
               </a>
