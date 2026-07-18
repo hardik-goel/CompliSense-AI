@@ -62,6 +62,24 @@ def default_profile() -> Dict[str, Any]:
     }
 
 
+def _refine_conditions(block: Dict[str, Any], profile: Dict[str, Any]) -> Optional[str]:
+    """Apply optional secondary conditions on an otherwise-applicable rule.
+
+    A rule may narrow its scope with ``requires_profile_true`` / ``requires_profile_false``
+    (lists of profile flag names). Example: Art. 22 (EU authorised representative) is a
+    provider duty that applies ONLY when the provider is NOT established in the EU, encoded as
+    ``requires_profile_false: ["established_in_eu"]``. Returns a reason string when a condition
+    excludes the rule, or ``None`` when all conditions pass. Absent keys impose no constraint.
+    """
+    for flag in block.get("requires_profile_true", []) or []:
+        if not bool(profile.get(flag)):
+            return f"requires profile.{flag} to be true, but it is not"
+    for flag in block.get("requires_profile_false", []) or []:
+        if bool(profile.get(flag)):
+            return f"requires profile.{flag} to be false, but it is set"
+    return None
+
+
 def resolve_applicability(
     rule: Dict[str, Any], profile: Optional[Dict[str, Any]]
 ) -> Tuple[bool, str]:
@@ -76,6 +94,9 @@ def resolve_applicability(
     if profile is None:
         return True, "applicability gating inactive (no entity profile provided)"
 
+    # Secondary conditions (evaluated only for a scope that would otherwise apply).
+    _refine_excluded = _refine_conditions(block, profile)
+
     # Open-source carve-out: a rule may declare `open_source_exempt: true`. When the entity
     # is open-source, that obligation does not apply. (Which EU rules carry this exemption is
     # subject to legal review — see LEGAL_REVIEW_NEEDED.md.)
@@ -83,11 +104,15 @@ def resolve_applicability(
         return False, f"scope '{scope}' does not apply: open-source exemption (profile.is_open_source)"
 
     if scope in UNIVERSAL_SCOPES:
+        if _refine_excluded:
+            return False, f"scope '{scope}' applies but {_refine_excluded}"
         return True, f"scope '{scope}' applies to all in-scope entities"
 
     if scope in _BOOL_FLAG_FOR_SCOPE:
         flag = _BOOL_FLAG_FOR_SCOPE[scope]
         if bool(profile.get(flag)):
+            if _refine_excluded:
+                return False, f"scope '{scope}' applies but {_refine_excluded}"
             return True, f"profile.{flag} is true → scope '{scope}' applies"
         return False, (
             f"scope '{scope}' does not apply: profile.{flag} is not set. "
@@ -97,6 +122,8 @@ def resolve_applicability(
     if scope in _EU_ROLE_SCOPES:
         roles = profile.get("eu_roles") or []
         if scope in roles:
+            if _refine_excluded:
+                return False, f"scope '{scope}' applies but {_refine_excluded}"
             return True, f"profile.eu_roles includes '{scope}'"
         return False, (
             f"scope '{scope}' does not apply: entity has not declared the "

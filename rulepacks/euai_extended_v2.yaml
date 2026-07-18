@@ -685,3 +685,142 @@ rules:
       pass: 0.0
       partial: 1.0
     severity: "Major"
+
+  # ── Deployer / non-EU-provider obligations (Task 2) ──────────────────────────
+  # Role-gated so a startup only sees duties that bind it. Dates aligned to Task 1
+  # (Annex III high-risk enforcement confirmed 2 Dec 2027). All secondary-sourced,
+  # pending legal review.
+
+  - id: EUAI-ART26-DEPLOYER-001
+    clause: "Art.26"
+    title: "Deployer obligations for high-risk AI systems are documented"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 26 (obligations of deployers of high-risk AI systems)"
+    rule_citation: "Regulation (EU) 2024/1689, Art. 26(1)-(7) (use per instructions, human oversight assignment, input-data control, log retention, worker notification)"
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_deployer"
+      threshold: "Applies to DEPLOYERS of high-risk AI systems: use per the provider's instructions, assign competent human oversight, control input data, retain automatically generated logs, and inform workers/worker representatives before putting a high-risk system into use in the workplace."
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL) — high-risk deployer duties aligned to Annex III enforcement on 2 Dec 2027."
+    date_verified_on: "2026-07-18"
+    verification: "secondary_source_only"
+    secondary_source_only: true
+    legal_review_status: "pending"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/deployer_obligations.yaml"
+      required_json_fields:
+        - "use_per_instructions"
+        - "human_oversight_assignment"
+        - "input_data_control"
+        - "log_retention"
+        - "worker_notification"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+
+  - id: EUAI-ART27-FRIA-001
+    clause: "Art.27"
+    title: "Fundamental rights impact assessment (FRIA) for applicable deployers is documented"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 27 (fundamental rights impact assessment for high-risk AI systems)"
+    rule_citation: "Regulation (EU) 2024/1689, Art. 27(1)-(4) (FRIA scope, contents, notification to market surveillance authority)"
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_deployer"
+      threshold: "Applies to deployers that are public bodies, entities providing public services, or deployers of certain high-risk systems (creditworthiness, life/health insurance risk) — a FRIA must be completed before first use."
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL) — FRIA duty aligned to Annex III enforcement on 2 Dec 2027."
+    date_verified_on: "2026-07-18"
+    verification: "secondary_source_only"
+    secondary_source_only: true
+    legal_review_status: "pending"
+    interpretation_uncertain: true
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/fundamental_rights_impact_assessment.yaml"
+      required_json_fields:
+        - "deployment_context"
+        - "affected_persons"
+        - "risks_to_fundamental_rights"
+        - "mitigation_measures"
+        - "authority_notification"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+
+  - id: EUAI-ART22-AUTHREP-001
+    clause: "Art.22"
+    title: "Authorised representative in the EU for non-EU providers is appointed"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 22 (authorised representatives of providers of high-risk AI systems established in third countries)"
+    rule_citation: "Regulation (EU) 2024/1689, Art. 22(1)-(3) (written mandate, tasks, cooperation with authorities)"
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      requires_profile_false:
+        - "established_in_eu"
+      threshold: "Applies to providers of high-risk AI systems NOT established in the EU (e.g. most Indian providers selling into the EU): appoint, by written mandate, an authorised representative established in the Union before placing the system on the EU market."
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL) — authorised-representative duty aligned to Annex III enforcement on 2 Dec 2027."
+    date_verified_on: "2026-07-18"
+    verification: "secondary_source_only"
+    secondary_source_only: true
+    legal_review_status: "pending"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/eu_authorised_representative.yaml"
+      required_json_fields:
+        - "representative_name"
+        - "written_mandate"
+        - "eu_establishment_address"
+        - "mandate_tasks"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+
+  - id: EUAI-ART73-INCIDENT-001
+    clause: "Art.73"
+    title: "Serious-incident reporting procedure is documented"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 73 (reporting of serious incidents to market surveillance authorities)"
+    rule_citation: "Regulation (EU) 2024/1689, Art. 73(1)-(7) (reporting timelines, investigation, corrective action)"
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Providers of high-risk AI systems must have a procedure to report serious incidents to the relevant market surveillance authority within the Art. 73 timelines. Deployers assist and notify the provider."
+      exemption_ref: null
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL) — serious-incident reporting aligned to Annex III enforcement on 2 Dec 2027."
+    date_verified_on: "2026-07-18"
+    verification: "secondary_source_only"
+    secondary_source_only: true
+    legal_review_status: "pending"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/serious_incident_reporting.yaml"
+      required_json_fields:
+        - "incident_definition"
+        - "reporting_timeline"
+        - "authority_contacts"
+        - "investigation_process"
+        - "corrective_action_log"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"

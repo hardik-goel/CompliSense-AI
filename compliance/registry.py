@@ -86,6 +86,17 @@ RULEPACKS: tuple[RulepackDefinition, ...] = (
         default_project_standard="DPDP_INDIA",
         sample_artifact_root="sample_artefacts/dpdp_india",
     ),
+    RulepackDefinition(
+        pack_id="dpdp_india_extended_v2",
+        label="DPDP India Extended v2.0",
+        regulation="Digital Personal Data Protection Act, 2023",
+        jurisdiction="DPDP_INDIA",
+        market="India",
+        version="2.0.0",
+        description="Extended DPDP pack adding the right to nominate (s.14) and lawful-guardian consent for persons with disabilities (s.9 proviso). v1 kept for reproducibility.",
+        default_project_standard="DPDP_INDIA",
+        sample_artifact_root="sample_artefacts/dpdp_india",
+    ),
 )
 
 _RULEPACK_ID_SET = {rulepack.pack_id for rulepack in RULEPACKS}

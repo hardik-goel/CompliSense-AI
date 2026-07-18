@@ -50,6 +50,13 @@ _PREDICATES: Dict[str, Callable[[Manifest], Any]] = {
     "EUAI-ART49-REGISTRATION-001": lambda m: m.registered_eu_database,
     "EUAI-ART72-POSTMARKET-001": lambda m: m.has_postmarket_monitoring,
     "EUAI-ART53-GPAI-001": lambda m: m.has_gpai_documentation,
+    # Omnibus / deployer additions (v2 packs). Secondary-sourced, pending legal review.
+    "EUAI-ART5-PROHIBITED-002": lambda m: m.avoids_prohibited_practices,
+    "EUAI-ART50-LEGACY-MARKING-001": lambda m: m.has_art50_transparency,
+    "EUAI-ART26-DEPLOYER-001": lambda m: m.has_deployer_obligations,
+    "EUAI-ART27-FRIA-001": lambda m: m.has_fria,
+    "EUAI-ART22-AUTHREP-001": lambda m: m.has_eu_authorised_rep,
+    "EUAI-ART73-INCIDENT-001": lambda m: m.has_incident_reporting_procedure,
 }
 
 _SEVERITY_RANK = {"Critical": 0, "Major": 1, "Minor": 2, "unknown": 3}

@@ -207,6 +207,23 @@ QUESTIONS: List[Dict[str, Any]] = [
         "optional": True,
     },
     {
+        "id": "ai_role",
+        "section": "EU AI Act (if applicable)",
+        "text": "Are you the provider (you build/place the AI system), the deployer (you use it under your authority), or both?",
+        "type": "single",
+        "options": ["provider", "deployer", "both", "none"],
+        "help": "Drives which EU AI Act duties are shown: provider duties (Arts 9-22), deployer duties (Arts 26-27), or both.",
+        "optional": True,
+    },
+    {
+        "id": "established_in_eu",
+        "section": "EU AI Act (if applicable)",
+        "text": "Is your organisation legally established in the EU?",
+        "type": "bool",
+        "help": "Non-EU providers placing high-risk AI on the EU market must appoint an EU authorised representative (Art. 22).",
+        "optional": True,
+    },
+    {
         "id": "provides_to_eu",
         "section": "EU AI Act (if applicable)",
         "text": "Is the AI system placed on the EU market or is its output used in the EU?",
@@ -334,6 +351,34 @@ QUESTIONS: List[Dict[str, Any]] = [
         "type": "bool",
         "optional": True,
     },
+    {
+        "id": "has_deployer_obligations",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "(Deployers) Do you use the system per instructions, assign human oversight, control input data, retain logs and notify workers (Art. 26)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_fria",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "(Deployers) Have you completed a fundamental rights impact assessment where required (Art. 27)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_eu_authorised_rep",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "(Non-EU providers) Have you appointed an EU authorised representative by written mandate (Art. 22)?",
+        "type": "bool",
+        "optional": True,
+    },
+    {
+        "id": "has_incident_reporting_procedure",
+        "section": "EU AI Act posture (if applicable)",
+        "text": "Do you have a serious-incident reporting procedure to market surveillance authorities (Art. 73)?",
+        "type": "bool",
+        "optional": True,
+    },
 ]
 
 QUESTION_IDS = {q["id"] for q in QUESTIONS}
@@ -368,6 +413,8 @@ class Manifest:
     # EU AI Act facts (applicability)
     has_ai_system: bool = False
     eu_role: str = "none"
+    ai_role: str = "none"  # provider | deployer | both | none (drives provider/deployer gating)
+    established_in_eu: bool = False
     provides_to_eu: bool = False
     is_open_source: bool = False
     # EU AI Act posture (readiness)
@@ -387,6 +434,10 @@ class Manifest:
     registered_eu_database: bool = False
     has_postmarket_monitoring: bool = False
     has_gpai_documentation: bool = False
+    has_deployer_obligations: bool = False
+    has_fria: bool = False
+    has_eu_authorised_rep: bool = False
+    has_incident_reporting_procedure: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -445,11 +496,26 @@ def eu_roles(manifest: Manifest) -> List[str]:
     Roles apply only when the entity actually has an AI system with an EU nexus (placed on
     the EU market or output used in the EU, Art. 2). Empty otherwise — so non-EU entities are
     never flagged for EU provider/deployer duties.
+
+    Two inputs feed the role set:
+    - ``ai_role`` (provider | deployer | both) is the primary provider/deployer selector.
+    - ``eu_role`` still carries the finer distinctions (importer, distributor, GPAI).
+    Both are unioned so, e.g., a GPAI provider that also deploys is scoped for all of them.
     """
     if not manifest.has_ai_system or not manifest.provides_to_eu:
         return []
-    scope = _EU_ROLE_TO_SCOPE.get(manifest.eu_role)
-    return [scope] if scope else []
+    scopes: set[str] = set()
+    ai_role = (manifest.ai_role or "none").strip().lower()
+    if ai_role == "both":
+        scopes.update({"eu_provider", "eu_deployer"})
+    elif ai_role == "provider":
+        scopes.add("eu_provider")
+    elif ai_role == "deployer":
+        scopes.add("eu_deployer")
+    legacy = _EU_ROLE_TO_SCOPE.get(manifest.eu_role)
+    if legacy:
+        scopes.add(legacy)
+    return sorted(scopes)
 
 
 def manifest_to_profile(manifest: Manifest) -> Dict[str, Any]:
@@ -462,6 +528,7 @@ def manifest_to_profile(manifest: Manifest) -> Dict[str, Any]:
         "is_state_instrumentality": bool(manifest.is_state_instrumentality),
         "eu_roles": eu_roles(manifest),
         "is_open_source": bool(manifest.is_open_source),
+        "established_in_eu": bool(manifest.established_in_eu),
     }
 
 
