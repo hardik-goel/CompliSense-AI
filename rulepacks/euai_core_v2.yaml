@@ -274,10 +274,10 @@ rules:
       warn_ms: 300
       fail_ms: 1000
 
-  - id: EUAI-ART16-QUALITY-MGMT-001
-    clause: "Art.16"
+  - id: EUAI-ART17-QUALITY-MGMT-001
+    clause: "Art.17"
     title: "Quality management system in place"
-    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 16-17 (provider obligations / quality management system)"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 17 (quality management system). Note: the QMS obligation is Art. 17; Art. 16 is the provider-obligations catalogue."
     rule_citation: null
     source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
     applicability:
@@ -309,10 +309,10 @@ rules:
       warn_ms: 300
       fail_ms: 1000
 
-  - id: EUAI-ART18-DATA-GOV-002
-    clause: "Art.18"
+  - id: EUAI-ART10-DATA-GOV-002
+    clause: "Art.10"
     title: "Training, validation and testing data governance"
-    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 18 (documentation keeping) / Art. 10 (data governance)"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 10 (data and data governance — training, validation and testing datasets). Note: retagged from Art. 18; data governance is Art. 10, Art. 18 covers documentation keeping."
     rule_citation: null
     source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
     applicability:
@@ -344,10 +344,10 @@ rules:
       warn_ms: 300
       fail_ms: 1000
 
-  - id: EUAI-ART20-RECORD-KEEPING-001
-    clause: "Art.20"
-    title: "Record keeping and logging"
-    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 12 + Art. 19-20 (record-keeping / automatically generated logs)"
+  - id: EUAI-ART12-RECORD-KEEPING-001
+    clause: "Art.12 / Art.19"
+    title: "Record-keeping and automatically generated logs"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 12 (record-keeping) + Art. 19 (automatically generated logs). Note: retagged from Art. 20, which covers corrective actions, not logging."
     rule_citation: null
     source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
     applicability:

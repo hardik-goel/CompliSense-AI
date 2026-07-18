@@ -41,6 +41,10 @@ _PREDICATES: Dict[str, Callable[[Manifest], Any]] = {
     "EUAI-ART11-TECHDOC-002": lambda m: m.has_technical_documentation,
     "EUAI-ART18-DATA-GOV-002": lambda m: m.has_recordkeeping_logs,
     "EUAI-ART20-RECORD-KEEPING-001": lambda m: m.has_recordkeeping_logs,
+    # v2 citation-corrected IDs (Task 3): QMS->Art17, data-gov->Art10, logging->Art12/19.
+    "EUAI-ART17-QUALITY-MGMT-001": lambda m: m.has_quality_management_system,
+    "EUAI-ART10-DATA-GOV-002": lambda m: m.has_data_governance,
+    "EUAI-ART12-RECORD-KEEPING-001": lambda m: m.has_recordkeeping_logs,
     "EUAI-ART13-TRANSPARENCY-001": lambda m: m.has_transparency_info,
     "EUAI-ART14-HUMAN-OVERSIGHT-001": lambda m: m.has_human_oversight,
     "EUAI-ART15-ACCURACY-001": lambda m: m.has_accuracy_robustness,
