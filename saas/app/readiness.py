@@ -107,9 +107,11 @@ async def score_endpoint(
         "summary": report["summary"],
         "jurisdiction": report["jurisdiction"],
         "pack_id": report["pack_id"],
+        "pack_version": report.get("pack_version"),
+        "rules_current_as_of": report.get("rules_current_as_of"),
+        "authenticated": bool(user),
         "incomplete_questions": missing,
         "disclaimer": report["disclaimer"],
-        "authenticated": bool(user),
     }
 
     if user:

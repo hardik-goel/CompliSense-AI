@@ -20,6 +20,37 @@ from agent.utils.resources import resource_path
 
 logger = logging.getLogger(__name__)
 
+# Standard readiness footer/disclaimer surfaced alongside the freshness stamp everywhere a
+# report or export shows results. Never weaken this wording — it keeps the output framed as
+# readiness, not a compliance determination.
+READINESS_DISCLAIMER = (
+    "Not legal advice; no compliance determination. Readiness self-assessment only."
+)
+
+
+def pack_freshness(pack_meta: Dict[str, Any] | None) -> Dict[str, Any]:
+    """Normalize a rulepack header into the freshness stamp surfaced in every output.
+
+    Returns a dict with ``pack_id``, ``pack_version`` and ``rules_current_as_of`` (falling
+    back to ``version`` / ``current_as_of`` when the explicit fields are absent), plus a
+    pre-rendered ``footer`` line for reports/exports. Safe on ``None`` (returns "unknown"s).
+    """
+    m = pack_meta or {}
+    pack_id = m.get("pack_id") or "unknown"
+    pack_version = m.get("pack_version") or m.get("version") or "unknown"
+    current = m.get("rules_current_as_of") or m.get("current_as_of") or "unknown"
+    footer = (
+        f"Readiness assessment against {pack_id} {pack_version}, rules current as of "
+        f"{current}. Not legal advice; no compliance determination."
+    )
+    return {
+        "pack_id": pack_id,
+        "pack_version": pack_version,
+        "rules_current_as_of": current,
+        "footer": footer,
+        "disclaimer": READINESS_DISCLAIMER,
+    }
+
 
 def _is_missing_evidence(ctx: Dict[str, Any]) -> bool:
     """
@@ -150,6 +181,7 @@ def run_scan(
     cancel_event=None,
     entity_profile: Dict[str, Any] | None = None,
     consistency_checks: List[Dict[str, Any]] | None = None,
+    pack_meta: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     """Run compliance scan with enhanced error handling.
 
@@ -157,6 +189,11 @@ def run_scan(
     whose ``applicability.scope`` does not match the profile is reported ``NOT_APPLICABLE``
     instead of being evaluated, so the engine never flags (e.g.) SDF-only duties for a
     non-SDF startup. When ``entity_profile`` is None, gating is inactive (legacy behaviour).
+
+    ``pack_meta`` carries the rulepack header freshness stamp (``pack_id``, ``pack_version``,
+    ``rules_current_as_of``) so findings, reports, and the evidence pack can state which pack
+    version they were assessed against and how current the legal content is. See
+    :func:`pack_freshness`.
     """
     try:
         from compliance.applicability import resolve_applicability
@@ -174,6 +211,7 @@ def run_scan(
             "summary": {"passed": 0, "partial": 0, "failed": 0, "not_applicable": 0},
             "results": [],
             "artifacts": {"required_total": 0, "present": [], "missing": [], "compliance_pct": 0.0},
+            "freshness": pack_freshness(pack_meta),
             "error": "No rules provided"
         }
 
@@ -492,4 +530,5 @@ def run_scan(
         "results": results,
         "artifacts": artifact_scan,
         "consistency": consistency,
+        "freshness": pack_freshness(pack_meta),
     }

@@ -51,9 +51,21 @@ def build_evidence_pack(
     prepared_by: Optional[str] = None,
     rulepack_id: Optional[str] = None,
     gap_states: Optional[List[Dict[str, Any]]] = None,
+    pack_version: Optional[str] = None,
+    rules_current_as_of: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Build the structured evidence pack. ``generated_at`` is an ISO string (injected)."""
+    """Build the structured evidence pack. ``generated_at`` is an ISO string (injected).
+
+    ``pack_version`` + ``rules_current_as_of`` carry the rulepack freshness stamp so the pack
+    states which pack version it was assessed against and how current the legal content is.
+    """
     discovered = project.get("discovered_manifest") or {}
+    _pack_version = pack_version or "unknown"
+    _rules_current = rules_current_as_of or "unknown"
+    freshness_footer = (
+        f"Readiness assessment against {rulepack_id or 'unknown'} {_pack_version}, "
+        f"rules current as of {_rules_current}. Not legal advice; no compliance determination."
+    )
 
     posture_history = [
         {"at": r.get("created_at"), "score": r.get("score"), "scan_id": r.get("scan_id")}
@@ -92,6 +104,9 @@ def build_evidence_pack(
             "project_name": project.get("name"),
             "compliance_standard": project.get("compliance_standard"),
             "rulepack_applied": rulepack_id,
+            "pack_version": _pack_version,
+            "rules_current_as_of": _rules_current,
+            "freshness_footer": freshness_footer,
             "generated_at": generated_at,
             "prepared_by": prepared_by,
             "team_id": project.get("team_id"),

@@ -238,5 +238,13 @@
 This report is an automated compliance aid. It summarizes detected documentation and rule evidence at scan time and does not replace legal review.
 </div>
 
+{% if freshness %}
+<div class="page-note small" style="margin-top:0.4rem;color:#475569;">
+Readiness assessment against {{ freshness.pack_id }} {{ freshness.pack_version }},
+rules current as of {{ freshness.rules_current_as_of }}.
+Not legal advice; no compliance determination.
+</div>
+{% endif %}
+
 </body>
 </html>

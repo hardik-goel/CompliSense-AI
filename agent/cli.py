@@ -152,6 +152,7 @@ def scan(root, pack, pack_id, out, pdf, mongo, mongo_uri, mongo_db, mongo_coll):
         iter_rules(rp),
         required_artifacts_manifest=rp.get("required_artifacts_manifest"),
         progress_callback=_cli_progress,
+        pack_meta=rp,
     )
 
     # Compute assessment (like agent_runner does)

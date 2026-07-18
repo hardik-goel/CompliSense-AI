@@ -1,9 +1,11 @@
 pack_id: "dpdp_india_extended_v1"
 schema_version: 2
 version: "1.0.0"
+pack_version: "1.0.0"
 jurisdiction: "DPDP_INDIA"
 updated: "2026-06-26"
 current_as_of: "2026-06-26"
+rules_current_as_of: "2026-06-26"
 reference_doc: "docs/LEGAL_REFERENCE_DPDP_EUAI.md"
 legal_review_status: "pending"
 legal_review_note: >-

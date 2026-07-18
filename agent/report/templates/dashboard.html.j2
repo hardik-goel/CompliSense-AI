@@ -284,5 +284,13 @@ function highlightRules(file) {
 This assessment is advisory and does not constitute legal advice.
 </p>
 
+{% if freshness %}
+<p style="margin-top:0.5rem;font-size:11px;color:#94a3b8;">
+Readiness assessment against {{ freshness.pack_id }} {{ freshness.pack_version }},
+rules current as of {{ freshness.rules_current_as_of }}.
+Not legal advice; no compliance determination.
+</p>
+{% endif %}
+
 </body>
 </html>

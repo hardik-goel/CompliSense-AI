@@ -148,6 +148,8 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "jurisdiction": jurisdiction,
         "pack_id": pack.get("pack_id"),
+        "pack_version": pack.get("pack_version") or pack.get("version"),
+        "rules_current_as_of": pack.get("rules_current_as_of") or pack.get("current_as_of"),
         "readiness_score": score,
         "scoring_available": scoring_available,
         "obligations_identified": scored,
