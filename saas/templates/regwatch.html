@@ -53,6 +53,13 @@
     </section>
 
     <section class="card-pane">
+      <h2 class="h5 mb-3">Change proposals</h2>
+      <p class="muted small mb-2">Human-review only. Approving writes a YAML patch <em>stub</em> under
+        <code>rulepacks/proposals/</code> for manual application — it never edits a live rulepack.</p>
+      <div id="proposals"><p class="muted mb-0">Loading…</p></div>
+    </section>
+
+    <section class="card-pane">
       <h2 class="h5 mb-3">Watched sources</h2>
       <div id="sources"><p class="muted mb-0">Loading…</p></div>
     </section>
@@ -94,6 +101,33 @@
       loadChanges();
     }
 
+    async function loadProposals() {
+      const el = document.getElementById("proposals");
+      const d = await fetch("/api/v1/regwatch/proposals?status=pending").then(r => r.json());
+      if (!d.proposals.length) { el.innerHTML = `<p class="muted mb-0">No pending proposals.</p>`; return; }
+      el.innerHTML = `<table class="table tbl"><thead><tr><th>Source</th><th>Action</th><th>Affected rules</th><th>Diff</th><th></th></tr></thead><tbody>${
+        d.proposals.map(p => `<tr>
+          <td><code>${esc(p.url)}</code></td>
+          <td><span class="pill pending">${esc(p.proposal.proposed_action)}</span></td>
+          <td class="muted small">${(p.proposal.affected_rule_ids||[]).join(", ") || "—"}</td>
+          <td class="muted small">+${p.proposal.diff_summary?.added_count ?? 0} / -${p.proposal.diff_summary?.removed_count ?? 0}</td>
+          <td class="text-nowrap">
+            <button class="btn btn-sm btn-success" data-prev="approved" data-id="${p.change_id}">Approve → patch</button>
+            <button class="btn btn-sm btn-outline-light" data-prev="rejected" data-id="${p.change_id}">Reject</button>
+          </td></tr>`).join("")}</tbody></table>`;
+      el.querySelectorAll("[data-prev]").forEach(b => b.addEventListener("click", () => reviewProposal(b.dataset.id, b.dataset.prev)));
+    }
+
+    async function reviewProposal(id, decision) {
+      const note = decision === "approved" ? (prompt("Reviewer note:", "") || "") : "";
+      const res = await fetch(`/api/v1/regwatch/proposals/${id}/review`, {
+        method: "POST", headers: adminHeaders(), body: JSON.stringify({ decision, note }) });
+      if (res.status === 403) { alert("Admin token required/invalid."); return; }
+      const d = await res.json();
+      if (d.proposal_patch_path) alert(`Patch stub written: ${d.proposal_patch_path}\nApply it by hand — nothing was auto-applied.`);
+      loadProposals();
+    }
+
     document.getElementById("run").addEventListener("click", async () => {
       const status = document.getElementById("run-status");
       status.textContent = "sweeping…";
@@ -102,10 +136,12 @@
       const d = await res.json();
       status.textContent = `✓ checked ${d.checked}, ${d.changes_created} change(s), ${d.errors.length} error(s)`;
       loadChanges();
+      loadProposals();
     });
 
     loadSources();
     loadChanges();
+    loadProposals();
   </script>
   <script src="/static/app-enhance.js"></script>
 </body>

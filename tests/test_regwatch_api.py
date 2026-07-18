@@ -124,4 +124,70 @@ def test_list_changes_filters_status(monkeypatch):
 def test_watch_sources_derived_from_real_packs():
     # integration: the real rulepacks yield watched source URLs mapped to rules.
     sources = R.watch_sources()
-    assert sources and all("url" in s and s["rule_ids"] for s in sources)
+    assert sources and all("url" in s for s in sources)
+
+
+# ── Change-proposal pipeline (Phase 5.4) ─────────────────────────────────────
+
+def test_watch_sources_includes_seed_watchlist():
+    from compliance.regwatch import SEED_WATCHLIST
+    urls = {s["url"] for s in R.watch_sources()}
+    for s in SEED_WATCHLIST:
+        assert s["url"] in urls
+
+
+def test_sweep_embeds_proposal_on_change(monkeypatch):
+    snaps, changes, fetcher = _patch(monkeypatch, {"https://law/a": "v1", "https://law/b": "v1"})
+    R.run_watch_sweep(fetcher=fetcher, now=NOW1)
+    f2 = lambda url: {"https://law/a": "v2 amended: enforcement date 2 Dec 2027", "https://law/b": "v1"}[url]
+    summary = R.run_watch_sweep(fetcher=f2, now=NOW2)
+    assert summary["changes_created"] == 1
+    chg = changes.docs[0]
+    assert chg["proposal"]["auto_applied"] is False
+    assert "diff_summary" in chg["proposal"] and "proposed_action" in chg["proposal"]
+
+
+def test_list_proposals_only_returns_changes_with_proposal(monkeypatch):
+    _, changes, _ = _patch(monkeypatch, {})
+    changes.insert_one({"change_id": "c1", "status": "pending", "detected_at": NOW1,
+                        "proposal": {"proposed_action": "review_only", "auto_applied": False}})
+    changes.insert_one({"change_id": "c2", "status": "pending", "detected_at": NOW2})  # no proposal
+    out = _run(R.list_proposals(status="pending", current_user={"id": "u"}))
+    assert out["count"] == 1 and out["proposals"][0]["change_id"] == "c1"
+
+
+def test_approve_proposal_writes_patch_stub(monkeypatch, tmp_path):
+    _, changes, _ = _patch(monkeypatch, {})
+    monkeypatch.setattr(R, "_PROPOSALS_DIR", tmp_path / "proposals")
+    changes.insert_one({"change_id": "c1", "url": "https://law/a", "status": "pending",
+                        "rule_ids": ["R1"], "detected_at": NOW1,
+                        "proposal": {"source": {"url": "https://law/a"}, "affected_rule_ids": ["R1"],
+                                     "proposed_action": "date_change", "diff_summary": {"added_count": 1},
+                                     "auto_applied": False}})
+    out = _run(R.review_proposal("c1", R.ProposalReview(decision="approved", note="looks right"), _admin=True))
+    assert out["status"] == "approved"
+    patch_file = tmp_path / "proposals" / "c1.yaml"
+    assert patch_file.exists()
+    body = patch_file.read_text()
+    assert "auto_applied: false" in body and "suggested_edit" in body
+    assert changes.docs[0]["status"] == "approved"
+
+
+def test_reject_proposal_writes_no_file(monkeypatch, tmp_path):
+    _, changes, _ = _patch(monkeypatch, {})
+    monkeypatch.setattr(R, "_PROPOSALS_DIR", tmp_path / "proposals")
+    changes.insert_one({"change_id": "c1", "url": "u", "status": "pending", "detected_at": NOW1,
+                        "proposal": {"auto_applied": False}})
+    out = _run(R.review_proposal("c1", R.ProposalReview(decision="rejected"), _admin=True))
+    assert out["status"] == "rejected" and out["proposal_patch_path"] is None
+    assert not (tmp_path / "proposals").exists() or not list((tmp_path / "proposals").glob("*.yaml"))
+    assert changes.docs[0]["status"] == "rejected"
+
+
+def test_review_proposal_bad_decision(monkeypatch):
+    from fastapi import HTTPException
+    _, changes, _ = _patch(monkeypatch, {})
+    changes.insert_one({"change_id": "c1", "status": "pending", "proposal": {"auto_applied": False}})
+    with pytest.raises(HTTPException) as e:
+        _run(R.review_proposal("c1", R.ProposalReview(decision="maybe"), _admin=True))
+    assert e.value.status_code == 400

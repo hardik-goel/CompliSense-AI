@@ -21,7 +21,14 @@ from pydantic import BaseModel, Field
 
 from agent.db.mongo import insert_audit_log
 from agent.rules.loader import load_rulepack
-from compliance.regwatch import collect_watch_sources, content_hash, detect_change
+from compliance.regwatch import (
+    build_change_proposal,
+    collect_watch_sources,
+    content_hash,
+    detect_change,
+    merge_watch_sources,
+    normalize_text,
+)
 from compliance.registry import get_rulepack_ids
 from saas.app.auth import get_current_user
 from saas.app.database import get_collection, serialize_document
@@ -30,6 +37,9 @@ from saas.app.readiness import require_admin
 router = APIRouter(prefix="/api/v1/regwatch", tags=["regwatch"])
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# Approved proposals are written here as git-friendly YAML patch STUBS for a human to apply
+# by hand. The engine never applies them itself.
+_PROPOSALS_DIR = _PROJECT_ROOT / "rulepacks" / "proposals"
 Fetcher = Callable[[str], str]
 
 
@@ -53,8 +63,16 @@ def _load_all_packs() -> list[dict[str, Any]]:
     return packs
 
 
+def _all_rules() -> list[dict[str, Any]]:
+    rules: list[dict[str, Any]] = []
+    for pack in _load_all_packs():
+        rules.extend(pack.get("rules", []) or [])
+    return rules
+
+
 def watch_sources() -> list[dict[str, Any]]:
-    return collect_watch_sources(_load_all_packs())
+    """Watched sources = rulepack-cited URLs unioned with the seed watchlist."""
+    return merge_watch_sources(collect_watch_sources(_load_all_packs()))
 
 
 def _default_fetcher(url: str) -> str:
@@ -91,23 +109,33 @@ def run_watch_sweep(fetcher: Optional[Fetcher] = None, now: Optional[dt.datetime
         result = detect_change(prev.get("hash") if prev else None, text)
         snaps.insert_one({
             "url": url, "hash": result["new_hash"], "fetched_at": now,
-            "rule_ids": source["rule_ids"], "pack_ids": source["pack_ids"],
+            "rule_ids": source.get("rule_ids", []), "pack_ids": source.get("pack_ids", []),
+            # Store the normalized text so the NEXT sweep can build a real diff summary.
+            "text": normalize_text(text),
         })
 
         if result["changed"]:
             # Dedup: skip if an open change for this url+new_hash already exists.
             if changes.find_one({"url": url, "new_hash": result["new_hash"], "status": "pending"}):
                 continue
+            # Build a human-review-ONLY change proposal (diff, affected rules, action hint).
+            proposal = build_change_proposal(
+                source=source,
+                prev_text=(prev or {}).get("text", "") if prev else "",
+                new_text=text,
+                all_rules=_all_rules(),
+            )
             change = {
                 "change_id": f"chg_{uuid.uuid4().hex[:12]}",
                 "url": url,
-                "rule_ids": source["rule_ids"],
-                "pack_ids": source["pack_ids"],
+                "rule_ids": source.get("rule_ids", []),
+                "pack_ids": source.get("pack_ids", []),
                 "prev_hash": result["prev_hash"],
                 "new_hash": result["new_hash"],
                 "status": "pending",
                 "detected_at": now,
                 "note": "",
+                "proposal": proposal,
             }
             changes.insert_one(change)
             created.append(change)
@@ -179,3 +207,121 @@ async def review_change(change_id: str, body: ReviewRequest, _admin: bool = Depe
     # LEGAL_REVIEW_NEEDED.md — it does not auto-modify rule content.
     return {"change_id": change_id, "status": decision,
             "rules_to_review": change.get("rule_ids", []) if decision == "approved" else []}
+
+
+# ── Change-proposal pipeline (Phase 5.4) ─────────────────────────────────────
+# A detected change carries an embedded `proposal` (built in run_watch_sweep). These
+# endpoints let a human list proposals and approve/reject them. Approval writes a
+# git-friendly YAML patch STUB under rulepacks/proposals/ for a human to apply by hand —
+# it NEVER edits a live rulepack.
+
+
+class ProposalReview(BaseModel):
+    decision: str = Field(description="approved | rejected")
+    note: str = Field(default="", max_length=2000)
+
+
+def _write_proposal_patch(change: dict[str, Any], now: dt.datetime) -> Path:
+    """Write an approved proposal as a YAML patch stub. Returns the file path.
+
+    The stub is a human-editable scaffold: it records the source, affected rules, proposed
+    action, and diff summary, with placeholder fields for the reviewer to fill. Applying it
+    to a rulepack is a manual, reviewed step — never automatic.
+    """
+    import yaml  # lazy: keep module import light
+
+    _PROPOSALS_DIR.mkdir(parents=True, exist_ok=True)
+    change_id = change.get("change_id", "unknown")
+    proposal = change.get("proposal") or {}
+    patch = {
+        "proposal_id": change_id,
+        "status": "approved_pending_manual_apply",
+        "generated_at": now.isoformat(),
+        "auto_applied": False,
+        "source": proposal.get("source", {"url": change.get("url")}),
+        "affected_rule_ids": proposal.get("affected_rule_ids", change.get("rule_ids", [])),
+        "proposed_action": proposal.get("proposed_action", "review_only"),
+        "diff_summary": proposal.get("diff_summary", {}),
+        "reviewer_note": change.get("review_note", ""),
+        "manual_edit_required": (
+            "Fill in the concrete rulepack edit below, then apply by hand. This file does "
+            "NOT modify any rulepack on its own."
+        ),
+        "suggested_edit": {
+            "pack_id": None,
+            "rule_id": None,
+            "field": None,        # e.g. enforcement_date / new rule
+            "current_value": None,
+            "proposed_value": None,
+        },
+    }
+    path = _PROPOSALS_DIR / f"{change_id}.yaml"
+    path.write_text(yaml.safe_dump(patch, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    return path
+
+
+@router.get("/proposals")
+async def list_proposals(status: str = "pending", current_user: dict[str, Any] = Depends(get_current_user)):
+    """List change proposals (changes that carry an embedded proposal). Default: pending."""
+    docs = list(changes_collection().find({}).sort("detected_at", -1))
+    out = []
+    for d in docs:
+        if not d.get("proposal"):
+            continue
+        if status != "all" and d.get("status") != status:
+            continue
+        out.append({
+            "change_id": d.get("change_id"),
+            "url": d.get("url"),
+            "status": d.get("status"),
+            "detected_at": d.get("detected_at"),
+            "proposal": d.get("proposal"),
+            "proposal_patch_path": d.get("proposal_patch_path"),
+        })
+    return {"count": len(out), "proposals": [serialize_document(p) for p in out]}
+
+
+@router.post("/proposals/{change_id}/review")
+async def review_proposal(change_id: str, body: ProposalReview, _admin: bool = Depends(require_admin)):
+    """Human-gated proposal decision. approve → writes a YAML patch stub; reject → archived.
+
+    NEVER edits a live rulepack. Approval only scaffolds a patch file for manual application.
+    """
+    decision = body.decision.strip().lower()
+    if decision not in {"approved", "rejected"}:
+        raise HTTPException(status_code=400, detail="decision must be 'approved' or 'rejected'")
+    change = changes_collection().find_one({"change_id": change_id})
+    if not change:
+        raise HTTPException(status_code=404, detail="Change not found")
+    if not change.get("proposal"):
+        raise HTTPException(status_code=400, detail="Change has no proposal to review")
+
+    now = dt.datetime.utcnow()
+    update: dict[str, Any] = {"status": decision, "review_note": body.note, "reviewed_at": now}
+    patch_path: str | None = None
+    if decision == "approved":
+        try:
+            path = _write_proposal_patch({**change, "review_note": body.note}, now)
+            try:
+                patch_path = str(path.relative_to(_PROJECT_ROOT))
+            except ValueError:  # patch dir outside the repo (e.g. tests) — use absolute
+                patch_path = str(path)
+        except Exception as exc:  # never 500 the review because file IO hiccupped
+            raise HTTPException(status_code=500, detail=f"Could not write patch: {exc}")
+        update["proposal_patch_path"] = patch_path
+    changes_collection().update_one({"change_id": change_id}, {"$set": update})
+
+    try:
+        insert_audit_log({
+            "source": "regwatch_proposal_review", "status": decision, "timestamp": now,
+            "metadata": {"change_id": change_id, "url": change.get("url"),
+                         "patch_path": patch_path, "note": body.note},
+        })
+    except Exception:
+        pass
+    return {
+        "change_id": change_id,
+        "status": decision,
+        "proposal_patch_path": patch_path,
+        "rules_to_review": change.get("proposal", {}).get("affected_rule_ids", []) if decision == "approved" else [],
+    }
