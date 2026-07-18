@@ -62,6 +62,17 @@ function prettyLabel(value: string): string {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Sentinel stored when a user picks "Not sure". Non-empty (so it counts as answered),
+ *  but recognised by no scoring predicate — the backend treats it as an honest unknown
+ *  (which surfaces as a "needs review" gap rather than a fabricated Yes/No). */
+const NOT_SURE = "not_sure";
+
+/** EU AI Act questions live in sections prefixed "EU AI Act". Everything else is DPDP.
+ *  We show only the questions relevant to the regulation the visitor picked. */
+function isEuQuestion(q: Question): boolean {
+  return q.section.startsWith("EU AI Act");
+}
+
 export default function ReadinessTool() {
   const questions = QUESTIONS;
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
@@ -193,8 +204,15 @@ export default function ReadinessTool() {
     );
   }
 
+  // Show only the questions relevant to the chosen regulation: DPDP hides the EU AI Act
+  // sections, and the EU AI Act check hides the DPDP-specific ones (and vice versa).
+  const isEuPack = packId.startsWith("euai");
+  const visibleQuestions = questions.filter((q) =>
+    isEuPack ? isEuQuestion(q) : !isEuQuestion(q)
+  );
+
   // Group questions by section for rendering.
-  const sections = questions.reduce<Record<string, Question[]>>((acc, q) => {
+  const sections = visibleQuestions.reduce<Record<string, Question[]>>((acc, q) => {
     (acc[q.section] = acc[q.section] || []).push(q);
     return acc;
   }, {});
@@ -227,9 +245,16 @@ export default function ReadinessTool() {
                 {q.optional ? " (optional)" : ""}
               </label>
               {q.help ? (
-                <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.2rem 0" }}>
-                  {q.help}
-                </p>
+                <details className="q-help" style={{ margin: "0.2rem 0" }}>
+                  <summary
+                    style={{ fontSize: "0.72rem", opacity: 0.75, cursor: "pointer", userSelect: "none" }}
+                  >
+                    What does this mean? Where do I find it?
+                  </summary>
+                  <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.3rem 0 0" }}>
+                    {q.help}
+                  </p>
+                </details>
               ) : null}
 
               {q.type === "bool" && (
@@ -245,6 +270,15 @@ export default function ReadinessTool() {
                       <span>{prettyLabel(opt)}</span>
                     </label>
                   ))}
+                  <label className="option-chip">
+                    <input
+                      type="radio"
+                      name={q.id}
+                      checked={answers[q.id] === NOT_SURE}
+                      onChange={() => setAnswer(q.id, NOT_SURE)}
+                    />
+                    <span>Not sure</span>
+                  </label>
                 </div>
               )}
 
@@ -262,6 +296,7 @@ export default function ReadinessTool() {
                       {prettyLabel(opt)}
                     </option>
                   ))}
+                  <option value={NOT_SURE}>Not sure / don&apos;t know</option>
                 </select>
               )}
 
@@ -313,7 +348,11 @@ export default function ReadinessTool() {
       ) : null}
 
       <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>
-        {submitting ? "Scoring…" : "Get my DPDP Readiness Score"}
+        {submitting
+          ? "Scoring…"
+          : isEuPack
+          ? "Check my EU AI Act readiness"
+          : "Get my DPDP Readiness Score"}
       </button>
 
       {submitting && scoringSlow ? (

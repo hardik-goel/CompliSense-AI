@@ -136,6 +136,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you have a standalone, plain-language privacy notice?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC5-NOTICE-001",
+        "help": "A separate, easy-to-read notice telling people what data you collect, why, and their rights (DPDP s.5 / Rule 3). Look for a 'Privacy Policy' / 'Privacy Notice' page linked in your website or app footer.",
     },
     {
         "id": "consent_mechanism",
@@ -144,6 +145,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "type": "single",
         "options": ["explicit_optin", "pre_ticked_or_implied", "none"],
         "maps_to_rule": "DPDP-SEC6-CONSENT-001",
+        "help": "How users agree to your data use. 'Explicit opt-in' = an unticked box or clear action they must take. Check your sign-up / cookie / onboarding screens.",
     },
     {
         "id": "has_withdrawal_mechanism",
@@ -151,6 +153,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Can users withdraw consent as easily as they gave it?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC6-CONSENT-001",
+        "help": "A way for users to say 'stop using my data' that is as simple as giving consent was (DPDP s.6). Look for an account setting, an unsubscribe/opt-out link, or a documented request process.",
     },
     {
         "id": "has_security_safeguards",
@@ -158,6 +161,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you have documented security safeguards (encryption, access control, logging)?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-001",
+        "help": "Written technical/organisational measures protecting personal data — e.g. encryption, role-based access, audit logs (DPDP s.8(5) / Rule 6). Ask your engineering/security lead or check your security policy / SOC2-ISO docs.",
     },
     {
         "id": "has_breach_process",
@@ -165,6 +169,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you have a personal-data-breach response process / register?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-002",
+        "help": "A documented plan for what happens if data is exposed — who is told, and a log of incidents (DPDP s.8(6) / Rule 7 requires notifying the Board and affected people). Check for an incident-response runbook or breach register.",
     },
     {
         "id": "retention_defined",
@@ -172,6 +177,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Have you defined data retention and erasure periods?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-003",
+        "help": "Rules for how long you keep personal data and when you delete it (DPDP s.8(7)-(8) / Rule 8). Check for a data-retention schedule or policy; if you 'keep everything forever', the answer is No.",
     },
     {
         "id": "has_grievance_contact",
@@ -179,13 +185,15 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you publish a grievance/contact point for data questions?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC13-GRIEVANCE-001",
+        "help": "A named contact / channel users can reach about their data (DPDP s.13 requires a response within ~90 days). Look for a 'Grievance Officer', DPO email, or contact form in your privacy notice.",
     },
     {
         "id": "grievance_email",
         "section": "Your current posture",
-        "text": "What is the published grievance contact email? (optional)",
+        "text": "What is the published grievance contact email?",
         "type": "text",
         "optional": True,
+        "help": "The email address you publish for data-protection questions and grievances. Find it in your privacy notice or website footer / contact page.",
     },
     {
         "id": "processors_listed",
@@ -193,6 +201,7 @@ QUESTIONS: List[Dict[str, Any]] = [
         "text": "Do you maintain an inventory of processors/vendors with data-processing contracts?",
         "type": "bool",
         "maps_to_rule": "DPDP-SEC8-PROCESSOR-001",
+        "help": "A list of third parties that handle personal data on your behalf (AWS, analytics, CRM, payroll…) with data-processing agreements in place (DPDP s.8(2) / Rule 6(f)). Check your vendor list / DPA folder.",
     },
     # --- EU AI Act facts (applicability only; EU posture scoring pending legal review) ---
     {
