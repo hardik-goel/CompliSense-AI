@@ -69,6 +69,8 @@ app.include_router(distribution_router)
 
 from saas.app.readiness import router as readiness_router  # noqa: E402
 app.include_router(readiness_router)
+from saas.app.leads_api import router as leads_router  # noqa: E402
+app.include_router(leads_router)
 
 from saas.app.monitoring import router as monitoring_router  # noqa: E402
 app.include_router(monitoring_router)

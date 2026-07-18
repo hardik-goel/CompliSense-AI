@@ -53,6 +53,24 @@ class Settings:
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     port: int = int(os.getenv("PORT", "10000"))
     secure_cookies: bool = _to_bool(os.getenv("SECURE_COOKIES"), default=False)
+    # ── Lead capture + mail (Prompt 3) ──────────────────────────────────────────
+    # MAIL_PROVIDER: smtp | console | none. "console" logs the email (dev/no creds);
+    # "none" disables sending (score still returned). A provider like Postmark/SES can be
+    # added by implementing the Mailer interface in saas/app/mail.py.
+    mail_provider: str = os.getenv("MAIL_PROVIDER", "console")
+    smtp_host: str = os.getenv("SMTP_HOST", "")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user: str = os.getenv("SMTP_USER", "")
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
+    smtp_use_tls: bool = _to_bool(os.getenv("SMTP_USE_TLS"), default=True)
+    mail_from: str = os.getenv("MAIL_FROM", os.getenv("SUPPORT_EMAIL", "support@complisenseai.com"))
+    operator_notify_email: str = os.getenv("OPERATOR_NOTIFY_EMAIL", "")
+    # Ungated direct calendar link for warm inbound (investors/referrals). NOT surfaced on
+    # the public page — shared manually. The public "Book a Demo" is gated behind the test.
+    direct_demo_url: str = os.getenv("DIRECT_DEMO_URL", "")
+    # Lead privacy contact + retention (DPDP compliance for the lead form itself).
+    lead_privacy_contact: str = os.getenv("LEAD_PRIVACY_CONTACT", os.getenv("SUPPORT_EMAIL", "support@complisenseai.com"))
+    lead_retention_days: int = int(os.getenv("LEAD_RETENTION_DAYS", "365"))
 
     @property
     def is_production(self) -> bool:
