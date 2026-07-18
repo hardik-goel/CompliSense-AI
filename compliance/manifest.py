@@ -397,6 +397,31 @@ QUESTIONS: List[Dict[str, Any]] = [
     },
 ]
 
+# ── Question tiers: CORE (default, ~10 Qs, ~2 min) vs DEEP (optional expander) ──
+# CORE questions render on one screen and drive the score. DEEP questions live behind a
+# collapsed "Add more for a deeper score" expander — still present and answerable; when left
+# blank they score as "unknown = gap" (honest), never as a pass. The EU AI Act block is its
+# own separate expander (shown only for an EU regulation) regardless of tier.
+CORE_QUESTION_IDS = {
+    "entity_type",
+    "sector",
+    "registered_users",       # india_user_count
+    "notified_as_sdf",        # is_sdf
+    "processes_children_data",
+    "has_privacy_notice",
+    "consent_mechanism",      # consent_method
+    "has_security_safeguards",
+    "has_breach_process",
+    "has_grievance_contact",  # publishes_grievance_contact
+}
+
+for _q in QUESTIONS:
+    # EU AI Act questions are always "deep" (they live in their own regulation-gated expander).
+    if _q["section"].startswith("EU AI Act"):
+        _q["tier"] = "deep"
+    else:
+        _q["tier"] = "core" if _q["id"] in CORE_QUESTION_IDS else "deep"
+
 QUESTION_IDS = {q["id"] for q in QUESTIONS}
 
 

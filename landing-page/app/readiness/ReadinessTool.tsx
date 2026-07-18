@@ -16,6 +16,7 @@ type Question = {
   options?: string[];
   help?: string;
   optional?: boolean;
+  tier?: "core" | "deep";
 };
 
 /**
@@ -210,12 +211,117 @@ export default function ReadinessTool() {
   const visibleQuestions = questions.filter((q) =>
     isEuPack ? isEuQuestion(q) : !isEuQuestion(q)
   );
+  // CORE = one-screen ~2-minute set; DEEP = optional, behind an expander.
+  const coreQuestions = visibleQuestions.filter((q) => q.tier !== "deep");
+  const deepQuestions = visibleQuestions.filter((q) => q.tier === "deep");
 
-  // Group questions by section for rendering.
-  const sections = visibleQuestions.reduce<Record<string, Question[]>>((acc, q) => {
-    (acc[q.section] = acc[q.section] || []).push(q);
-    return acc;
-  }, {});
+  function groupBySection(qs: Question[]): [string, Question[]][] {
+    const map = qs.reduce<Record<string, Question[]>>((acc, q) => {
+      (acc[q.section] = acc[q.section] || []).push(q);
+      return acc;
+    }, {});
+    return Object.entries(map);
+  }
+
+  function renderField(q: Question) {
+    return (
+      <div className="field field-full" key={q.id} style={{ marginBottom: "1rem" }}>
+        <label htmlFor={q.id}>
+          {q.text}
+          {q.optional ? " (optional)" : ""}
+        </label>
+        {q.help ? (
+          <details className="q-help" style={{ margin: "0.2rem 0" }}>
+            <summary
+              style={{ fontSize: "0.72rem", opacity: 0.75, cursor: "pointer", userSelect: "none" }}
+            >
+              What does this mean? Where do I find it?
+            </summary>
+            <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.3rem 0 0" }}>
+              {q.help}
+            </p>
+          </details>
+        ) : null}
+
+        {q.type === "bool" && (
+          <div className="option-group">
+            {["yes", "no"].map((opt) => (
+              <label key={opt} className="option-chip">
+                <input
+                  type="radio"
+                  name={q.id}
+                  checked={answers[q.id] === (opt === "yes")}
+                  onChange={() => setAnswer(q.id, opt === "yes")}
+                />
+                <span>{prettyLabel(opt)}</span>
+              </label>
+            ))}
+            <label className="option-chip">
+              <input
+                type="radio"
+                name={q.id}
+                checked={answers[q.id] === NOT_SURE}
+                onChange={() => setAnswer(q.id, NOT_SURE)}
+              />
+              <span>Not sure</span>
+            </label>
+          </div>
+        )}
+
+        {q.type === "single" && (
+          <select
+            id={q.id}
+            value={(answers[q.id] as string) || ""}
+            onChange={(e) => setAnswer(q.id, e.target.value)}
+          >
+            <option value="" disabled>
+              Select…
+            </option>
+            {(q.options || []).map((opt) => (
+              <option key={opt} value={opt}>
+                {prettyLabel(opt)}
+              </option>
+            ))}
+            <option value={NOT_SURE}>Not sure / don&apos;t know</option>
+          </select>
+        )}
+
+        {q.type === "multi" && (
+          <div className="option-group">
+            {(q.options || []).map((opt) => (
+              <label key={opt} className="option-chip">
+                <input
+                  type="checkbox"
+                  checked={Array.isArray(answers[q.id]) && (answers[q.id] as string[]).includes(opt)}
+                  onChange={() => toggleMulti(q.id, opt)}
+                />
+                <span>{prettyLabel(opt)}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {q.type === "number" && (
+          <input
+            id={q.id}
+            type="number"
+            min={0}
+            value={(answers[q.id] as number) ?? ""}
+            onChange={(e) => setAnswer(q.id, e.target.value)}
+          />
+        )}
+
+        {q.type === "text" && (
+          <input
+            id={q.id}
+            type="text"
+            value={(answers[q.id] as string) || ""}
+            onChange={(e) => setAnswer(q.id, e.target.value)}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="readiness-form">
@@ -230,113 +336,40 @@ export default function ReadinessTool() {
           </select>
           <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.2rem 0" }}>
             DPDP returns a readiness score. EU AI Act returns the applicable obligations (no numeric
-            score yet — EU posture scoring is pending legal review). Answer the "EU AI Act (if
-            applicable)" questions for an EU check.
+            score yet — EU posture scoring is pending legal review).
           </p>
         </div>
       </fieldset>
-      {Object.entries(sections).map(([section, qs]) => (
+
+      {/* CORE questions — one screen, ~2 minutes. */}
+      {groupBySection(coreQuestions).map(([section, qs]) => (
         <fieldset key={section} style={{ border: "none", marginBottom: "1.5rem" }}>
           <legend className="section-kicker">{section}</legend>
-          {qs.map((q) => (
-            <div className="field field-full" key={q.id} style={{ marginBottom: "1rem" }}>
-              <label htmlFor={q.id}>
-                {q.text}
-                {q.optional ? " (optional)" : ""}
-              </label>
-              {q.help ? (
-                <details className="q-help" style={{ margin: "0.2rem 0" }}>
-                  <summary
-                    style={{ fontSize: "0.72rem", opacity: 0.75, cursor: "pointer", userSelect: "none" }}
-                  >
-                    What does this mean? Where do I find it?
-                  </summary>
-                  <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.3rem 0 0" }}>
-                    {q.help}
-                  </p>
-                </details>
-              ) : null}
-
-              {q.type === "bool" && (
-                <div className="option-group">
-                  {["yes", "no"].map((opt) => (
-                    <label key={opt} className="option-chip">
-                      <input
-                        type="radio"
-                        name={q.id}
-                        checked={answers[q.id] === (opt === "yes")}
-                        onChange={() => setAnswer(q.id, opt === "yes")}
-                      />
-                      <span>{prettyLabel(opt)}</span>
-                    </label>
-                  ))}
-                  <label className="option-chip">
-                    <input
-                      type="radio"
-                      name={q.id}
-                      checked={answers[q.id] === NOT_SURE}
-                      onChange={() => setAnswer(q.id, NOT_SURE)}
-                    />
-                    <span>Not sure</span>
-                  </label>
-                </div>
-              )}
-
-              {q.type === "single" && (
-                <select
-                  id={q.id}
-                  value={(answers[q.id] as string) || ""}
-                  onChange={(e) => setAnswer(q.id, e.target.value)}
-                >
-                  <option value="" disabled>
-                    Select…
-                  </option>
-                  {(q.options || []).map((opt) => (
-                    <option key={opt} value={opt}>
-                      {prettyLabel(opt)}
-                    </option>
-                  ))}
-                  <option value={NOT_SURE}>Not sure / don&apos;t know</option>
-                </select>
-              )}
-
-              {q.type === "multi" && (
-                <div className="option-group">
-                  {(q.options || []).map((opt) => (
-                    <label key={opt} className="option-chip">
-                      <input
-                        type="checkbox"
-                        checked={Array.isArray(answers[q.id]) && (answers[q.id] as string[]).includes(opt)}
-                        onChange={() => toggleMulti(q.id, opt)}
-                      />
-                      <span>{prettyLabel(opt)}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {q.type === "number" && (
-                <input
-                  id={q.id}
-                  type="number"
-                  min={0}
-                  value={(answers[q.id] as number) ?? ""}
-                  onChange={(e) => setAnswer(q.id, e.target.value)}
-                />
-              )}
-
-              {q.type === "text" && (
-                <input
-                  id={q.id}
-                  type="text"
-                  value={(answers[q.id] as string) || ""}
-                  onChange={(e) => setAnswer(q.id, e.target.value)}
-                />
-              )}
-            </div>
-          ))}
+          {qs.map((q) => renderField(q))}
         </fieldset>
       ))}
+
+      {/* DEEP questions — optional, collapsed. For EU this is the EU AI Act block; for DPDP
+          it's the extra precision questions. Unanswered deep questions score as unknown = gap. */}
+      {deepQuestions.length > 0 && (
+        <details className="deep-questions" style={{ marginBottom: "1.5rem" }}>
+          <summary className="section-kicker" style={{ cursor: "pointer", userSelect: "none" }}>
+            {isEuPack
+              ? "EU AI Act questions (answer these for an EU check)"
+              : `Add ${deepQuestions.length} more for a deeper, more precise score`}
+          </summary>
+          <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.7, margin: "0.5rem 0" }}>
+            Optional. Leaving these blank is fine — they simply score as “needs review” rather than
+            a pass, so answering more sharpens your score.
+          </p>
+          {groupBySection(deepQuestions).map(([section, qs]) => (
+            <fieldset key={section} style={{ border: "none", marginBottom: "1rem" }}>
+              <legend className="section-kicker" style={{ fontSize: "0.78rem" }}>{section}</legend>
+              {qs.map((q) => renderField(q))}
+            </fieldset>
+          ))}
+        </details>
+      )}
 
       {error ? (
         <p className="form-error" role="alert">

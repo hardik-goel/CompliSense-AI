@@ -12,14 +12,16 @@
         "government_body",
         "other"
       ],
-      "help": "Determines baseline Data Fiduciary status."
+      "help": "Determines baseline Data Fiduciary status.",
+      "tier": "core"
     },
     {
       "id": "offers_in_india",
       "section": "About your organisation",
       "text": "Do you offer goods or services to individuals in India (or process their data)?",
       "type": "bool",
-      "help": "DPDP applies within India and extraterritorially to those serving Indian users (Act s.3)."
+      "help": "DPDP applies within India and extraterritorially to those serving Indian users (Act s.3).",
+      "tier": "deep"
     },
     {
       "id": "sector",
@@ -36,56 +38,64 @@
         "saas",
         "other"
       ],
-      "help": "Some sectors carry extra obligations or exemptions."
+      "help": "Some sectors carry extra obligations or exemptions.",
+      "tier": "core"
     },
     {
       "id": "registered_users",
       "section": "About your organisation",
       "text": "Roughly how many registered users do you have in India?",
       "type": "number",
-      "help": "Used only to check Third-Schedule class triggers (e-commerce/social >=2cr, gaming >=50L)."
+      "help": "Used only to check Third-Schedule class triggers (e-commerce/social >=2cr, gaming >=50L).",
+      "tier": "core"
     },
     {
       "id": "notified_as_sdf",
       "section": "About your organisation",
       "text": "Has the Central Government notified you as a Significant Data Fiduciary (SDF)?",
       "type": "bool",
-      "help": "SDF duties (DPIA, audit, India DPO) apply ONLY to notified SDFs. Most startups are NOT SDFs."
+      "help": "SDF duties (DPIA, audit, India DPO) apply ONLY to notified SDFs. Most startups are NOT SDFs.",
+      "tier": "core"
     },
     {
       "id": "is_state_instrumentality",
       "section": "About your organisation",
       "text": "Are you a State or an instrumentality of the State?",
       "type": "bool",
-      "help": "Certain State processing follows the Second Schedule standards (Rule 5)."
+      "help": "Certain State processing follows the Second Schedule standards (Rule 5).",
+      "tier": "deep"
     },
     {
       "id": "acts_as_consent_manager",
       "section": "About your organisation",
       "text": "Do you operate as a registered Consent Manager?",
       "type": "bool",
-      "help": "Consent Manager obligations (Rule 4) apply only if you act as one."
+      "help": "Consent Manager obligations (Rule 4) apply only if you act as one.",
+      "tier": "deep"
     },
     {
       "id": "processes_children_data",
       "section": "Data you handle",
       "text": "Do you knowingly process personal data of children (under 18)?",
       "type": "bool",
-      "help": "Triggers verifiable parental consent (Rule 10) + Act s.9 bans, subject to Fourth-Schedule exemptions."
+      "help": "Triggers verifiable parental consent (Rule 10) + Act s.9 bans, subject to Fourth-Schedule exemptions.",
+      "tier": "core"
     },
     {
       "id": "handles_disability_guardian_data",
       "section": "Data you handle",
       "text": "Do you process personal data of persons with disability who act through a lawful guardian?",
       "type": "bool",
-      "help": "Triggers the s.9-proviso lawful-guardian consent path (DPDP-SEC9-GUARDIAN-001). Mirrors the children's-data gate; the guardian rule also fires when you process children's data."
+      "help": "Triggers the s.9-proviso lawful-guardian consent path (DPDP-SEC9-GUARDIAN-001). Mirrors the children's-data gate; the guardian rule also fires when you process children's data.",
+      "tier": "deep"
     },
     {
       "id": "cross_border_transfer",
       "section": "Data you handle",
       "text": "Do you transfer personal data outside India?",
       "type": "bool",
-      "help": "Permitted subject to future Central-Govt restrictions (Rule 15)."
+      "help": "Permitted subject to future Central-Govt restrictions (Rule 15).",
+      "tier": "deep"
     },
     {
       "id": "pii_categories",
@@ -104,7 +114,8 @@
         "children_data",
         "none"
       ],
-      "help": "Itemised personal data must be listed in your notice (Rule 3)."
+      "help": "Itemised personal data must be listed in your notice (Rule 3).",
+      "tier": "deep"
     },
     {
       "id": "storage_locations",
@@ -121,7 +132,8 @@
         "notebooks",
         "unsure"
       ],
-      "help": "Used to map where personal data may reside (informs security & processor checks)."
+      "help": "Used to map where personal data may reside (informs security & processor checks).",
+      "tier": "deep"
     },
     {
       "id": "has_privacy_notice",
@@ -129,7 +141,8 @@
       "text": "Do you have a standalone, plain-language privacy notice?",
       "type": "bool",
       "maps_to_rule": "DPDP-SEC5-NOTICE-001",
-      "help": "A separate, easy-to-read notice telling people what data you collect, why, and their rights (DPDP s.5 / Rule 3). Look for a 'Privacy Policy' / 'Privacy Notice' page linked in your website or app footer."
+      "help": "A separate, easy-to-read notice telling people what data you collect, why, and their rights (DPDP s.5 / Rule 3). Look for a 'Privacy Policy' / 'Privacy Notice' page linked in your website or app footer.",
+      "tier": "core"
     },
     {
       "id": "consent_mechanism",
@@ -142,7 +155,8 @@
         "none"
       ],
       "maps_to_rule": "DPDP-SEC6-CONSENT-001",
-      "help": "How users agree to your data use. 'Explicit opt-in' = an unticked box or clear action they must take. Check your sign-up / cookie / onboarding screens."
+      "help": "How users agree to your data use. 'Explicit opt-in' = an unticked box or clear action they must take. Check your sign-up / cookie / onboarding screens.",
+      "tier": "core"
     },
     {
       "id": "has_withdrawal_mechanism",
@@ -150,7 +164,8 @@
       "text": "Can users withdraw consent as easily as they gave it?",
       "type": "bool",
       "maps_to_rule": "DPDP-SEC6-CONSENT-001",
-      "help": "A way for users to say 'stop using my data' that is as simple as giving consent was (DPDP s.6). Look for an account setting, an unsubscribe/opt-out link, or a documented request process."
+      "help": "A way for users to say 'stop using my data' that is as simple as giving consent was (DPDP s.6). Look for an account setting, an unsubscribe/opt-out link, or a documented request process.",
+      "tier": "deep"
     },
     {
       "id": "has_security_safeguards",
@@ -158,7 +173,8 @@
       "text": "Do you have documented security safeguards (encryption, access control, logging)?",
       "type": "bool",
       "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-001",
-      "help": "Written technical/organisational measures protecting personal data — e.g. encryption, role-based access, audit logs (DPDP s.8(5) / Rule 6). Ask your engineering/security lead or check your security policy / SOC2-ISO docs."
+      "help": "Written technical/organisational measures protecting personal data — e.g. encryption, role-based access, audit logs (DPDP s.8(5) / Rule 6). Ask your engineering/security lead or check your security policy / SOC2-ISO docs.",
+      "tier": "core"
     },
     {
       "id": "has_breach_process",
@@ -166,7 +182,8 @@
       "text": "Do you have a personal-data-breach response process / register?",
       "type": "bool",
       "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-002",
-      "help": "A documented plan for what happens if data is exposed — who is told, and a log of incidents (DPDP s.8(6) / Rule 7 requires notifying the Board and affected people). Check for an incident-response runbook or breach register."
+      "help": "A documented plan for what happens if data is exposed — who is told, and a log of incidents (DPDP s.8(6) / Rule 7 requires notifying the Board and affected people). Check for an incident-response runbook or breach register.",
+      "tier": "core"
     },
     {
       "id": "retention_defined",
@@ -174,7 +191,8 @@
       "text": "Have you defined data retention and erasure periods?",
       "type": "bool",
       "maps_to_rule": "DPDP-SEC8-OBLIGATIONS-003",
-      "help": "Rules for how long you keep personal data and when you delete it (DPDP s.8(7)-(8) / Rule 8). Check for a data-retention schedule or policy; if you 'keep everything forever', the answer is No."
+      "help": "Rules for how long you keep personal data and when you delete it (DPDP s.8(7)-(8) / Rule 8). Check for a data-retention schedule or policy; if you 'keep everything forever', the answer is No.",
+      "tier": "deep"
     },
     {
       "id": "has_grievance_contact",
@@ -182,7 +200,8 @@
       "text": "Do you publish a grievance/contact point for data questions?",
       "type": "bool",
       "maps_to_rule": "DPDP-SEC13-GRIEVANCE-001",
-      "help": "A named contact / channel users can reach about their data (DPDP s.13 requires a response within ~90 days). Look for a 'Grievance Officer', DPO email, or contact form in your privacy notice."
+      "help": "A named contact / channel users can reach about their data (DPDP s.13 requires a response within ~90 days). Look for a 'Grievance Officer', DPO email, or contact form in your privacy notice.",
+      "tier": "core"
     },
     {
       "id": "grievance_email",
@@ -190,7 +209,8 @@
       "text": "What is the published grievance contact email?",
       "type": "text",
       "optional": true,
-      "help": "The email address you publish for data-protection questions and grievances. Find it in your privacy notice or website footer / contact page."
+      "help": "The email address you publish for data-protection questions and grievances. Find it in your privacy notice or website footer / contact page.",
+      "tier": "deep"
     },
     {
       "id": "processors_listed",
@@ -198,7 +218,8 @@
       "text": "Do you maintain an inventory of processors/vendors with data-processing contracts?",
       "type": "bool",
       "maps_to_rule": "DPDP-SEC8-PROCESSOR-001",
-      "help": "A list of third parties that handle personal data on your behalf (AWS, analytics, CRM, payroll…) with data-processing agreements in place (DPDP s.8(2) / Rule 6(f)). Check your vendor list / DPA folder."
+      "help": "A list of third parties that handle personal data on your behalf (AWS, analytics, CRM, payroll…) with data-processing agreements in place (DPDP s.8(2) / Rule 6(f)). Check your vendor list / DPA folder.",
+      "tier": "deep"
     },
     {
       "id": "has_ai_system",
@@ -206,7 +227,8 @@
       "text": "Do you build, deploy, import, or distribute an AI system?",
       "type": "bool",
       "help": "Gates whether EU AI Act obligations apply at all.",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "eu_role",
@@ -223,7 +245,8 @@
         "gpai_downstream"
       ],
       "help": "EU AI Act obligations are role-gated (provider duties differ from deployer duties).",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "ai_role",
@@ -237,7 +260,8 @@
         "none"
       ],
       "help": "Drives which EU AI Act duties are shown: provider duties (Arts 9-22), deployer duties (Arts 26-27), or both.",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "established_in_eu",
@@ -245,7 +269,8 @@
       "text": "Is your organisation legally established in the EU?",
       "type": "bool",
       "help": "Non-EU providers placing high-risk AI on the EU market must appoint an EU authorised representative (Art. 22).",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "provides_to_eu",
@@ -253,7 +278,8 @@
       "text": "Is the AI system placed on the EU market or is its output used in the EU?",
       "type": "bool",
       "help": "The EU AI Act applies extraterritorially when output is used in the EU (Art. 2).",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "is_open_source",
@@ -261,147 +287,168 @@
       "text": "Is the AI model/system released under a free and open-source licence?",
       "type": "bool",
       "help": "Some EU AI Act duties carry open-source carve-outs (scope subject to legal review).",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "avoids_prohibited_practices",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you confirm your AI does NOT use any prohibited practice (Art. 5: manipulative/exploitative techniques, social scoring, untargeted scraping for facial DBs, etc.)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_ai_literacy_program",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you have an AI-literacy programme for staff operating AI systems (Art. 4)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_art50_transparency",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you disclose AI interaction and label AI-generated/deepfake content where required (Art. 50)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_risk_management_system",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you operate a documented risk-management system for the AI system (Art. 9)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_data_governance",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you have documented training/validation/test data governance (Art. 10)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_technical_documentation",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you maintain up-to-date technical documentation for the AI system (Art. 11)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_recordkeeping_logs",
       "section": "EU AI Act posture (if applicable)",
       "text": "Does the system keep automatic logs / records over its lifecycle (Art. 18 & 20)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_transparency_info",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you provide instructions-for-use / transparency information to deployers (Art. 13)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_human_oversight",
       "section": "EU AI Act posture (if applicable)",
       "text": "Have you designed effective human-oversight measures (Art. 14)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_accuracy_robustness",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you have accuracy, robustness and cybersecurity measures (Art. 15)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_quality_management_system",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you operate a quality-management system (Art. 16)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_risk_classification",
       "section": "EU AI Act posture (if applicable)",
       "text": "Have you classified whether the system is high-risk per Art. 6 / Annex III?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_conformity_assessment",
       "section": "EU AI Act posture (if applicable)",
       "text": "Have you completed (or planned) conformity assessment + CE marking (Art. 43)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "registered_eu_database",
       "section": "EU AI Act posture (if applicable)",
       "text": "Is the system registered in the EU database where required (Art. 49)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_postmarket_monitoring",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you operate a post-market monitoring system (Art. 72)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_gpai_documentation",
       "section": "EU AI Act posture (if applicable)",
       "text": "(GPAI providers) Do you keep model documentation, a copyright policy and a training-content summary (Arts. 53-55)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_deployer_obligations",
       "section": "EU AI Act posture (if applicable)",
       "text": "(Deployers) Do you use the system per instructions, assign human oversight, control input data, retain logs and notify workers (Art. 26)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_fria",
       "section": "EU AI Act posture (if applicable)",
       "text": "(Deployers) Have you completed a fundamental rights impact assessment where required (Art. 27)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_eu_authorised_rep",
       "section": "EU AI Act posture (if applicable)",
       "text": "(Non-EU providers) Have you appointed an EU authorised representative by written mandate (Art. 22)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     },
     {
       "id": "has_incident_reporting_procedure",
       "section": "EU AI Act posture (if applicable)",
       "text": "Do you have a serious-incident reporting procedure to market surveillance authorities (Art. 73)?",
       "type": "bool",
-      "optional": true
+      "optional": true,
+      "tier": "deep"
     }
   ]
 }
