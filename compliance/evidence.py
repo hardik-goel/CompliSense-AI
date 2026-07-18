@@ -118,6 +118,8 @@ def build_evidence_pack(
             "gaps": readiness_report.get("gaps", []),
             "ready": readiness_report.get("ready", []),
             "not_applicable": readiness_report.get("not_applicable", []),
+            # "Out of scope for your profile" — deliberate exclusions, not misses.
+            "scope_exclusions": readiness_report.get("scope_exclusions", []),
         },
         "confirmed_manifest": discovered,
         "posture_history": posture_history,

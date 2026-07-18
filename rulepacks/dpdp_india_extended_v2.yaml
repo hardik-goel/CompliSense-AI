@@ -1,7 +1,7 @@
 pack_id: "dpdp_india_extended_v2"
 schema_version: 2
-version: "2.0.0"
-pack_version: "2.0.0"
+version: "2.1.0"
+pack_version: "2.1.0"
 jurisdiction: "DPDP_INDIA"
 updated: "2026-07-18"
 current_as_of: "2026-07-18"
@@ -13,6 +13,14 @@ legal_review_note: >-
   compliance-readiness engineering artefact, not legal advice. DPDP operational
   obligations (Rules 3, 5-16) become enforceable ~13 May 2027 — findings are
   "prepare by" items, not present-day violations.
+# Areas deliberately NOT assessed by default, so an omission reads as a decision, not a
+# miss. Surfaced in the readiness report as "Out of scope for your profile".
+scope_exclusions:
+  - id: consent_manager_first_schedule
+    label: "Consent Manager obligations (DPDP Rules 2025, Rule 4 + First Schedule)"
+    note: >-
+      Applies only to entities registered as Consent Managers; excluded from the
+      default assessment. Add a dedicated Consent Manager pack on demand.
 changelog:
   - version: "2.0.0"
     date: "2026-07-18"
@@ -23,6 +31,16 @@ changelog:
       Third-Schedule class-based retention split (DPDP-SEC8-RETENTION-CLASS-001 remains
       gated to third_schedule_class_only). v1 kept registered for reproducibility.
     superseded_pack: "dpdp_india_extended_v1"
+  - version: "2.1.0"
+    date: "2026-07-18"
+    summary: >-
+      DPDP gap-fill refinement. SEC14 nomination now checks a nomination section
+      (nomination_capture_method / nominee_record / activation_trigger / honour_process).
+      SEC9-GUARDIAN re-gated to the new `disability_guardian_only` scope (manifest fact
+      `handles_disability_guardian_data`, which also fires on children's data) against a
+      dedicated guardian_consent_policy.yaml artefact. Added scope_exclusions
+      (consent_manager_first_schedule). SEC6-CONSENT carries a review_action for
+      primary-text verification.
 reviewer: null
 reviewed_on: null
 required_artifacts_manifest: "agent/artefacts/required_artifacts_dpdp.yaml"
@@ -73,6 +91,7 @@ rules:
     enforcement_date: "2027-05-13"
     date_status: "phased_confirmed"
     verification: "secondary_source_only"
+    review_action: "verify wording against DPDP Rules 2025 Rule 3 primary text"
     evaluator: "file_presence"
     inputs:
       file: "compliance/consent_record.json"
@@ -383,10 +402,13 @@ rules:
     evaluator: "file_presence"
     inputs:
       file: "compliance/rights_request_sop.yaml"
+      # Requires a `nomination` section in the rights SOP with these sub-fields
+      # (see sample_artefacts/dpdp_india/compliance/rights_request_sop.yaml).
       required_json_fields:
-        - "nomination_support"
-        - "nomination_intake_channel"
-        - "nominee_verification"
+        - "nomination_capture_method"
+        - "nominee_record"
+        - "activation_trigger"
+        - "honour_process"
     expression: "exists and missing_fields <= 1"
     thresholds:
       pass: 0.0
@@ -400,8 +422,13 @@ rules:
     rule_citation: "DPDP Rules 2025, Rule 10 (verifiable consent / guardian-verification mechanics)"
     source_url: "https://dpdpa.com/DPDP_Rules_2025_English_only.pdf"
     applicability:
-      scope: "child_data_processing_only"
-      threshold: "Applies where the Data Fiduciary processes personal data of children (<18) OR of persons with disability who have a lawful guardian — the same Rule 10 guardian-verification machinery. Gated to entities that process such data."
+      # Sibling to DPDP-SEC9-CHILDREN-001: shares the guardian-verification machinery,
+      # but fires independently. Applicable when the entity processes children's data OR
+      # personal data of persons with disability who act through a lawful guardian —
+      # captured by the manifest `handles_disability_guardian_data` fact (which is set true
+      # when either children's data or disability/guardian data is handled).
+      scope: "disability_guardian_only"
+      threshold: "Applies where the Data Fiduciary processes personal data of persons with disability who have a lawful guardian (s.9 proviso), or children's data (same Rule 10 machinery)."
       exemption_ref: "Fourth Schedule exemptions (Rule 12)."
     status: "phased_not_yet_in_force"
     enforcement_date: "2027-05-13"
@@ -409,13 +436,15 @@ rules:
     verification: "secondary_source_only"
     secondary_source_only: true
     legal_review_status: "pending"
+    interpretation_uncertain: true
     evaluator: "file_presence"
     inputs:
-      file: "compliance/child_data_policy.yaml"
+      file: "compliance/guardian_consent_policy.yaml"
       required_json_fields:
-        - "guardian_consent_mechanism"
-        - "lawful_guardian_verification"
-        - "persons_with_disability_handling"
+        - "guardian_verification_method"
+        - "disability_scope_notes"
+        - "consent_capture"
+        - "withdrawal_by_guardian"
     expression: "exists and missing_fields <= 1"
     thresholds:
       pass: 0.0

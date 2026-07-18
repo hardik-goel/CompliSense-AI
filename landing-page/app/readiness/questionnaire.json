@@ -74,6 +74,13 @@
       "help": "Triggers verifiable parental consent (Rule 10) + Act s.9 bans, subject to Fourth-Schedule exemptions."
     },
     {
+      "id": "handles_disability_guardian_data",
+      "section": "Data you handle",
+      "text": "Do you process personal data of persons with disability who act through a lawful guardian?",
+      "type": "bool",
+      "help": "Triggers the s.9-proviso lawful-guardian consent path (DPDP-SEC9-GUARDIAN-001). Mirrors the children's-data gate; the guardian rule also fires when you process children's data."
+    },
+    {
       "id": "cross_border_transfer",
       "section": "Data you handle",
       "text": "Do you transfer personal data outside India?",

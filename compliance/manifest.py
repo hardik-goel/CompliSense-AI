@@ -99,6 +99,13 @@ QUESTIONS: List[Dict[str, Any]] = [
         "help": "Triggers verifiable parental consent (Rule 10) + Act s.9 bans, subject to Fourth-Schedule exemptions.",
     },
     {
+        "id": "handles_disability_guardian_data",
+        "section": "Data you handle",
+        "text": "Do you process personal data of persons with disability who act through a lawful guardian?",
+        "type": "bool",
+        "help": "Triggers the s.9-proviso lawful-guardian consent path (DPDP-SEC9-GUARDIAN-001). Mirrors the children's-data gate; the guardian rule also fires when you process children's data.",
+    },
+    {
         "id": "cross_border_transfer",
         "section": "Data you handle",
         "text": "Do you transfer personal data outside India?",
@@ -397,6 +404,7 @@ class Manifest:
     is_state_instrumentality: bool = False
     acts_as_consent_manager: bool = False
     processes_children_data: bool = False
+    handles_disability_guardian_data: bool = False
     cross_border_transfer: bool = False
     # Processing facts
     pii_categories: List[str] = field(default_factory=list)
@@ -523,6 +531,11 @@ def manifest_to_profile(manifest: Manifest) -> Dict[str, Any]:
     return {
         "is_significant_data_fiduciary": bool(manifest.notified_as_sdf),
         "processes_children_data": bool(manifest.processes_children_data),
+        # Guardian rule shares the children's gate: applicable when disability/guardian data
+        # OR children's data is handled (both use the Rule 10 guardian-verification machinery).
+        "handles_disability_guardian_data": bool(
+            manifest.handles_disability_guardian_data or manifest.processes_children_data
+        ),
         "is_third_schedule_class": is_third_schedule_class(manifest),
         "is_consent_manager": bool(manifest.acts_as_consent_manager),
         "is_state_instrumentality": bool(manifest.is_state_instrumentality),

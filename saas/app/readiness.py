@@ -109,6 +109,7 @@ async def score_endpoint(
         "pack_id": report["pack_id"],
         "pack_version": report.get("pack_version"),
         "rules_current_as_of": report.get("rules_current_as_of"),
+        "scope_exclusions": report.get("scope_exclusions", []),
         "authenticated": bool(user),
         "incomplete_questions": missing,
         "disclaimer": report["disclaimer"],

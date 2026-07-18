@@ -145,11 +145,16 @@ def score_manifest(manifest: Manifest, pack: Dict[str, Any]) -> Dict[str, Any]:
             "qualified practitioner."
         )
 
+    # Deliberate scope exclusions declared in the pack header — surfaced so an omission
+    # reads as a decision ("Out of scope for your profile"), not a gap we missed.
+    scope_exclusions = pack.get("scope_exclusions") or []
+
     return {
         "jurisdiction": jurisdiction,
         "pack_id": pack.get("pack_id"),
         "pack_version": pack.get("pack_version") or pack.get("version"),
         "rules_current_as_of": pack.get("rules_current_as_of") or pack.get("current_as_of"),
+        "scope_exclusions": scope_exclusions,
         "readiness_score": score,
         "scoring_available": scoring_available,
         "obligations_identified": scored,

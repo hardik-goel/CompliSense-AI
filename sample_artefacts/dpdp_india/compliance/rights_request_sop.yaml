@@ -6,3 +6,12 @@ access_request_fulfilment: privacy_team_coordinates_export_and_explanation
 acknowledgement_sla: "3 business days"
 escalation_path: privacy_lead_then_legal
 correction_and_erasure_path: privacy_ops_runbook
+
+# ── Right to nominate (DPDP Act s.14) — DPDP-SEC14-NOMINATION-001 ─────────────
+# The rights SOP must support a Data Principal nominating another individual to
+# exercise their rights in the event of death or incapacity. Fields checked by the
+# rule are top-level (the file_presence evaluator does not descend into sub-maps).
+nomination_capture_method: "in_app_nomination_form_plus_signed_declaration"
+nominee_record: "nominee_name_relationship_and_contact_stored_against_principal"
+activation_trigger: "death_certificate_or_medical_incapacity_attestation_verified"
+honour_process: "privacy_ops_runbook_step_7_nominee_exercises_rights_after_verification"

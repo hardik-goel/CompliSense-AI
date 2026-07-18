@@ -150,6 +150,9 @@ Generated: {_esc(meta['generated_at'])} · Prepared by: {_esc(meta['prepared_by'
 gaps {_esc(summary.get('gaps'))}, applicable {_esc(summary.get('applicable'))},
 not applicable {_esc(summary.get('not_applicable'))}.</p>
 
+<h2>Out of scope for your profile</h2>
+{("<ul>" + "".join(f"<li><strong>{_esc(x.get('label'))}</strong> — {_esc(x.get('note'))}</li>" for x in (r.get('scope_exclusions') or [])) + "</ul>") if r.get('scope_exclusions') else '<p class="muted">No deliberate scope exclusions for this pack.</p>'}
+
 <h2>Gaps (prepare-by readiness items)</h2>
 <table><thead><tr><th>Item</th><th>Rule</th><th>Citation</th><th>Status</th><th>Framing</th></tr></thead>
 <tbody>{gaps_rows or '<tr><td colspan="5">No gaps recorded.</td></tr>'}</tbody></table>

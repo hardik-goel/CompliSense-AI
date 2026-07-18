@@ -31,6 +31,7 @@ UNIVERSAL_SCOPES = {"all_data_fiduciaries", "all_ai_actors"}
 _BOOL_FLAG_FOR_SCOPE = {
     "significant_data_fiduciary_only": "is_significant_data_fiduciary",
     "child_data_processing_only": "processes_children_data",
+    "disability_guardian_only": "handles_disability_guardian_data",
     "third_schedule_class_only": "is_third_schedule_class",
     "consent_manager_only": "is_consent_manager",
     "state_instrumentality_only": "is_state_instrumentality",
@@ -55,6 +56,7 @@ def default_profile() -> Dict[str, Any]:
     return {
         "is_significant_data_fiduciary": False,
         "processes_children_data": False,
+        "handles_disability_guardian_data": False,
         "is_third_schedule_class": False,
         "is_consent_manager": False,
         "is_state_instrumentality": False,
