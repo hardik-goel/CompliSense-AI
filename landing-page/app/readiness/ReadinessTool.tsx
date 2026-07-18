@@ -83,6 +83,11 @@ export default function ReadinessTool() {
   const [result, setResult] = useState<ScoreResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [packId, setPackId] = useState<string>("dpdp_india_core_v1");
+  // Lead capture (email delivery of the full report) + DPDP consent for this form itself.
+  const [email, setEmail] = useState<string>("");
+  const [consent, setConsent] = useState<boolean>(false);
+  const [honeypot, setHoneypot] = useState<string>(""); // bots fill this; humans never see it
+  const [emailed, setEmailed] = useState<boolean>(false);
   const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Nudge the scoring service awake while the visitor reads the questions, so
@@ -114,19 +119,47 @@ export default function ReadinessTool() {
     });
   }
 
+  /** Mark the readiness test complete for this browser session so the gated "Book a Demo"
+   *  button (elsewhere on the site) unlocks and can pre-fill the lead context. */
+  function markReadinessComplete(score: number | null, withEmail: string) {
+    try {
+      sessionStorage.setItem("cs_readiness_done", "1");
+      if (score != null) sessionStorage.setItem("cs_readiness_score", String(score));
+      if (withEmail) sessionStorage.setItem("cs_readiness_email", withEmail);
+      window.dispatchEvent(new Event("cs-readiness-complete"));
+    } catch {
+      /* sessionStorage unavailable (private mode) — non-fatal */
+    }
+  }
+
   async function handleSubmit() {
+    const wantsEmail = email.trim().length > 0;
+    // Email delivery requires consent (DPDP for this form); the on-screen teaser does not.
+    if (wantsEmail && !consent) {
+      setError("Please tick the consent box so we can email your score.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setScoringSlow(false);
     slowTimer.current = setTimeout(() => setScoringSlow(true), SLOW_SCORE_NOTICE_MS);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/readiness/score`, {
+      // With an email + consent -> capture the lead and email the full report.
+      // Without an email -> ephemeral on-screen teaser only.
+      const endpoint = wantsEmail ? "/api/v1/readiness/lead" : "/api/v1/readiness/score";
+      const body = wantsEmail
+        ? { answers, pack_id: packId, email: email.trim(), consent, company_website: honeypot }
+        : { answers, pack_id: packId };
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, pack_id: packId }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      setResult(await res.json());
+      const data = await res.json();
+      setResult(data);
+      setEmailed(wantsEmail);
+      markReadinessComplete(data.readiness_score ?? null, wantsEmail ? email.trim() : "");
     } catch {
       setError("Could not score your answers. Please try again later.");
     } finally {
@@ -139,6 +172,12 @@ export default function ReadinessTool() {
   if (result) {
     return (
       <div className="readiness-result">
+        {emailed ? (
+          <p className="form-notice" role="status" style={{ marginBottom: "1rem" }}>
+            ✓ We’ve emailed your full readiness report{email ? ` to ${email}` : ""}. You can now
+            book a demo and we’ll walk through your specific gaps.
+          </p>
+        ) : null}
         <div className="panel" style={{ textAlign: "center", padding: "2rem" }}>
           {result.scoring_available === false ? (
             <>
@@ -390,6 +429,56 @@ export default function ReadinessTool() {
         </details>
       )}
 
+      {/* Email capture (optional for the on-screen teaser; required to receive the FULL
+          report by email). Collecting this makes us a Data Fiduciary — so consent + a
+          privacy notice + a documented deletion path are mandatory (DPDP for ourselves). */}
+      <fieldset style={{ border: "none", marginBottom: "1rem" }}>
+        <legend className="section-kicker">Get the full report by email (optional)</legend>
+        <div className="field field-full">
+          <label htmlFor="lead_email">Work email</label>
+          <input
+            id="lead_email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {/* Honeypot: visually hidden + off-screen; real users never fill it. */}
+          <input
+            type="text"
+            name="company_website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+          />
+        </div>
+        {email.trim().length > 0 && (
+          <div className="field field-full" style={{ marginTop: "0.5rem" }}>
+            <label style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", fontSize: "0.82rem", fontWeight: 400 }}>
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                style={{ marginTop: "0.2rem" }}
+              />
+              <span>
+                I agree CompliSense may email my readiness score and contact me about a demo.{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">
+                  How we use this
+                </a>
+                : we store your email + answers to send the score and follow up about a demo,
+                retain it up to 12 months, and delete it on request — email{" "}
+                <a href="mailto:privacy@complisenseai.com">privacy@complisenseai.com</a>.
+              </span>
+            </label>
+          </div>
+        )}
+      </fieldset>
+
       {error ? (
         <p className="form-error" role="alert">
           {error}{" "}
@@ -402,6 +491,8 @@ export default function ReadinessTool() {
       <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>
         {submitting
           ? "Scoring…"
+          : email.trim().length > 0
+          ? "Email me my full readiness report"
           : isEuPack
           ? "Check my EU AI Act readiness"
           : "Get my DPDP Readiness Score"}
