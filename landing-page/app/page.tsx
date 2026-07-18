@@ -542,6 +542,10 @@ export default function HomePage() {
             <p className="hero-subtext body-text" data-animate>
               DPDP, AI governance, vendor reviews, and audit readiness — automated from one operating layer.
             </p>
+            <p className="hero-subtext body-text" data-animate style={{ fontSize: "0.95rem", opacity: 0.9 }}>
+              India&apos;s DPDP regime is already in force — the Data Protection Board is live and the clock to full
+              compliance (13 May 2027) is running.
+            </p>
             <div className="hero-actions" data-animate style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
               <a href="/readiness" className="btn-primary">
                 Check your DPDP readiness — free, 15 minutes &rarr;
@@ -583,6 +587,32 @@ export default function HomePage() {
                   — <strong style={{ color: "var(--warning)" }}>{daysToDeadline.toLocaleString()}</strong> days remaining
                 </span>
               )}
+            </div>
+
+            {/* DPDP is already in motion — three-phase enforcement timeline (accurate framing:
+                Phase 1 is LIVE now; substantive obligations are NOT enforced until Phase 3). */}
+            <div className="dpdp-phases" data-animate style={{ marginTop: "16px", textAlign: "left" }}>
+              <p className="section-kicker" style={{ marginBottom: "8px" }}>DPDP is already in motion</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px" }}>
+                <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.08)" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--success)" }}>Phase 1 · LIVE NOW</div>
+                  <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginTop: "4px", lineHeight: 1.5 }}>
+                    Data Protection Board operational · ₹250 cr penalty framework in law · complaints can be filed
+                  </div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.08)" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--warning)" }}>Phase 2 · Nov 2026</div>
+                  <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginTop: "4px", lineHeight: 1.5 }}>
+                    Enforcement powers + Consent Manager registration begin · deadline may compress to 12 months
+                  </div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444" }}>Phase 3 · 13 May 2027</div>
+                  <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginTop: "4px", lineHeight: 1.5 }}>
+                    Full compliance mandatory · no grace period
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="social-proof-bar" data-animate style={{ marginTop: "40px" }}>

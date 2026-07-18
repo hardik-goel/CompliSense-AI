@@ -24,6 +24,12 @@ _env = Environment(
 )
 
 DEADLINE = "13 May 2027"
+# Accurate three-phase framing (Prompt 4): what's live now vs. the full-compliance date.
+# Deliberately does NOT claim substantive obligations are enforced today.
+PHASE_NOTE = (
+    "The Data Protection Board and the penalty framework are live now; full compliance is "
+    "due 13 May 2027 (no grace period)."
+)
 
 # One-line "what closing this looks like" per DPDP obligation. Falls back to a generic hint.
 _CLOSE_HINTS = {
@@ -104,6 +110,7 @@ def build_assessment_view(
         "submitted_at": submitted_at,
         "rules_current_as_of": report.get("rules_current_as_of") or "—",
         "deadline": DEADLINE,
+        "phase_note": PHASE_NOTE,
         "cta_url": cta_url,
         "unsubscribe_contact": unsubscribe_contact,
         "passes": passes,

@@ -27,15 +27,27 @@
     publication (~Nov 2026)**.
   - Rules **3, 5–16, 22, 23**: in force **eighteen months after publication (~13 May
     2027)** — this is the bulk of operational compliance.
-- **Phased dates at a glance (as of 2026-07-18):**
-  - Rules **notified 2025-11-14** (Gazette publication).
-  - **DPB operational** — the Data Protection Board machinery (Rules 1, 2, 17–21) is
-    in force from publication.
-  - **Consent-manager registration ~Nov 2026** (Rule 4, one year after publication).
-  - **Full operational compliance 2027-05-13** (Rules 3, 5–16, 22, 23).
-- **Framing for the product:** this is a "prepare for 13 May 2027" tool. NOT a
-  "you are in violation today" tool. The core operational obligations are NOT yet
-  enforceable. Say so everywhere.
+- **Three-phase enforcement (single source of truth for marketing + rulepack copy; verified
+  18 Jul 2026 against Shardul Amarchand Mangaldas, iPleaders, Astra, Vratex, Kraver):**
+  Notified 13/14 Nov 2025 (gazette G.S.R. 846(E)); staggered, 3 phases.
+  - **PHASE 1 — LIVE NOW (since 13 Nov 2025):** Data Protection Board of India established
+    and operational; all 28 definitions (s.2) legally operative; administrative machinery +
+    complaint portal live; the penalty framework under **s.33 exists in law (up to ₹250 crore
+    per violation)**. What is live is the *machinery*, not the substantive duties.
+  - **PHASE 2 — 13 Nov 2026:** Consent Manager registration opens; the Board's enforcement /
+    inquiry powers and penalty imposition for breach of registration conditions begin. NOTE:
+    Jan 2026 MeitY consultations proposed compressing the 18-month window to 12 months — a real
+    acceleration risk; frame as "may move up", not certain.
+  - **PHASE 3 — 13 May 2027:** substantive operational obligations (notice, consent, security,
+    breach, retention, data-principal rights, cross-border) fully enforceable. **NO grace period.**
+- **Accuracy guardrail (counsel instruction):** do NOT claim substantive obligations
+  (e.g. "you can be fined today for lacking a privacy notice") are enforced now — they are not
+  until 13 May 2027. "Live now" claims are limited to: the Board being operational, definitions
+  in force, the complaint portal, and the penalty framework existing in law. Overstating current
+  enforcement damages a compliance brand's credibility; precision is the selling point.
+- **Framing for the product:** the Board + penalty framework are LIVE NOW, but the core
+  operational obligations are NOT yet enforceable — this is a "prepare for 13 May 2027" tool,
+  NOT a "you are in violation today" tool. Say so everywhere.
 - **Territorial scope:** applies to processing within India AND extraterritorially to
   entities offering goods/services to individuals in India (Act s.3).
 - **Key roles:** Data Fiduciary (≈ controller; determines purpose & means), Data
