@@ -40,6 +40,30 @@ RULEPACKS: tuple[RulepackDefinition, ...] = (
         default_project_standard="EU_AI_ACT",
         sample_artifact_root="artefacts",
     ),
+    # v2 packs — Digital Omnibus on AI (final, in force Jul 2026). v1 kept registered above
+    # for report reproducibility; v2 carries the confirmed dates + new Omnibus rules.
+    RulepackDefinition(
+        pack_id="euai_core_v2",
+        label="EU AI Act Core v2.0 (Digital Omnibus)",
+        regulation="EU AI Act",
+        jurisdiction="EU_AI_ACT",
+        market="European Union",
+        version="2.0.0",
+        description="EU AI Act core pack updated for the final Digital Omnibus on AI (confirmed high-risk dates).",
+        default_project_standard="EU_AI_ACT",
+        sample_artifact_root="artefacts",
+    ),
+    RulepackDefinition(
+        pack_id="euai_extended_v2",
+        label="EU AI Act Extended v2.0 (Digital Omnibus)",
+        regulation="EU AI Act",
+        jurisdiction="EU_AI_ACT",
+        market="European Union",
+        version="2.0.0",
+        description="Extended EU AI Act pack updated for the Digital Omnibus: confirmed dates, NCII/CSAM prohibition, deployer/authrep/FRIA/incident duties.",
+        default_project_standard="EU_AI_ACT",
+        sample_artifact_root="artefacts",
+    ),
     RulepackDefinition(
         pack_id="dpdp_india_core_v1",
         label="DPDP India Core v1.0",
@@ -106,7 +130,10 @@ def get_rulepack_display_label(pack_id: str | None) -> str:
         "dpdp_india_extended_v1": "DPDP-Extended",
         "euai_core": "EU-AI Core",
         "euai_core_v1": "EU-AI Core",
+        "euai_core_v2": "EU-AI Core v2",
         "euai_extended": "EU-AI Extended",
         "euai_extended_v1": "EU-AI Extended",
+        "euai_extended_v2": "EU-AI Extended v2",
+        "dpdp_india_extended_v2": "DPDP-Extended v2",
     }
     return mapping.get(key, pack_id)

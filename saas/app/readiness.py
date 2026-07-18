@@ -46,8 +46,10 @@ router = APIRouter(prefix="/api/v1/readiness", tags=["readiness"])
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 # DPDP packs are fully scored; EU AI Act packs are role-gated and surface obligations only
 # (no numeric score until EU posture scoring is built + legally reviewed).
-_DPDP_PACKS = {"dpdp_india_core_v1", "dpdp_india_extended_v1"}
-_ALLOWED_PACKS = _DPDP_PACKS | {"euai_core_v1", "euai_extended_v1"}
+_DPDP_PACKS = {"dpdp_india_core_v1", "dpdp_india_extended_v1", "dpdp_india_extended_v2"}
+_ALLOWED_PACKS = _DPDP_PACKS | {
+    "euai_core_v1", "euai_extended_v1", "euai_core_v2", "euai_extended_v2"
+}
 
 
 def assessments_collection():

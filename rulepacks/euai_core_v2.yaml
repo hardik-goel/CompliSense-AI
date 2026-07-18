@@ -1,0 +1,501 @@
+pack_id: "euai_core_v2"
+schema_version: 2
+version: "2.0.0"
+pack_version: "2.0.0"
+jurisdiction: "EU_AI_ACT"
+updated: "2026-07-18"
+current_as_of: "2026-07-18"
+rules_current_as_of: "2026-07-18"
+reference_doc: "docs/LEGAL_REFERENCE_DPDP_EUAI.md"
+legal_review_status: "pending"
+legal_review_note: >-
+  Rule content pending professional legal review as of 2026-07-18. This is a
+  compliance-readiness engineering artefact, not legal advice. These rules cover
+  high-risk PROVIDER obligations (EU AI Act Chapter III). The Digital Omnibus on AI is
+  now FINAL (European Parliament 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026):
+  Annex III stand-alone high-risk obligations are CONFIRMED to enforce on 2 Dec 2027
+  (Annex I embedded high-risk: 2 Aug 2028). Dates are no longer provisional but remain
+  secondary-sourced pending professional review. A startup merely USING third-party AI
+  is a deployer, not a provider.
+changelog:
+  - version: "2.0.0"
+    date: "2026-07-18"
+    summary: >-
+      Digital Omnibus on AI final adoption (EP 16 Jun 2026, Council 29 Jun 2026, in
+      force Jul 2026). Annex III stand-alone high-risk (Arts 9-15, 17, 43, 49, 72)
+      enforcement CONFIRMED at 2 Dec 2027 (date_status provisional_pending_amendment ->
+      phased_confirmed). Annex I embedded high-risk enforcement set to 2 Aug 2028.
+      Article 50 transparency unchanged at 2 Aug 2026 (imminent). Citation corrections:
+      QMS is Art. 17 (not 16); logging/record-keeping realigned to Arts 12/18/19/20.
+    superseded_pack: "euai_core_v1"
+reviewer: null
+reviewed_on: null
+required_artifacts_manifest: "agent/artefacts/required_artifacts_euai.yaml"
+rules:
+  - id: EUAI-ART9-RISK-MGMT-001
+    clause: "Art.9"
+    title: "Risk management system documented and maintained"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 9 (risk management system)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III). Deployers of third-party AI have lighter duties (Art. 26-27)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027 (was provisionally 2 Aug 2026)."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "schema_validate"
+    inputs:
+      file: "compliance/risk_register.yaml"
+      schema_file: "schemas/risk_register.schema.json"
+      coverage_min: 0.9
+    expression: "(schema_valid and coverage >= coverage_min) or (exists and coverage >= 0.5)"
+    thresholds:
+      pass: 0.9
+      partial: 0.5
+    severity: "Major"
+    evidence:
+      collect: ["file_hash", "schema_validation_report"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART10-DATA-GOV-001
+    clause: "Art.10"
+    title: "Dataset documentation completeness"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 10 (data and data governance)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "data/dataset_card.json"
+      required_json_fields:
+        - "provenance"
+        - "collection_method"
+        - "licensing"
+        - "known_biases"
+        - "preprocessing"
+        - "split_stats"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+    evidence:
+      collect: ["dataset_card_snapshot", "missing_fields_list"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART11-TECHDOC-001
+    clause: "Art.11 / Annex IV"
+    title: "Model technical documentation (Annex IV essentials)"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 11 + Annex IV (technical documentation)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "model/model_card.json"
+      required_json_fields:
+        - "intended_purpose"
+        - "architecture"
+        - "training_data_refs"
+        - "eval_metrics"
+        - "known_limitations"
+        - "release_version"
+        - "integration_context"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+    evidence:
+      collect: ["model_card_snapshot", "missing_fields_list"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART11-TECHDOC-002
+    clause: "Art.11 / Annex IV"
+    title: "Model technical documentation coverage"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 11 + Annex IV (technical documentation)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "techdoc_coverage"
+    inputs:
+      explicit_files:
+        - "model/model_card.json"
+      implicit_evaluators:
+        - "model_introspect"
+    thresholds:
+      pass: 0.8
+      partial: 0.4
+    expression: "coverage_score >= 0.7"
+    severity: "Major"
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART13-TRANSPARENCY-001
+    clause: "Art.13"
+    title: "Transparency and information to users"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 13 (transparency & provision of information to deployers)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Art. 13 (instructions to deployers) is a high-risk PROVIDER obligation. Distinct from Art. 50 limited-risk transparency (chatbots/deepfakes, from 2 Aug 2026)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/transparency_documentation.yaml"
+      required_json_fields:
+        - "user_notification"
+        - "ai_system_identification"
+        - "capabilities_limitations"
+        - "human_oversight_info"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+    evidence:
+      collect: ["transparency_documentation_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART14-HUMAN-OVERSIGHT-001
+    clause: "Art.14"
+    title: "Human oversight measures documented"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 14 (human oversight)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III). Deployers also have oversight duties under Art. 26."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/human_oversight.yaml"
+      required_json_fields:
+        - "oversight_mechanisms"
+        - "intervention_procedures"
+        - "human_in_loop_requirements"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Critical"
+    evidence:
+      collect: ["human_oversight_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART15-ACCURACY-001
+    clause: "Art.15"
+    title: "Accuracy, robustness and cybersecurity measures"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 15 (accuracy, robustness and cybersecurity)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/accuracy_robustness.yaml"
+      required_json_fields:
+        - "accuracy_metrics"
+        - "robustness_tests"
+        - "cybersecurity_measures"
+        - "adversarial_testing"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+    evidence:
+      collect: ["accuracy_robustness_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART16-QUALITY-MGMT-001
+    clause: "Art.16"
+    title: "Quality management system in place"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 16-17 (provider obligations / quality management system)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Quality management system is a high-risk PROVIDER obligation (Art. 17)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/quality_management.yaml"
+      required_json_fields:
+        - "quality_policy"
+        - "quality_controls"
+        - "testing_procedures"
+        - "documentation_standards"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Major"
+    evidence:
+      collect: ["quality_management_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART18-DATA-GOV-002
+    clause: "Art.18"
+    title: "Training, validation and testing data governance"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 18 (documentation keeping) / Art. 10 (data governance)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "data/dataset_card.json"
+      required_json_fields:
+        - "data_quality_metrics"
+        - "data_preprocessing"
+        - "train_val_test_splits"
+        - "data_lineage"
+    expression: "exists and missing_fields <= 2"
+    thresholds:
+      pass: 0.0
+      partial: 2.0
+    severity: "Critical"
+    evidence:
+      collect: ["dataset_governance_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  - id: EUAI-ART20-RECORD-KEEPING-001
+    clause: "Art.20"
+    title: "Record keeping and logging"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 12 + Art. 19-20 (record-keeping / automatically generated logs)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Applies to providers of high-risk AI systems (Art. 6 + Annex III)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/record_keeping.yaml"
+      required_json_fields:
+        - "logging_policy"
+        - "retention_periods"
+        - "audit_trail_requirements"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+    evidence:
+      collect: ["record_keeping_snapshot"]
+    sla:
+      warn_ms: 300
+      fail_ms: 1000
+
+  # ── High-risk classification, conformity & market-surveillance (provider) ────
+  # Closes the coverage gap where a system could score well without ever classifying
+  # its risk tier or completing conformity. All provider/high-risk, provisional dates.
+
+  - id: EUAI-ART6-CLASSIFICATION-001
+    clause: "Art.6 / Annex III"
+    title: "High-risk classification assessment is documented"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 6 + Annex III (classification of high-risk AI systems)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "Every provider must determine whether its system is high-risk under Art. 6 + Annex III (biometrics, critical infra, education, employment, essential services, law enforcement, migration, justice)."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/risk_classification.yaml"
+      required_json_fields:
+        - "annex_iii_categories_assessed"
+        - "is_high_risk"
+        - "classification_rationale"
+        - "reviewer"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Critical"
+
+  - id: EUAI-ART43-CONFORMITY-001
+    clause: "Art.43 / Art.47-48"
+    title: "Conformity assessment and CE marking are recorded"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Arts. 43, 47-48 (conformity assessment, declaration of conformity, CE marking)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "High-risk providers must complete a conformity assessment, draw up an EU declaration of conformity, and affix CE marking before placing on market."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/conformity_assessment.yaml"
+      required_json_fields:
+        - "assessment_procedure"
+        - "declaration_of_conformity"
+        - "ce_marking_status"
+        - "notified_body"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+
+  - id: EUAI-ART49-REGISTRATION-001
+    clause: "Art.49"
+    title: "EU database registration is recorded"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Art. 49 (registration in the EU database for high-risk AI systems)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "High-risk providers register the system in the EU database before placing on market / putting into service."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/eu_database_registration.yaml"
+      required_json_fields:
+        - "registration_status"
+        - "system_identifier"
+        - "registered_on"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
+
+  - id: EUAI-ART72-POSTMARKET-001
+    clause: "Art.72 / Art.73"
+    title: "Post-market monitoring and serious-incident reporting"
+    act_citation: "Regulation (EU) 2024/1689 (EU AI Act), Arts. 72-73 (post-market monitoring; reporting of serious incidents)"
+    rule_citation: null
+    source_url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    applicability:
+      scope: "eu_provider"
+      threshold: "High-risk providers operate a post-market monitoring system and report serious incidents to authorities."
+      exemption_ref: "Open-source AI systems exempt (Art. 2) unless prohibited or high-risk."
+    status: "phased_not_yet_in_force"
+    enforcement_date: "2027-12-02"
+    date_status: "phased_confirmed"
+    amending_instrument: "Digital Omnibus on AI (FINAL: EP 16 Jun 2026, Council 29 Jun 2026, in force Jul 2026) — confirms Annex III stand-alone high-risk enforcement on 2 Dec 2027."
+    date_verified_on: "2026-06-26"
+    verification: "secondary_source_only"
+    evaluator: "file_presence"
+    inputs:
+      file: "compliance/post_market_monitoring.yaml"
+      required_json_fields:
+        - "monitoring_plan"
+        - "incident_reporting_process"
+        - "last_reviewed_on"
+    expression: "exists and missing_fields <= 1"
+    thresholds:
+      pass: 0.0
+      partial: 1.0
+    severity: "Major"
