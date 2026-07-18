@@ -49,6 +49,7 @@ type ScoreResponse = {
   jurisdiction?: string;
   summary: { ready: number; gaps: number; applicable: number; not_applicable: number };
   top_gaps?: Gap[];
+  gaps?: Gap[];
   gaps_locked?: number;
   disclaimer: string;
   incomplete_questions: string[];
@@ -167,21 +168,39 @@ export default function ReadinessTool() {
         <h3 style={{ marginTop: "1.5rem" }}>
           {result.scoring_available === false ? "Obligations to prepare for" : "Top gaps to address"}
         </h3>
-        {(result.top_gaps || []).map((g) => (
-          <div key={g.rule_id} className="security-item" data-animate style={{ marginBottom: "0.75rem" }}>
-            <strong className="author-name">
-              {g.title} <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>({g.severity})</span>
-            </strong>
-            <p className="body-text" style={{ fontSize: "0.82rem" }}>
-              {g.act_citation || g.rule_citation} — {g.framing}
-            </p>
-            {g.verification && g.verification !== "primary_source_verified" ? (
-              <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.75 }}>
-                ⚠ Source: {g.verification.replace(/_/g, " ")} — not yet primary-verified; treat as indicative.
+        {/* Render from top_gaps (anonymous teaser) OR gaps (signed-in full report) — a
+            detected gap must never render an empty list just because of which field carries it. */}
+        {(() => {
+          const gapsToShow = (result.top_gaps && result.top_gaps.length
+            ? result.top_gaps
+            : result.gaps) || [];
+          if (gapsToShow.length === 0) {
+            return (
+              <p className="body-text" style={{ opacity: 0.75 }}>
+                No gaps detected in the questions you answered.
               </p>
-            ) : null}
-          </div>
-        ))}
+            );
+          }
+          return gapsToShow.map((g) => (
+            <div key={g.rule_id} className="security-item" data-animate style={{ marginBottom: "0.75rem" }}>
+              <strong className="author-name">
+                {g.title} <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>({g.severity})</span>
+              </strong>
+              {/* Full citation — wrap so it can never clip mid-word (was truncating live). */}
+              <p
+                className="body-text"
+                style={{ fontSize: "0.82rem", whiteSpace: "normal", overflowWrap: "anywhere" }}
+              >
+                {g.act_citation || g.rule_citation} — {g.framing}
+              </p>
+              {g.verification && g.verification !== "primary_source_verified" ? (
+                <p className="body-text" style={{ fontSize: "0.72rem", opacity: 0.75 }}>
+                  ⚠ Source: {g.verification.replace(/_/g, " ")} — not yet primary-verified; treat as indicative.
+                </p>
+              ) : null}
+            </div>
+          ));
+        })()}
 
         {result.gaps_locked && result.gaps_locked > 0 ? (
           <div className="panel" style={{ padding: "1.25rem", textAlign: "center" }}>
