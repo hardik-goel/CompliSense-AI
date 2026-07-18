@@ -16,24 +16,27 @@ limiting. Mail delivery is pluggable (saas/app/mail.py); tests inject a fake mai
 from __future__ import annotations
 
 import datetime as dt
-import html
 import logging
 import re
 import uuid
-from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from agent.rules.loader import load_rulepack
-from compliance.legal_text import legal_footer_html, legal_footer_text
+from compliance.legal_text import legal_footer_text
 from compliance.manifest import build_manifest
 from compliance.readiness import score_manifest, top_gaps
 from saas.app.config import settings
 from saas.app.database import get_collection, serialize_document
 from saas.app.mail import MailMessage, get_mailer
 from saas.app.readiness import _load_pack, _ALLOWED_PACKS, require_admin
+from saas.app.report_email import (
+    build_assessment_view,
+    render_client_email,
+    render_operator_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,13 @@ _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _RATE_LIMIT_MAX = 5          # max submissions
 _RATE_LIMIT_WINDOW_SEC = 300  # per IP per 5 minutes
 _DPDP_DEADLINE = "13 May 2027"
+# Public demo booking base (same as the landing page). The client email CTA prefills the
+# lead's email. Warm-inbound DIRECT_DEMO_URL stays env-only and is never used here.
+_CALENDLY = "https://calendly.com/hardik-goel214/complisense-ai"
+
+
+def _booking_url(email: str) -> str:
+    return f"{_CALENDLY}?email={quote(email)}" if email else _CALENDLY
 
 
 def leads_collection():
@@ -83,59 +93,6 @@ class LeadRequest(BaseModel):
     company_website: str = Field(default="", description="honeypot; leave empty")
 
 
-def _score_email_html(email: str, report: Dict[str, Any]) -> str:
-    score = report.get("readiness_score")
-    scoring = report.get("scoring_available", True)
-    gaps = top_gaps(report, 5)
-    rows = "".join(
-        f"<li style='margin-bottom:8px'><strong>{html.escape(str(g.get('title')))}</strong> "
-        f"<span style='color:#6b7280'>({html.escape(str(g.get('severity')))})</span><br>"
-        f"<span style='font-size:13px;color:#374151'>"
-        f"{html.escape(str(g.get('act_citation') or g.get('rule_citation') or ''))} — "
-        f"{html.escape(str(g.get('framing') or ''))}</span></li>"
-        for g in gaps
-    ) or "<li>No gaps detected in the answers you provided.</li>"
-    headline = (
-        f"Your readiness score: <strong>{score}%</strong>" if scoring and score is not None
-        else "Your applicable obligations are ready to review"
-    )
-    demo = ""
-    if settings.direct_demo_url or True:  # CTA always shown; link resolved by the app/booking
-        demo = (
-            "<p style='margin-top:20px'><a href='https://complisenseai.com/readiness' "
-            "style='background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;"
-            "text-decoration:none;display:inline-block'>Book a demo — we'll walk your specific gaps</a></p>"
-        )
-    return (
-        f"<div style='font-family:-apple-system,Segoe UI,sans-serif;max-width:640px;margin:0 auto;color:#111'>"
-        f"<h2>{headline}</h2>"
-        f"<p style='color:#374151'>Prepared for {html.escape(email)}. DPDP operational obligations "
-        f"become enforceable ~<strong>{_DPDP_DEADLINE}</strong> — the items below are 'prepare by' "
-        f"readiness gaps, not present-day violations.</p>"
-        f"<h3>Top gaps to prepare</h3><ul>{rows}</ul>"
-        f"{demo}"
-        f"{legal_footer_html()}"
-        f"</div>"
-    )
-
-
-def _operator_email_html(email: str, report: Dict[str, Any], answers: Dict[str, Any], ip: str) -> str:
-    ans = "".join(
-        f"<tr><td style='padding:2px 8px;color:#6b7280'>{html.escape(str(k))}</td>"
-        f"<td style='padding:2px 8px'>{html.escape(str(v))}</td></tr>"
-        for k, v in answers.items()
-    )
-    return (
-        f"<div style='font-family:-apple-system,Segoe UI,sans-serif'>"
-        f"<h2>New readiness lead</h2>"
-        f"<p><strong>Email:</strong> {html.escape(email)}<br>"
-        f"<strong>Score:</strong> {report.get('readiness_score')}% · "
-        f"<strong>Pack:</strong> {html.escape(str(report.get('pack_id')))}<br>"
-        f"<strong>Gaps:</strong> {report.get('summary', {}).get('gaps')} · "
-        f"<strong>IP:</strong> {html.escape(ip)}</p>"
-        f"<h3>All answers</h3><table style='border-collapse:collapse'>{ans}</table>"
-        f"</div>"
-    )
 
 
 @router.post("/lead")
@@ -177,46 +134,98 @@ async def capture_lead(payload: LeadRequest, request: Request = None):
         "ip": ip,
         "created_at": now,
     }
+    # Render the client + operator HTML reports (Prompt 3B) from the already-scored findings.
+    view = build_assessment_view(
+        report, payload.answers, email,
+        cta_url=_booking_url(email), submitted_at=now.isoformat(),
+        unsubscribe_contact=settings.lead_privacy_contact,
+    )
+    client_subject, client_html = render_client_email(view)
+    lead["rendered_client_html"] = client_html
+    lead["findings"] = {"passes": view["passes"], "gaps": view["gaps"], "nas": view["nas"]}
+
+    delivered = _deliver(view, client_subject, client_html, email)
+    lead["email_delivery"] = delivered
+
     try:
         leads_collection().insert_one(lead)
     except Exception as e:
         logger.warning("Could not persist lead: %s", e)
 
-    mailer = get_mailer()
-    delivered = False
-    try:
-        delivered = mailer.send(MailMessage(
-            to=[email],
-            subject="Your CompliSense DPDP readiness score",
-            html=_score_email_html(email, report),
-            text=f"Your readiness score: {report.get('readiness_score')}%. "
-                 f"Prepare by {_DPDP_DEADLINE}. {legal_footer_text()}",
-            reply_to=settings.support_email,
-        ))
-    except Exception as e:
-        logger.warning("Visitor email failed: %s", e)
-
-    # Operator notification (every lead + their full situation).
-    if settings.operator_notify_email:
-        try:
-            mailer.send(MailMessage(
-                to=[settings.operator_notify_email],
-                subject=f"New readiness lead: {email} ({report.get('readiness_score')}%)",
-                html=_operator_email_html(email, report, payload.answers, ip),
-                text=f"Lead {email} scored {report.get('readiness_score')}%.",
-            ))
-        except Exception as e:
-            logger.warning("Operator notify failed: %s", e)
-
     return {
         "ok": True,
-        "delivered": delivered,
+        "delivered": delivered.get("client", False),
         "readiness_score": report.get("readiness_score"),
         "summary": report.get("summary"),
         "top_gaps": top_gaps(report, 3),
         "lead_id": lead["id"],
         "privacy_notice_url": "https://complisenseai.com/privacy",
     }
+
+
+def _deliver(view: Dict[str, Any], client_subject: str, client_html: str, email: str) -> Dict[str, Any]:
+    """Send client + operator emails. Non-blocking: failures are logged + recorded (for
+    retry_pending_leads), never raised into the request path. Operator address is server-side
+    only (never returned to the client)."""
+    mailer = get_mailer()
+    status = {"client": False, "operator": None}
+    try:
+        status["client"] = mailer.send(MailMessage(
+            to=[email], subject=client_subject, html=client_html,
+            text=f"Your DPDP readiness. Prepare by {_DPDP_DEADLINE}. {legal_footer_text()}",
+            reply_to=settings.support_email,
+        ))
+    except Exception as e:
+        logger.warning("Client email failed: %s", e)
+    if settings.operator_notify_email:
+        op_subject, op_html = render_operator_email(view)
+        status["operator"] = False
+        try:
+            status["operator"] = mailer.send(MailMessage(
+                to=[settings.operator_notify_email], subject=op_subject, html=op_html,
+                text=f"Lead {email}: {view.get('score')}% — {view.get('suggested_angle')}",
+            ))
+        except Exception as e:
+            logger.warning("Operator email failed: %s", e)
+    return status
+
+
+def retry_pending_leads(limit: int = 50) -> Dict[str, Any]:
+    """Resend emails for leads whose delivery previously failed (never lose a lead silently).
+
+    Re-renders the operator email from stored answers; reuses the stored client HTML. Callable
+    from a cron. Best-effort; updates email_delivery on success.
+    """
+    retried = 0
+    try:
+        pending = list(leads_collection().find(
+            {"$or": [{"email_delivery.client": False}, {"email_delivery.operator": False}]}
+        ).limit(limit))
+    except Exception:
+        pending = []
+    for lead in pending:
+        report_like = {
+            "readiness_score": lead.get("readiness_score"),
+            "scoring_available": True,
+            "rules_current_as_of": None,
+            "ready": [{"title": p.get("title"), "rule_id": p.get("rule_id")} for p in lead.get("findings", {}).get("passes", [])],
+            "gaps": lead.get("findings", {}).get("gaps", []),
+            "not_applicable": [{"title": n.get("title"), "reason": n.get("why")} for n in lead.get("findings", {}).get("nas", [])],
+        }
+        view = build_assessment_view(
+            report_like, lead.get("answers", {}), lead.get("email", ""),
+            cta_url=_booking_url(lead.get("email", "")),
+            submitted_at=str(lead.get("created_at", "")),
+            unsubscribe_contact=settings.lead_privacy_contact,
+        )
+        subject, html_body = render_client_email(view)
+        status = _deliver(view, subject, lead.get("rendered_client_html") or html_body, lead.get("email", ""))
+        try:
+            leads_collection().update_one({"id": lead.get("id")}, {"$set": {"email_delivery": status}})
+        except Exception:
+            pass
+        retried += 1
+    return {"retried": retried}
 
 
 @router.delete("/lead")

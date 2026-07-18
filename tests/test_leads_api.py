@@ -59,6 +59,7 @@ def _patch(monkeypatch, operator="ops@complisenseai.com"):
         support_email="support@complisenseai.com",
         direct_demo_url="",
         mail_from="support@complisenseai.com",
+        lead_privacy_contact="privacy@complisenseai.com",
     ))
     return col, mailer
 
