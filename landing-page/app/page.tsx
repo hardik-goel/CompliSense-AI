@@ -943,6 +943,7 @@ export default function HomePage() {
           </div>
 
           {/* BY THE NUMBERS / CHARTS */}
+          {/* REVIEW: substantiate or revise these figures before public claims (counsel note). */}
           <div className="section-header" style={{ marginTop: "96px" }} data-animate>
             <p className="label-caption">BY THE NUMBERS</p>
             <h3>What teams measure after going live.</h3>
@@ -1735,6 +1736,12 @@ export default function HomePage() {
             CompliSense-AI provides compliance-<strong>readiness</strong> assessment and tooling, not legal advice.
             Results are informational, may not reflect the latest legal position, and do not constitute a legal
             determination of compliance. Consult a qualified data-protection practitioner before relying on these results.
+          </p>
+          <p className="body-text" style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "8px", textAlign: "center", lineHeight: 1.5 }}>
+            CompliSense-AI provides a regulatory-readiness assessment, not legal advice, and does not create any
+            attorney-client relationship. To the maximum extent permitted by law, CompliSense&apos;s liability is
+            limited as set out in our <Link href="/terms">Terms</Link>; we are not liable for any regulatory fine or
+            penalty imposed on you.
           </p>
         </div>
       </footer>

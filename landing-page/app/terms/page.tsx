@@ -58,9 +58,21 @@ export default function TermsPage() {
           </section>
 
           <section style={{ marginTop: "40px", paddingTop: "40px", borderTop: "1px solid #1B3A5C" }}>
+            <h2 style={{ fontSize: "20px", color: "#F1F5F9", marginBottom: "16px" }}>Not Legal Advice; No Attorney-Client Relationship</h2>
+            <p style={{ fontSize: "15px", lineHeight: 1.8, color: "#94A3B8" }}>
+              CompliSense-AI provides a regulatory-readiness assessment, not legal advice, and does not create any
+              attorney-client relationship. Outputs are informational and do not constitute a legal determination of
+              compliance. Consult a qualified data-protection practitioner before relying on any result.
+            </p>
+          </section>
+
+          <section style={{ marginTop: "40px", paddingTop: "40px", borderTop: "1px solid #1B3A5C" }}>
             <h2 style={{ fontSize: "20px", color: "#F1F5F9", marginBottom: "16px" }}>Limitation of Liability</h2>
             <p style={{ fontSize: "15px", lineHeight: 1.8, color: "#94A3B8" }}>
-              CompliSense-AI provides operational compliance tooling. It does not constitute legal advice. We are not liable for regulatory outcomes resulting from how the platform is used.
+              CompliSense-AI provides operational compliance-readiness tooling. It does not constitute legal advice.
+              To the maximum extent permitted by law, CompliSense&apos;s liability is limited as set out in these Terms;
+              we are not liable for any regulatory fine or penalty imposed on you, or for regulatory outcomes resulting
+              from how the platform is used.
             </p>
           </section>
 
