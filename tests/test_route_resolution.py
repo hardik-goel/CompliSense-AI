@@ -51,3 +51,14 @@ def test_no_two_routes_share_a_path_and_method():
             key = (getattr(route, "path", ""), method)
             assert key not in seen, f"Duplicate route registered: {key}"
             seen.add(key)
+
+
+# --- the records page must not collide with the ROPA JSON API ----------------------------
+
+def test_the_records_page_resolves_to_the_page_not_the_api():
+    route = _resolve("/projects/p1/records")
+    assert route is not None and route.path == "/projects/{project_id}/records"
+
+
+def test_the_ropa_json_api_is_not_shadowed_by_the_page():
+    assert _resolve("/projects/p1/ropa").path == "/projects/{project_id}/ropa"

@@ -53,6 +53,12 @@ either by direct dependency or because the rule belongs to a domain the artefact
 artefact with no stamp is reported `unstamped` — we cannot prove it is unaffected, and
 silently passing it is the lie the stamp exists to prevent ([[0004-unknown-is-a-gap]]).
 
+**The client is told, rather than having to ask.** `evaluate_artefact_freshness()` and
+`evaluate_regwatch_exposure()` run in the monitoring cron alongside the scan-overdue sweep,
+raising `artefact_stale` and `regwatch_exposure` alerts (deduped per day). Only `stale`
+alerts — a `review` result is deliberately silent, because an alert that fires on every
+unrelated pack bump is one the client learns to ignore, and then the real one is missed too.
+
 **Nothing regenerates automatically.** Same gate as [[0008-human-gated-regwatch]]: a system
 that silently rewrites the client's compliance evidence is one nobody can audit.
 
@@ -83,4 +89,4 @@ that silently rewrites the client's compliance evidence is one nobody can audit.
 ## Related
 
 [[0007-deterministic-records]] · [[0008-human-gated-regwatch]] · [[0010-eight-domain-lens]] ·
-[[0004-unknown-is-a-gap]]
+[[0004-unknown-is-a-gap]] · [[0014-pack-follows-the-cited-rules]]

@@ -36,9 +36,12 @@ class _FakeCopilot:
 
 
 def _patch(monkeypatch, role="owner", copilot=None):
+    import saas.app.freshness_api as F
     import saas.app.ropa_api as R
     col = _Col()
     monkeypatch.setattr(A, "artefacts_collection", lambda: col)
+    # Draft/approve/export all record provenance now; without this they hit real Mongo.
+    monkeypatch.setattr(F, "provenance_collection", lambda: _Col())
     monkeypatch.setattr(A, "get_project_with_role", lambda pid, user, action: (PROJECT, role))
     monkeypatch.setattr(A, "get_copilot", lambda: copilot or _FakeCopilot())
     monkeypatch.setattr(A, "insert_audit_log", lambda *a, **k: None)
@@ -152,3 +155,66 @@ def test_needed_also_advertises_the_generated_ropa_and_dfd(monkeypatch):
     # Generated artefacts are facts, not drafts — no approval step, no LLM.
     assert all(g["ai_drafted"] is False for g in body["generated"])
     assert generated["record_of_processing"]["endpoint"].endswith("/ropa.md")
+
+
+# --- provenance: every path a client can download from must leave a stamp -----------------
+
+def _prov_col(monkeypatch):
+    """Re-patch the provenance store with a handle the test can assert against."""
+    import saas.app.freshness_api as F
+    col = _Col()
+    monkeypatch.setattr(F, "provenance_collection", lambda: col)
+    return col
+
+
+def test_downloading_the_zip_records_stamps_for_the_generated_artefacts(monkeypatch):
+    # Regression: the zip is the primary download path and it recorded nothing, so the
+    # freshness report could not speak about the documents the client actually held.
+    _patch(monkeypatch)
+    prov = _prov_col(monkeypatch)
+    _run(A.draft_artefact("p1", "privacy_notice", consent_to_send=True, current_user=USER))
+    _run(A.approve_artefact("p1", "privacy_notice", current_user=USER))
+    _run(A.export_approved("p1", current_user=USER))
+    stamped = {d["artefact_id"] for d in prov.docs}
+    assert {"record_of_processing", "data_flow_diagram"} <= stamped
+
+
+def test_an_ai_drafted_artefact_is_stamped_with_the_rule_it_rests_on(monkeypatch):
+    col = _patch(monkeypatch)
+    _prov_col(monkeypatch)
+    _run(A.draft_artefact("p1", "privacy_notice", consent_to_send=True, current_user=USER))
+    stamp = col.find_one({"project_id": "p1", "art_id": "privacy_notice"})["provenance"]
+    assert "DPDP-SEC5-NOTICE-001" in stamp["rules"]
+    assert stamp["pack_id"].startswith("dpdp_india")
+
+
+def test_approving_an_ai_draft_records_its_stamp_for_freshness(monkeypatch):
+    _patch(monkeypatch)
+    prov = _prov_col(monkeypatch)
+    _run(A.draft_artefact("p1", "privacy_notice", consent_to_send=True, current_user=USER))
+    assert prov.docs == []          # not yet relied upon
+    _run(A.approve_artefact("p1", "privacy_notice", current_user=USER))
+    assert prov.find_one({"project_id": "p1", "artefact_id": "privacy_notice"})
+
+
+def test_an_eu_artefact_is_stamped_against_the_eu_pack(monkeypatch):
+    col = _patch(monkeypatch)
+    _prov_col(monkeypatch)
+    _run(A.draft_artefact("p1", "risk_management", consent_to_send=True,
+                          pack_id="euai_extended_v2", current_user=USER))
+    stamp = col.find_one({"project_id": "p1", "art_id": "risk_management"})["provenance"]
+    assert stamp["pack_id"].startswith("euai")
+
+
+def test_the_zip_stamp_survives_a_provenance_store_failure(monkeypatch):
+    """A stamping failure must never block the client's download."""
+    import saas.app.freshness_api as F
+    _patch(monkeypatch)
+
+    class _Boom:
+        def update_one(self, *a, **k): raise RuntimeError("mongo down")
+    monkeypatch.setattr(F, "provenance_collection", lambda: _Boom())
+    _run(A.draft_artefact("p1", "privacy_notice", consent_to_send=True, current_user=USER))
+    _run(A.approve_artefact("p1", "privacy_notice", current_user=USER))
+    names = set(_zip(_run(A.export_approved("p1", current_user=USER))).namelist())
+    assert "record_of_processing.md" in names

@@ -70,3 +70,38 @@ def test_no_credentials_or_raw_values_leak():
     pack = build_evidence_pack(PROJECT, READINESS, RUNS, ALERTS, DISCOVERIES, PII, generated_at="t")
     d = pack["connector_discovery"][0]
     assert d["signals"] == 2 and "signal_values" not in d and "credentials" not in d
+
+
+# --- the eight-domain lens travels into the evidence pack ---------------------------------
+
+def test_evidence_pack_carries_the_domain_rollup_for_a_dpdp_assessment():
+    from pathlib import Path
+    from agent.rules.loader import load_rulepack
+    from compliance.evidence import build_evidence_pack
+    from compliance.manifest import build_manifest
+    from compliance.readiness import score_manifest
+
+    pack = load_rulepack(Path("rulepacks/dpdp_india_extended_v2.yaml"), validate=False)
+    report = score_manifest(build_manifest(
+        {"entity_type": "startup", "sector": "saas", "offers_in_india": True,
+         "has_privacy_notice": True}), pack)
+    out = build_evidence_pack({"id": "p1"}, report, [], [], [], [],
+                              generated_at="2026-08-11T00:00:00Z")
+    domains = out["readiness"]["domains"]
+    assert [d["number"] for d in domains] == list(range(1, 9))
+    assert next(d for d in domains if d["number"] == 2)["status"] == "ready"
+
+
+def test_evidence_pack_omits_the_lens_for_a_non_dpdp_assessment():
+    from pathlib import Path
+    from agent.rules.loader import load_rulepack
+    from compliance.evidence import build_evidence_pack
+    from compliance.manifest import build_manifest
+    from compliance.readiness import score_manifest
+
+    pack = load_rulepack(Path("rulepacks/euai_extended_v2.yaml"), validate=False)
+    report = score_manifest(build_manifest(
+        {"has_ai_system": True, "eu_role": "provider", "provides_to_eu": True}), pack)
+    out = build_evidence_pack({"id": "p1"}, report, [], [], [], [],
+                              generated_at="2026-08-11T00:00:00Z")
+    assert out["readiness"]["domains"] == []
