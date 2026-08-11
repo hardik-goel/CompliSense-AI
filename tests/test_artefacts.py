@@ -41,3 +41,12 @@ def test_spec_for_roundtrip():
     s = spec_for("retention_schedule")
     assert s and s["rule_id"] == "DPDP-SEC8-OBLIGATIONS-003" and s["filename"] == "retention_schedule.md"
     assert spec_for("does_not_exist") is None
+
+
+def test_generated_artefacts_are_deterministic_and_cite_the_rules_they_support():
+    from compliance.artefacts import GENERATED_ARTEFACTS
+    ropa = next(g for g in GENERATED_ARTEFACTS if g["artefact_id"] == "record_of_processing")
+    assert ropa["ai_drafted"] is False
+    assert "DPDP-SEC16-TRANSFER-001" in ropa["supports_rules"]
+    # It supports rules but does not on its own close any of them.
+    assert "closes_rules" not in ropa

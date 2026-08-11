@@ -66,6 +66,35 @@ ARTEFACT_CATALOG: Dict[str, Dict[str, Any]] = {
 }
 
 
+# Artefacts we GENERATE deterministically from confirmed facts rather than AI-draft. They
+# need no approval step because nothing is invented: a register of facts written by an LLM
+# would be a fabricated record. They *support* the rules listed — they do not close them.
+GENERATED_ARTEFACTS: List[Dict[str, Any]] = [
+    {
+        "artefact_id": "record_of_processing",
+        "title": "Record of Processing Activities (ROPA)",
+        "filename": "record_of_processing.md",
+        "ai_drafted": False,
+        "endpoint": "/projects/{project_id}/ropa.md",
+        "supports_rules": ["DPDP-SEC5-NOTICE-001", "DPDP-SEC7-LEGITIMATE-USE-001",
+                           "DPDP-SEC8-OBLIGATIONS-003", "DPDP-SEC8-PROCESSOR-001",
+                           "DPDP-SEC16-TRANSFER-001"],
+        "note": "Built from your declared processing activities, the names-only data-flow map "
+                "and your questionnaire answers. Unsourced fields are stamped UNKNOWN.",
+    },
+    {
+        "artefact_id": "data_flow_diagram",
+        "title": "Personal-data flow diagram (DFD)",
+        "filename": "data_flow_diagram.svg",
+        "ai_drafted": False,
+        "endpoint": "/projects/{project_id}/ropa/dfd.svg",
+        "supports_rules": ["DPDP-SEC16-TRANSFER-001", "DPDP-SEC8-PROCESSOR-001"],
+        "note": "Rendered from the same register, so the diagram can never disagree with the "
+                "table. Marks the India trust boundary when data leaves the country.",
+    },
+]
+
+
 def _connector_source_available(project: Dict[str, Any]) -> bool:
     """True if the project has any confirmed discovery facts to pre-fill from."""
     return bool(project.get("discovered_manifest"))

@@ -99,11 +99,20 @@ app.include_router(evidence_router)
 from saas.app.gaps_api import router as gaps_router  # noqa: E402
 app.include_router(gaps_router)
 
+# Freshness MUST be registered before artefacts_api: FastAPI matches in registration order,
+# and artefacts_api's /artefacts/{art_id} would otherwise swallow /artefacts/freshness and
+# friends. Locked by tests/test_route_resolution.py.
+from saas.app.freshness_api import router as freshness_router  # noqa: E402
+app.include_router(freshness_router)
+
 from saas.app.artefacts_api import router as artefacts_router  # noqa: E402
 app.include_router(artefacts_router)
 
 from saas.app.collection_api import router as collection_router  # noqa: E402
 app.include_router(collection_router)
+
+from saas.app.ropa_api import router as ropa_router  # noqa: E402
+app.include_router(ropa_router)
 
 
 @app.on_event("startup")

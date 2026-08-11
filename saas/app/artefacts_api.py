@@ -20,8 +20,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from agent.db.mongo import insert_audit_log
-from compliance.artefacts import CONNECTABLE_SOURCES, SOURCE_LABELS, needed_artefacts, spec_for
+from compliance.artefacts import (
+    CONNECTABLE_SOURCES,
+    GENERATED_ARTEFACTS,
+    SOURCE_LABELS,
+    needed_artefacts,
+    spec_for,
+)
+from compliance.dfd import build_dfd, dfd_to_svg
 from compliance.manifest import build_manifest
+from compliance.ropa import ropa_to_markdown
 from compliance.readiness import score_manifest
 from saas.app.auth import get_current_user
 from saas.app.copilot_api import _find_rule, get_copilot
@@ -69,6 +77,8 @@ async def list_needed(project_id: str, pack_id: str = _DEFAULT_PACK,
         n["status"] = existing.get(n["artefact_id"], "needed")
     return {
         "project_id": project_id, "pack_id": pack_id, "count": len(needed), "artefacts": needed,
+        "generated": [{**g, "endpoint": g["endpoint"].format(project_id=project_id)}
+                      for g in GENERATED_ARTEFACTS],
         "sources_legend": SOURCE_LABELS,
         "we_can_connect_to": CONNECTABLE_SOURCES,
         "note": "We can auto-fetch facts only from the connectors above (read-only). Everything "
@@ -85,14 +95,33 @@ async def list_artefacts(project_id: str, current_user: dict[str, Any] = Depends
             "artefacts": [serialize_document(d) for d in docs]}
 
 
+def _generated_files(project_id: str, project: dict[str, Any]) -> list[tuple[str, str, str]]:
+    """Deterministic artefacts built from confirmed facts — (filename, title, content).
+
+    These are *generated*, not AI-drafted, so they need no approval step: a ROPA is a record
+    of facts, and an LLM-written record would be a fabricated one. Best-effort — a failure
+    here must never block the export of the approved drafts.
+    """
+    from saas.app.ropa_api import _build as _build_ropa
+    try:
+        ropa = _build_ropa(project_id, project)
+    except Exception:
+        return []
+    return [
+        ("record_of_processing.md", "Record of Processing Activities", ropa_to_markdown(ropa)),
+        ("data_flow_diagram.svg", "Personal-data flow diagram", dfd_to_svg(build_dfd(ropa))),
+    ]
+
+
 @router.get("/{project_id}/artefacts/export.zip")
 async def export_approved(project_id: str, current_user: dict[str, Any] = Depends(get_current_user)):
     """Download APPROVED artefacts as a zip to drop into the scan input folder."""
-    get_project_with_role(project_id, current_user, "view")
+    project, _role = get_project_with_role(project_id, current_user, "view")
     approved = list(artefacts_collection().find({"project_id": project_id, "status": "approved"}))
     if not approved:
         raise HTTPException(status_code=404, detail="No approved artefacts yet — draft and approve some first.")
 
+    generated = _generated_files(project_id, project)
     readme = (
         "CompliSense-AI — approved starter artefacts\n"
         "===========================================\n\n"
@@ -103,13 +132,24 @@ async def export_approved(project_id: str, current_user: dict[str, Any] = Depend
         "    python run_scan.py --project-path <this-folder> --output-dir ./output\n\n"
         "Files included:\n" + "\n".join(f"  - {a['filename']}  ({a['title']})" for a in approved) + "\n"
     )
+    if generated:
+        readme += (
+            "\nGENERATED (not AI-drafted)\n"
+            "  Built deterministically from your declared activities, data-flow inference and\n"
+            "  questionnaire answers. Anything we could not source is stamped UNKNOWN rather than\n"
+            "  guessed — see 'What is still missing' in the register.\n"
+            + "\n".join(f"  - {name}  ({title})" for name, title, _ in generated) + "\n"
+        )
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("READ_ME_FIRST.txt", readme)
         for a in approved:
             z.writestr(a["filename"], a.get("content") or "")
+        for name, _title, content in generated:
+            z.writestr(name, content)
     buf.seek(0)
-    _audit(current_user, project_id, "artefact_export", "exported", {"count": len(approved)})
+    _audit(current_user, project_id, "artefact_export", "exported",
+           {"count": len(approved), "generated": [n for n, _, _ in generated]})
     return StreamingResponse(iter([buf.getvalue()]), media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="complisense_artefacts_{project_id}.zip"'})
 

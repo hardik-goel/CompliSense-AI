@@ -36,11 +36,13 @@ class _FakeCopilot:
 
 
 def _patch(monkeypatch, role="owner", copilot=None):
+    import saas.app.ropa_api as R
     col = _Col()
     monkeypatch.setattr(A, "artefacts_collection", lambda: col)
     monkeypatch.setattr(A, "get_project_with_role", lambda pid, user, action: (PROJECT, role))
     monkeypatch.setattr(A, "get_copilot", lambda: copilot or _FakeCopilot())
     monkeypatch.setattr(A, "insert_audit_log", lambda *a, **k: None)
+    monkeypatch.setattr(R, "pii_collection", lambda: _Col())
     return col
 
 
@@ -102,3 +104,51 @@ def test_approve_requires_a_draft(monkeypatch):
     with pytest.raises(HTTPException) as e:
         _run(A.approve_artefact("p1", "privacy_notice", current_user=USER))
     assert e.value.status_code == 404  # nothing drafted yet
+
+
+def _zip(resp):
+    """StreamingResponse -> ZipFile (the export streams, so there is no .body)."""
+    import io, zipfile
+
+    async def _drain():
+        return b"".join([c async for c in resp.body_iterator])
+
+    return zipfile.ZipFile(io.BytesIO(_run(_drain())))
+
+
+def test_export_bundles_the_deterministic_ropa_and_dfd(monkeypatch):
+    _patch(monkeypatch)
+    _run(A.draft_artefact("p1", "privacy_notice", consent_to_send=True, current_user=USER))
+    _run(A.approve_artefact("p1", "privacy_notice", current_user=USER))
+    names = set(_zip(_run(A.export_approved("p1", current_user=USER))).namelist())
+    assert {"record_of_processing.md", "data_flow_diagram.svg"} <= names
+
+
+def test_bundled_ropa_is_the_real_register_not_a_stub(monkeypatch):
+    _patch(monkeypatch)
+    _run(A.draft_artefact("p1", "privacy_notice", consent_to_send=True, current_user=USER))
+    _run(A.approve_artefact("p1", "privacy_notice", current_user=USER))
+    z = _zip(_run(A.export_approved("p1", current_user=USER)))
+    ropa = z.read("record_of_processing.md").decode()
+    assert "# Record of Processing Activities" in ropa
+    assert "REQUIRES LEGAL REVIEW" in ropa.upper()
+    assert z.read("data_flow_diagram.svg").decode().startswith("<svg")
+
+
+def test_readme_tells_the_client_the_ropa_is_generated_not_ai_drafted(monkeypatch):
+    _patch(monkeypatch)
+    _run(A.draft_artefact("p1", "privacy_notice", consent_to_send=True, current_user=USER))
+    _run(A.approve_artefact("p1", "privacy_notice", current_user=USER))
+    z = _zip(_run(A.export_approved("p1", current_user=USER)))
+    readme = z.read("READ_ME_FIRST.txt").decode()
+    assert "record_of_processing.md" in readme and "not AI-drafted" in readme
+
+
+def test_needed_also_advertises_the_generated_ropa_and_dfd(monkeypatch):
+    _patch(monkeypatch)
+    body = _run(A.list_needed("p1", current_user=USER))
+    generated = {g["artefact_id"]: g for g in body["generated"]}
+    assert "record_of_processing" in generated and "data_flow_diagram" in generated
+    # Generated artefacts are facts, not drafts — no approval step, no LLM.
+    assert all(g["ai_drafted"] is False for g in body["generated"])
+    assert generated["record_of_processing"]["endpoint"].endswith("/ropa.md")
