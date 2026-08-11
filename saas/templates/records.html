@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Records &amp; currency | CompliSense-AI</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #0f1116; color: #e7eaf0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 36px 20px 64px; }
+    .card-pane { background: #171a22; border: 1px solid #2a2f3a; border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+    .muted { color: #98a2b3; }
+    .form-control, .form-select { background: #10131a; color: #e7eaf0; border-color: #2a2f3a; }
+    a { text-decoration: none; }
+
+    /* Domain badges — the same numbering the diagram and the register use. */
+    .dom { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px;
+           border-radius:999px; font-size:.72rem; font-weight:700; background:#2c3e6b; color:#fff; margin:1px; }
+    .dom.na { background:#39414f; color:#8b95a5; }
+    .dom.x { background:#c0392b; }
+
+    .st { font-size:.72rem; font-weight:700; padding:.25rem .55rem; border-radius:999px; white-space:nowrap; }
+    .st.ready { background: rgba(52,211,153,.18); color:#34d399; }
+    .st.partial { background: rgba(255,194,75,.18); color:#fbbf24; }
+    .st.gap { background: rgba(248,113,113,.18); color:#f87171; }
+    .st.not_applicable, .st.not_assessed { background: rgba(148,163,184,.16); color:#98a2b3; }
+    .st.fresh { background: rgba(52,211,153,.18); color:#34d399; }
+    .st.review { background: rgba(255,194,75,.18); color:#fbbf24; }
+    .st.stale { background: rgba(248,113,113,.18); color:#f87171; }
+
+    table.reg { width:100%; font-size:.82rem; border-collapse:collapse; }
+    table.reg th { color:#98a2b3; font-weight:600; text-align:left; padding:8px 10px; border-bottom:1px solid #2a2f3a; white-space:nowrap; }
+    table.reg td { padding:8px 10px; border-bottom:1px solid #1e222b; vertical-align:top; }
+    .scroll-x { overflow-x:auto; }
+    .unknown { color:#f87171; font-style:italic; }
+    .meter { height:6px; background:#22262f; border-radius:999px; overflow:hidden; }
+    .meter > span { display:block; height:100%; background:#7c8cff; }
+    .warn { background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.4); border-radius: 10px; padding: 10px 12px; color:#fbbf24; font-size:.85rem; }
+    .note { background: rgba(124,140,255,.10); border:1px solid rgba(124,140,255,.28); border-radius:10px; padding:10px 12px; font-size:.85rem; color:#aab4ff; }
+    #dfd svg { max-width:100%; height:auto; }
+  </style>
+  <link rel="stylesheet" href="/static/theme.css">
+</head>
+<body data-project-id="{{ project_id }}">
+  <main class="shell">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+      <div>
+        <h1 class="h2 mb-1">Records &amp; currency</h1>
+        <p class="muted mb-0">
+          {{ project_name }} — your Record of Processing Activities and data-flow diagram, built
+          from your confirmed facts, and whether they still match the law we have recorded.
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/projects/{{ project_id }}/artefacts" class="btn btn-outline-light btn-sm">Artefacts</a>
+        <a href="/projects/{{ project_id }}/pii" class="btn btn-outline-light btn-sm">Data map</a>
+        <a href="/dashboard" class="btn btn-outline-light btn-sm">Dashboard</a>
+      </div>
+    </div>
+
+    <div class="note mb-3">
+      These documents are <strong>generated</strong>, not AI-drafted — a register is a record of
+      facts, and a fabricated record is worse than a missing one. Anything we cannot source is
+      marked <span class="unknown">UNKNOWN</span> rather than guessed.
+      <strong>Not legal advice; requires legal review.</strong>
+    </div>
+
+    <!-- Freshness ------------------------------------------------------------------->
+    <section class="card-pane">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Is what you hold still current?</h2>
+        <span class="muted small" id="fresh-summary"></span>
+      </div>
+      <div id="freshness" class="muted small">Loading…</div>
+    </section>
+
+    <!-- DPDPA domains --------------------------------------------------------------->
+    <section class="card-pane">
+      <h2 class="h6 mb-1">DPDPA domains</h2>
+      <p class="muted small mb-3">
+        The eight domains an assessor reads by. A domain marked <em>not applicable</em> was ruled
+        out by your declared facts — that is a decision on record, not an omission.
+      </p>
+      <div id="domains" class="muted small">Loading…</div>
+    </section>
+
+    <!-- Diagram ---------------------------------------------------------------------->
+    <section class="card-pane">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Personal-data flow</h2>
+        <a class="btn btn-outline-light btn-sm" id="dl-svg" download>Download SVG</a>
+      </div>
+      <div id="dfd" class="scroll-x muted small">Loading…</div>
+    </section>
+
+    <!-- Register ---------------------------------------------------------------------->
+    <section class="card-pane">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Record of Processing Activities</h2>
+        <a class="btn btn-outline-light btn-sm" id="dl-md" download>Download Markdown</a>
+      </div>
+      <div class="mb-3" id="completeness"></div>
+      <div class="scroll-x"><table class="reg" id="register"></table></div>
+      <div id="unknowns" class="mt-3"></div>
+    </section>
+
+    <!-- Declare activities -------------------------------------------------------------->
+    <section class="card-pane">
+      <h2 class="h6 mb-1">Declare your processing activities</h2>
+      <p class="muted small mb-3">
+        Purpose and data principals are things only you can supply — this is the only way the
+        register reaches 100%. One row per activity.
+      </p>
+      <div id="acts"></div>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-outline-light btn-sm" id="add-act">Add activity</button>
+        <button class="btn btn-primary btn-sm" id="save-acts">Save &amp; rebuild</button>
+        <span class="muted small align-self-center" id="save-msg"></span>
+      </div>
+    </section>
+  </main>
+
+<script>
+const PID = document.body.dataset.projectId;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const UNKNOWN_RE = /^UNKNOWN/;
+const cell = v => {
+  const t = Array.isArray(v) ? (v.length ? v.join(", ") : "—") : (v ?? "—");
+  return UNKNOWN_RE.test(t) ? `<span class="unknown">${esc(t)}</span>` : esc(t);
+};
+
+document.getElementById("dl-md").href = `/projects/${PID}/ropa.md`;
+document.getElementById("dl-svg").href = `/projects/${PID}/ropa/dfd.svg`;
+
+/* --- freshness ------------------------------------------------------------------- */
+async function loadFreshness() {
+  const el = document.getElementById("freshness");
+  try {
+    const d = await fetch(`/projects/${PID}/artefacts/freshness`).then(r => r.json());
+    document.getElementById("fresh-summary").textContent =
+      `${d.summary.total} document(s) · ${d.summary.stale} stale`;
+    if (!d.artefacts.length) {
+      el.innerHTML = `<span class="muted">Nothing exported yet. Download the register or the
+        diagram and we will track whether it stays current.</span>`;
+      return;
+    }
+    el.innerHTML = d.artefacts.map(a => `
+      <div class="d-flex justify-content-between align-items-start gap-3 py-2"
+           style="border-bottom:1px solid #1e222b">
+        <div>
+          <div>${esc(a.title)} <span class="st ${a.status}">${a.status}</span></div>
+          <div class="muted small">built against ${esc(a.built_against_version || "?")}
+            · pack now ${esc(a.current_version || "?")}</div>
+          ${a.reasons.map(r => `<div class="small mt-1">· ${esc(r.action)}
+            ${r.rule_id ? `<code class="muted">${esc(r.rule_id)}</code>` : ""}
+            ${r.fields && r.fields.length ? `<span class="muted">(${esc(r.fields.join(", "))})</span>` : ""}
+          </div>`).join("")}
+        </div>
+        ${a.regenerate ? `<a class="btn btn-sm btn-outline-warning"
+            href="/projects/${PID}/${a.artefact_id === "data_flow_diagram" ? "ropa/dfd.svg" : "ropa.md"}"
+            download>Re-generate</a>` : ""}
+      </div>`).join("");
+  } catch (e) { el.textContent = "Could not load freshness."; }
+}
+
+/* --- domains, register, diagram --------------------------------------------------- */
+function renderDomains(ropa) {
+  const applicable = new Set(ropa.domains.applicable);
+  document.getElementById("domains").innerHTML = `
+    <div class="row g-2">${ropa.domains.legend.map(d => `
+      <div class="col-md-6 d-flex gap-2 align-items-start">
+        <span class="dom ${applicable.has(d.number) ? "" : "na"}">${d.number}</span>
+        <div>
+          <div>${esc(d.title)}
+            ${applicable.has(d.number) ? "" : `<span class="st not_applicable">not applicable</span>`}
+          </div>
+          <div class="muted" style="font-size:.75rem">${esc(d.act_citation)}</div>
+        </div>
+      </div>`).join("")}</div>`;
+}
+
+function renderRegister(ropa) {
+  const cols = ["Activity", "Purpose", "Store", "Provider / region", "Categories",
+                "Data principals", "Retention", "Legal basis", "Processors",
+                "Cross-border", "Domains", "Source"];
+  document.getElementById("register").innerHTML =
+    `<thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>` +
+    ropa.rows.map(r => `<tr>
+      <td>${cell(r.activity_id)}</td><td>${cell(r.purpose)}</td><td>${cell(r.store)}</td>
+      <td>${cell([r.provider, r.region].filter(Boolean).join(" / ") || "—")}</td>
+      <td>${cell(r.categories)}</td><td>${cell(r.data_principals)}</td>
+      <td>${cell(r.retention)}</td><td>${cell(r.legal_basis)}</td><td>${cell(r.processors)}</td>
+      <td>${r.cross_border ? '<span class="st gap">yes</span>' : "no"}</td>
+      <td>${(r.domains || []).map(n => `<span class="dom ${n === 8 ? "x" : ""}">${n}</span>`).join("")}</td>
+      <td class="muted">${cell(r.provenance)}</td>
+    </tr>`).join("") + "</tbody>";
+
+  const c = ropa.completeness;
+  document.getElementById("completeness").innerHTML = `
+    <div class="d-flex justify-content-between small mb-1">
+      <span>Completeness</span><span class="muted">${c.percent}% — ${c.fields_known} of ${c.fields_total} fields sourced</span>
+    </div>
+    <div class="meter"><span style="width:${c.percent}%"></span></div>`;
+
+  document.getElementById("unknowns").innerHTML = ropa.unknowns.length ? `
+    <div class="warn"><strong>Still missing.</strong> The register is not complete until these are filled.</div>
+    <ul class="small mt-2 mb-0">${ropa.unknowns.map(u =>
+      `<li><strong>${esc(u.activity_id)} · ${esc(u.column)}</strong> — ${esc(u.how_to_fill)}</li>`).join("")}</ul>`
+    : `<div class="muted small">Every register field is sourced from a declared or inferred fact.</div>`;
+}
+
+async function loadRopa() {
+  const d = await fetch(`/projects/${PID}/ropa`).then(r => r.json());
+  renderDomains(d.ropa);
+  renderRegister(d.ropa);
+  const svg = await fetch(`/projects/${PID}/ropa/dfd.svg`).then(r => r.text());
+  document.getElementById("dfd").innerHTML = svg;
+  return d.ropa;
+}
+
+/* --- declared activities ----------------------------------------------------------- */
+const FIELDS = [
+  ["activity_id", "Activity id"], ["purpose", "Purpose"], ["categories", "Categories (comma-sep)"],
+  ["data_principals", "Data principals (comma-sep)"], ["stores", "Stores (comma-sep)"],
+  ["retention", "Retention"], ["legal_basis", "Legal basis"], ["processors", "Processors (comma-sep)"],
+];
+const LISTS = new Set(["categories", "data_principals", "stores", "processors"]);
+
+function actRow(a = {}) {
+  const div = document.createElement("div");
+  div.className = "row g-2 mb-2 act";
+  div.innerHTML = FIELDS.map(([k, label]) => `
+    <div class="col-md-3">
+      <input class="form-control form-control-sm" data-k="${k}" placeholder="${label}"
+             value="${esc(LISTS.has(k) ? (a[k] || []).join(", ") : (a[k] || ""))}">
+    </div>`).join("") +
+    `<div class="col-md-3"><button class="btn btn-sm btn-outline-danger rm">Remove</button></div>`;
+  div.querySelector(".rm").onclick = () => div.remove();
+  return div;
+}
+
+async function loadActs() {
+  const d = await fetch(`/projects/${PID}/ropa`).then(r => r.json());
+  const declared = d.ropa.rows.filter(r => r.provenance === "declared");
+  const host = document.getElementById("acts");
+  host.innerHTML = "";
+  const seen = new Set();
+  declared.forEach(r => {
+    if (seen.has(r.activity_id)) return;
+    seen.add(r.activity_id);
+    host.appendChild(actRow({
+      activity_id: r.activity_id, purpose: UNKNOWN_RE.test(r.purpose) ? "" : r.purpose,
+      categories: r.categories, data_principals: Array.isArray(r.data_principals) ? r.data_principals : [],
+      stores: [r.store], retention: UNKNOWN_RE.test(r.retention) ? "" : r.retention,
+      legal_basis: UNKNOWN_RE.test(r.legal_basis) ? "" : r.legal_basis,
+      processors: Array.isArray(r.processors) ? r.processors : [],
+    }));
+  });
+  if (!host.children.length) host.appendChild(actRow());
+}
+
+document.getElementById("add-act").onclick = () =>
+  document.getElementById("acts").appendChild(actRow());
+
+document.getElementById("save-acts").onclick = async () => {
+  const msg = document.getElementById("save-msg");
+  const activities = [...document.querySelectorAll(".act")].map(row => {
+    const a = {};
+    row.querySelectorAll("input").forEach(i => {
+      const v = i.value.trim();
+      a[i.dataset.k] = LISTS.has(i.dataset.k)
+        ? v.split(",").map(s => s.trim()).filter(Boolean) : (v || null);
+    });
+    return a;
+  }).filter(a => a.activity_id);
+
+  msg.textContent = "Saving…";
+  const res = await fetch(`/projects/${PID}/ropa/activities`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ activities }),
+  });
+  if (!res.ok) { msg.textContent = "Save failed."; return; }
+  msg.textContent = "Saved — register rebuilt.";
+  await loadRopa();
+};
+
+loadFreshness();
+loadRopa().then(loadActs);
+</script>
+</body>
+</html>

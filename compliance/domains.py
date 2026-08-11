@@ -146,6 +146,57 @@ def applicable_domains(answers: Dict[str, Any]) -> List[int]:
     )
 
 
+def domain_rollup(report: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Re-cut a readiness report by the eight domains, for the report a client actually reads.
+
+    The engine scores rule by rule; the market reads domain by domain. This is the same
+    findings viewed through the lens, never a second assessment — every rule id here came
+    from the report passed in.
+
+    Returns ``[]`` for a non-DPDP report. The lens is DPDP-specific by design (see
+    ``docs/adr/0010-eight-domain-lens.md``); inventing an EU mapping here would be a guess
+    dressed as an assessment.
+    """
+    if (report or {}).get("jurisdiction") != "DPDP_INDIA":
+        return []
+
+    def _ids(bucket: str) -> set:
+        return {r.get("rule_id") for r in report.get(bucket) or []}
+
+    ready_ids, gap_ids, na_ids = _ids("ready"), _ids("gaps"), _ids("not_applicable")
+
+    out: List[Dict[str, Any]] = []
+    for d in DOMAINS:
+        rules = set(d["rule_ids"])
+        ready = sorted(rules & ready_ids)
+        gaps = sorted(rules & gap_ids)
+        not_applicable = sorted(rules & na_ids)
+        assessed = len(ready) + len(gaps)
+        # A domain is applicable if the engine assessed any of its rules. That reuses the
+        # gate in compliance/applicability.py rather than re-deriving it from the manifest,
+        # so the rollup can never disagree with the report it is summarising.
+        applicable = assessed > 0
+
+        if not applicable:
+            status = "not_applicable" if not_applicable else "not_assessed"
+            percent = None
+        elif not gaps:
+            status, percent = "ready", 100
+        elif not ready:
+            status, percent = "gap", 0
+        else:
+            status, percent = "partial", round(len(ready) / assessed * 100)
+
+        out.append({
+            "number": d["number"], "domain_id": d["domain_id"], "title": d["title"],
+            "act_citation": d["act_citation"], "summary": d["summary"],
+            "applicable": applicable, "status": status, "percent": percent,
+            "assessed": assessed, "ready": ready, "gaps": gaps,
+            "not_applicable": not_applicable,
+        })
+    return out
+
+
 def _always_on(answers: Dict[str, Any]) -> List[int]:
     """Domains that ride along on every stage once they apply to the entity at all."""
     return [6] if (answers or {}).get("notified_as_sdf") else []

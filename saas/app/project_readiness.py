@@ -15,6 +15,7 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from compliance.domains import domain_rollup
 from compliance.manifest import build_manifest, manifest_to_profile
 from compliance.readiness import score_manifest
 from saas.app.auth import get_current_user
@@ -62,6 +63,10 @@ async def project_readiness(
         field = _CONNECTOR_BACKED_RULES.get(item.get("rule_id"))
         if field and field in discovered:
             item["evidence_source"] = "connector"
+
+    # The engine scores rule by rule; the market reads domain by domain. Same findings,
+    # re-cut through the eight-domain lens (empty for non-DPDP packs, by design).
+    report["domains"] = domain_rollup(report)
 
     report["evidence"] = {
         "discovered_fields": sorted(discovered.keys()),

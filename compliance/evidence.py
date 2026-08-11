@@ -21,6 +21,9 @@ DISCLAIMER = (
 )
 
 
+from compliance.domains import domain_rollup
+
+
 def _citations_from_readiness(report: Dict[str, Any]) -> List[Dict[str, Any]]:
     seen: Dict[str, Dict[str, Any]] = {}
     for bucket in ("ready", "gaps", "not_applicable"):
@@ -120,6 +123,9 @@ def build_evidence_pack(
             "not_applicable": readiness_report.get("not_applicable", []),
             # "Out of scope for your profile" — deliberate exclusions, not misses.
             "scope_exclusions": readiness_report.get("scope_exclusions", []),
+            # The same findings re-cut by the eight DPDPA domains an auditor reads by.
+            # Empty for a non-DPDP assessment rather than guessed.
+            "domains": domain_rollup(readiness_report),
         },
         "confirmed_manifest": discovered,
         "posture_history": posture_history,

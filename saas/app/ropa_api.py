@@ -25,15 +25,11 @@ from compliance.provenance import build_provenance
 from compliance.ropa import ProcessingActivity, build_ropa, ropa_to_markdown
 from saas.app.auth import get_current_user
 from saas.app.database import get_collection
-from saas.app.freshness_api import load_pack, provenance_collection
+from saas.app.freshness_api import pack_for_rules, record_provenance
 from saas.app.projects import projects_collection
 from saas.app.teams import get_project_with_role
 
 router = APIRouter(prefix="/projects", tags=["ropa"])
-
-# The register cites rules that only exist in the extended pack (legitimate use, transfer,
-# processor inventory), so provenance is stamped against that pack rather than core.
-PROVENANCE_PACK = "dpdp_india_extended_v2"
 
 
 def pii_collection():
@@ -92,29 +88,23 @@ def _build(project_id: str, project: dict[str, Any]) -> dict[str, Any]:
         generated_at=dt.datetime.utcnow().isoformat() + "Z",
     )
     # Stamp what this register was built from, so staleness is computable later rather than
-    # guessed. A failure to load the pack must not break generation — it degrades to an
-    # unstamped artefact, which the freshness report then reports as unverifiable.
+    # guessed. The pack follows the rules the register cites. A failure here must not break
+    # generation — it degrades to an unstamped artefact, which freshness reports as such.
     try:
+        supports = ropa.get("supports_rules") or []
+        pack = pack_for_rules(supports)
         ropa["provenance"] = build_provenance(
-            load_pack(PROVENANCE_PACK),
-            ropa.get("supports_rules") or [],
+            pack, supports,
             domains=(ropa.get("domains") or {}).get("applicable") or [],
-        )
+        ) if pack else None
     except Exception:
         ropa["provenance"] = None
     return ropa
 
 
 def _record_provenance(project_id: str, artefact_id: str, ropa: dict[str, Any]) -> None:
-    """Remember the stamp of what we just handed the client, keyed by artefact."""
-    stamp = ropa.get("provenance")
-    if not stamp:
-        return
-    provenance_collection().update_one(
-        {"project_id": project_id, "artefact_id": artefact_id},
-        {"$set": {"provenance": stamp, "generated_at": ropa.get("generated_at")}},
-        upsert=True,
-    )
+    record_provenance(project_id, artefact_id, ropa.get("provenance"),
+                      ropa.get("generated_at"))
 
 
 @router.get("/{project_id}/ropa")

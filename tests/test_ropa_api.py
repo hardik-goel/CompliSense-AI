@@ -2,6 +2,7 @@
 
 import asyncio
 
+import saas.app.freshness_api as F
 import saas.app.ropa_api as R
 
 
@@ -41,7 +42,8 @@ def _patch(monkeypatch, project=None, inferences=None):
         pii.insert_one(doc)
     monkeypatch.setattr(R, "projects_collection", lambda: projects)
     monkeypatch.setattr(R, "pii_collection", lambda: pii)
-    monkeypatch.setattr(R, "provenance_collection", lambda: prov)
+    # The provenance store lives in freshness_api; ropa_api records through it.
+    monkeypatch.setattr(F, "provenance_collection", lambda: prov)
     monkeypatch.setattr(R, "get_project_with_role", lambda pid, u, perm: (proj, "owner"))
     monkeypatch.setattr(R, "insert_audit_log", lambda *a, **k: None)
     return projects, pii, proj

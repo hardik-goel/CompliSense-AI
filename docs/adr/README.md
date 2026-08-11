@@ -37,6 +37,7 @@ reported as unverifiable rather than fine.
 | 11 | [Diagram derives from the register](0011-diagram-derives-from-register.md) | Two generators would drift; a projection cannot. |
 | 12 | [Consent-gated persistence, non-PII analytics](0012-consent-gated-persistence.md) | We must be able to answer our own questionnaire honestly. |
 | 13 | [Superseded packs stay registered](0013-superseded-packs-stay-registered.md) | A past assessment must remain reproducible against the pack that produced it. |
+| 14 | [The pack follows the cited rules](0014-pack-follows-the-cited-rules.md) | Jurisdiction is a property of the rules an artefact rests on, not of its project. |
 
 ## Format
 

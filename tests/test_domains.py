@@ -149,3 +149,71 @@ def test_returned_domain_numbers_are_sorted_and_unique():
     nums = domains_for_node("store", {"outside_india": True},
                             {"notified_as_sdf": True, "processes_children_data": True})
     assert nums == sorted(set(nums))
+
+
+# --- domain rollup over a readiness report ------------------------------------------------
+
+from compliance.domains import domain_rollup  # noqa: E402
+from compliance.manifest import build_manifest  # noqa: E402
+from compliance.readiness import score_manifest  # noqa: E402
+
+STARTUP = {"entity_type": "startup", "sector": "saas", "offers_in_india": True,
+           "registered_users": 500, "consent_mechanism": "explicit_optin",
+           "has_privacy_notice": True}
+
+
+def _report(extra=None):
+    return score_manifest(build_manifest({**STARTUP, **(extra or {})}), EXT)
+
+
+def test_rollup_covers_all_eight_domains():
+    assert [d["number"] for d in domain_rollup(_report())] == list(range(1, 9))
+
+
+def test_a_declared_posture_shows_as_ready_in_its_domain():
+    notice = next(d for d in domain_rollup(_report()) if d["number"] == 2)
+    assert "DPDP-SEC5-NOTICE-001" in notice["ready"]
+    assert notice["status"] == "ready"
+
+
+def test_an_undeclared_posture_shows_as_a_gap_in_its_domain():
+    notice = next(d for d in domain_rollup(_report({"has_privacy_notice": False}))
+                  if d["number"] == 2)
+    assert "DPDP-SEC5-NOTICE-001" in notice["gaps"]
+    assert notice["status"] == "gap"
+
+
+def test_a_domain_gated_off_by_the_profile_is_reported_not_applicable():
+    sdf = next(d for d in domain_rollup(_report()) if d["number"] == 6)
+    assert sdf["applicable"] is False and sdf["status"] == "not_applicable"
+
+
+def test_a_domain_becomes_applicable_once_the_profile_triggers_it():
+    sdf = next(d for d in domain_rollup(_report({"notified_as_sdf": True}))
+               if d["number"] == 6)
+    assert sdf["applicable"] is True and sdf["status"] != "not_applicable"
+
+
+def test_a_partly_ready_domain_reports_partial_with_a_percentage():
+    rollup = domain_rollup(_report({"has_security_safeguards": True}))
+    security = next(d for d in rollup if d["number"] == 4)
+    assert security["status"] == "partial"
+    assert 0 < security["percent"] < 100
+
+
+def test_each_domain_carries_its_citation_so_the_rollup_is_defensible():
+    assert all(d["act_citation"] for d in domain_rollup(_report()))
+
+
+def test_rollup_counts_reconcile_with_the_rules_it_lists():
+    for d in domain_rollup(_report()):
+        assert d["assessed"] == len(d["ready"]) + len(d["gaps"])
+
+
+def test_the_lens_is_dpdp_only_and_says_so_rather_than_guessing_for_the_eu():
+    eu = score_manifest(build_manifest({"has_ai_system": True, "eu_role": "provider",
+                                        "provides_to_eu": True}), EU_PACK)
+    assert domain_rollup(eu) == []
+
+
+EU_PACK = load_rulepack(Path("rulepacks/euai_extended_v2.yaml"), validate=False)

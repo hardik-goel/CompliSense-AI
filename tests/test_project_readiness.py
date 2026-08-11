@@ -77,3 +77,20 @@ def test_eu_pack_scores_with_role_gating(monkeypatch):
     report = _run(PR.project_readiness("p1", pack_id="euai_core_v1", current_user=USER))
     assert report["jurisdiction"] == "EU_AI_ACT"
     assert report["summary"]["applicable"] > 0  # eu_provider rules now apply (not all N/A)
+
+
+def test_project_readiness_response_carries_the_domain_rollup(monkeypatch):
+    _patch(monkeypatch, {"id": "p1", "user_id": "u1",
+                         "discovered_manifest": {"has_privacy_notice": True}})
+    body = _run(PR.project_readiness("p1", pack_id="dpdp_india_extended_v2", current_user=USER))
+    assert [d["number"] for d in body["domains"]] == list(range(1, 9))
+    assert all(d["act_citation"] for d in body["domains"])
+    assert next(d for d in body["domains"] if d["number"] == 2)["status"] == "ready"
+
+
+def test_the_domain_rollup_is_absent_for_an_eu_assessment(monkeypatch):
+    _patch(monkeypatch, {"id": "p1", "user_id": "u1",
+                         "discovered_manifest": {"has_ai_system": True, "eu_role": "provider",
+                                                 "provides_to_eu": True}})
+    body = _run(PR.project_readiness("p1", pack_id="euai_extended_v1", current_user=USER))
+    assert body["domains"] == []

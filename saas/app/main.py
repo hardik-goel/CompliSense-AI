@@ -306,6 +306,26 @@ async def project_artefacts_page(project_id: str, request: Request):
     )
 
 
+@app.get("/projects/{project_id}/records", response_class=HTMLResponse)
+async def project_records_page(project_id: str, request: Request):
+    """Register, diagram, domain rollup and freshness — the surface for all of it.
+
+    Path is /records, not /ropa: the ROPA JSON API already owns /projects/{id}/ropa and is
+    registered first, so a page there would be unreachable.
+    """
+    user = _get_user_from_request(request)
+    if not user:
+        return RedirectResponse(url="/")
+    project = projects_collection().find_one({"id": project_id, "user_id": user["id"]})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return templates.TemplateResponse(
+        "records.html",
+        _template_context(request, user=user, project_id=project_id,
+                          project_name=project.get("name", "Project")),
+    )
+
+
 @app.get("/projects/{project_id}/pii", response_class=HTMLResponse)
 async def project_pii_page(project_id: str, request: Request):
     user = _get_user_from_request(request)

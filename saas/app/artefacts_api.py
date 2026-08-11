@@ -29,11 +29,13 @@ from compliance.artefacts import (
 )
 from compliance.dfd import build_dfd, dfd_to_svg
 from compliance.manifest import build_manifest
+from compliance.provenance import build_provenance
 from compliance.ropa import ropa_to_markdown
 from compliance.readiness import score_manifest
 from saas.app.auth import get_current_user
 from saas.app.copilot_api import _find_rule, get_copilot
 from saas.app.database import get_collection, serialize_document
+from saas.app.freshness_api import pack_for_rules, record_provenance
 from saas.app.project_readiness import _PROJECT_PACKS
 from saas.app.readiness import _load_pack
 from saas.app.teams import get_project_with_role
@@ -107,10 +109,19 @@ def _generated_files(project_id: str, project: dict[str, Any]) -> list[tuple[str
         ropa = _build_ropa(project_id, project)
     except Exception:
         return []
-    return [
+    files = [
         ("record_of_processing.md", "Record of Processing Activities", ropa_to_markdown(ropa)),
         ("data_flow_diagram.svg", "Personal-data flow diagram", dfd_to_svg(build_dfd(ropa))),
     ]
+    # The zip is the primary download path. Without this the freshness report cannot speak
+    # about the documents the client is actually holding — the stamp exists for exactly this.
+    for artefact_id in ("record_of_processing", "data_flow_diagram"):
+        try:
+            record_provenance(project_id, artefact_id, ropa.get("provenance"),
+                              ropa.get("generated_at"))
+        except Exception:
+            pass  # a stamping failure must never block the client's download
+    return files
 
 
 @router.get("/{project_id}/artefacts/export.zip")
@@ -191,6 +202,7 @@ async def draft_artefact(project_id: str, art_id: str, consent_to_send: bool = F
     doc = {"project_id": project_id, "art_id": art_id, "rule_id": spec["rule_id"],
            "title": spec["title"], "filename": spec["filename"], "status": "drafted",
            "content": result.get("answer", ""), "grounded": result.get("grounded"),
+           "provenance": _stamp_for(spec["rule_id"]),
            "drafted_by": current_user["id"], "drafted_at": now, "approved_by": None, "approved_at": None}
     artefacts_collection().update_one({"project_id": project_id, "art_id": art_id}, {"$set": doc}, upsert=True)
     _audit(current_user, project_id, "artefact_draft", "drafted", {"art_id": art_id})
@@ -212,8 +224,22 @@ async def approve_artefact(project_id: str, art_id: str,
     now = dt.datetime.utcnow()
     artefacts_collection().update_one({"project_id": project_id, "art_id": art_id},
         {"$set": {"status": "approved", "approved_by": current_user["id"], "approved_at": now}})
+    # Approval, not drafting, is the moment the client starts relying on the document.
+    try:
+        record_provenance(project_id, art_id, doc.get("provenance"), doc.get("drafted_at"))
+    except Exception:
+        pass
     _audit(current_user, project_id, "artefact_approve", "approved", {"art_id": art_id})
     return {"project_id": project_id, "art_id": art_id, "status": "approved"}
+
+
+def _stamp_for(rule_id: str) -> dict[str, Any] | None:
+    """Provenance for a single-rule artefact, against whichever pack holds that rule."""
+    try:
+        pack = pack_for_rules([rule_id])
+        return build_provenance(pack, [rule_id]) if pack else None
+    except Exception:
+        return None
 
 
 def _audit(user: dict[str, Any], project_id: str, source: str, status: str, meta: dict[str, Any]) -> None:

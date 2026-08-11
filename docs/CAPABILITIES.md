@@ -21,7 +21,9 @@ compliance determination.** Rulepacks are **pending professional legal review**.
 6. **Stay current** — every generated artefact is stamped with the rulepack + rules it was
    built from (legally-material fields only). `fresh` / `review` / `stale` per document, with
    the changed field named. Pending regulatory-watch findings raise an early warning *before*
-   any rule is edited. Nothing regenerates itself. `compliance/provenance.py`.
+   any rule is edited. Nothing regenerates itself, and the monitoring cron raises
+   `artefact_stale` / `regwatch_exposure` alerts so the client is told rather than having to
+   ask. `compliance/provenance.py`, `saas/app/freshness_api.py`.
 7. **Remediate** — an AI copilot explains a gap or drafts a document (grounded, consent-gated, "DRAFT — requires legal review").
    - **Generate artefacts** *(no documents yet?)* — for each gap, see where the artefact can be sourced
      (connector / questionnaire / AI draft / manual), AI-draft it, **explicitly approve** each one,
@@ -53,7 +55,8 @@ and the **evidence export**.
 - **ROPA + data-flow diagram** — deterministic register and SVG diagram from the same facts, so the table and the picture can never disagree. Completeness is reported honestly (unknowns listed, never guessed). Supports (does not close) DPDP s.5 / s.7 / s.8 / s.16.
 - **DPDPA domain lens** — the eight domains buyers already read, as a *proven view* over the rulepack: a test fails if a rule belongs to no domain, or a domain has no backing rule.
 - **Regulatory-change watcher** — hashes the cited legal sources; raises a **human-gated** review item on change (never auto-edits a rule).
-- **Artefact freshness** — provenance stamps + staleness (`fresh`/`review`/`stale`) join the watcher to the documents a client is holding, so "we monitor the law" is a benefit they receive, not a backlog we keep.
+- **Artefact freshness** — provenance stamps + staleness (`fresh`/`review`/`stale`) join the watcher to the documents a client is holding, so "we monitor the law" is a benefit they receive, not a backlog we keep. Surfaced as scheduled alerts, not only on request.
+- **Records & currency page** — `/projects/{id}/records`: the register, the diagram, the domain rollup, the freshness report, and the form for declaring processing activities.
 - **MCP server** — 8 read-only tools for Claude Desktop (rules, readiness, PII, connector policies).
 - **Copilot** — Anthropic-backed, grounded in the cited rule + non-PII facts, consent-gated, drafts marked "requires legal review".
 - **Teams / RBAC** — viewer · engineer · DPO · admin · owner; gap assignment + DPO sign-off, audited.

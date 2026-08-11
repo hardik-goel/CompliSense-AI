@@ -42,7 +42,6 @@ def _patch(monkeypatch):
                             raising=False)
         monkeypatch.setattr(mod, "insert_audit_log", lambda *a, **k: None, raising=False)
     monkeypatch.setattr(F, "provenance_collection", lambda: prov)
-    monkeypatch.setattr(R, "provenance_collection", lambda: prov)
     monkeypatch.setattr(R, "projects_collection", lambda: projects)
     monkeypatch.setattr(R, "pii_collection", lambda: pii)
     return prov
@@ -218,3 +217,34 @@ def test_the_warning_says_plainly_that_no_rule_has_been_changed_yet(monkeypatch)
     body = _run(F.get_regwatch_impact("p1", current_user=USER))
     note = body["note"].lower()
     assert "no rule has been changed" in note and "nothing has been applied" in note
+
+
+# --- the pack follows the rules the artefact cites, not a hardcoded constant --------------
+
+def test_pack_is_chosen_by_the_rules_the_artefact_actually_cites():
+    dpdp = F.pack_for_rules(["DPDP-SEC16-TRANSFER-001", "DPDP-SEC5-NOTICE-001"])
+    eu = F.pack_for_rules(["EUAI-ART9-RISK-MGMT-001"])
+    assert dpdp["pack_id"].startswith("dpdp_india")
+    assert eu["pack_id"].startswith("euai")
+
+
+def test_pack_selection_prefers_the_pack_covering_the_most_cited_rules():
+    # SEC5 lives in both core and extended; SEC16 only in extended.
+    pack = F.pack_for_rules(["DPDP-SEC5-NOTICE-001", "DPDP-SEC16-TRANSFER-001"])
+    ids = {r["id"] for r in pack["rules"]}
+    assert {"DPDP-SEC5-NOTICE-001", "DPDP-SEC16-TRANSFER-001"} <= ids
+
+
+def test_unknown_rules_do_not_silently_pick_an_arbitrary_pack():
+    assert F.pack_for_rules(["DPDP-NOPE-001"]) is None
+
+
+def test_no_rules_selects_no_pack():
+    assert F.pack_for_rules([]) is None
+
+
+def test_the_ropa_stamp_names_the_pack_that_actually_holds_its_rules(monkeypatch):
+    _patch(monkeypatch)
+    prov = _run(R.get_ropa("p1", current_user=USER))["ropa"]["provenance"]
+    assert prov["pack_id"] == "dpdp_india_extended_v2"
+    assert prov["missing_rule_ids"] == []
