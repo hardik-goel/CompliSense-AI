@@ -11,7 +11,6 @@ not_applicable -> NA.
 
 from __future__ import annotations
 
-import html
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import datetime as dt
 import html
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends

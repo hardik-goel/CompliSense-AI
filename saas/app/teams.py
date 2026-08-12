@@ -19,7 +19,7 @@ from agent.db.mongo import insert_audit_log
 from saas.app.auth import get_current_user, users_collection
 from saas.app.database import get_collection, serialize_document
 from saas.app.projects import projects_collection
-from saas.app.rbac import ROLES, can, role_at_least
+from saas.app.rbac import ROLES, can
 
 router = APIRouter(tags=["teams"])
 

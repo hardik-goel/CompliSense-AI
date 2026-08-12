@@ -109,15 +109,23 @@ def test_run_evaluator_import_error():
     assert "not found" in result["engine_error"].lower()
 
 
-def test_run_evaluator_missing_run_function():
-    """Test handling of evaluator missing run function."""
-    with patch('agent.scanner.import_module') as mock_import:
-        mock_mod = MagicMock()
-        del mock_mod.run  # Remove run function
-        mock_import.return_value = mock_mod
-        
-        result = _run_evaluator(Path("/tmp"), "test_evaluator", {})
-        assert "engine_error" in result
+def test_run_evaluator_missing_run_function(monkeypatch):
+    """A registered evaluator module without a run() function is reported, not raised.
+
+    This previously patched `agent.scanner.import_module`, which `_run_evaluator` never
+    calls — it resolves evaluators from a static dict. The patch was a no-op and the test
+    was really exercising the unknown-evaluator branch, identical to the test above. It
+    now removes `run` from a *registered* evaluator, which is the only way to reach the
+    branch this test is named after.
+    """
+    from agent.evaluators import file_presence
+
+    monkeypatch.delattr(file_presence, "run")
+    result = _run_evaluator(Path("/tmp"), "file_presence", {})
+
+    assert "engine_error" in result
+    assert "no 'run' function" in result["engine_error"]
+    assert result["evaluator"] == "file_presence"
 
 
 def test_run_scan_progress_callback(tmp_path):

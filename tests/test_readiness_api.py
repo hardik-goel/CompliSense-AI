@@ -145,7 +145,7 @@ def test_get_assessment_404_for_other_user(monkeypatch):
 
 # ── Admin-gated analytics summary (item 3) ─────────────────────────────────────
 
-from saas.app.readiness import require_admin, analytics_summary
+from saas.app.readiness import require_admin
 from saas.app.config import settings as _settings
 
 

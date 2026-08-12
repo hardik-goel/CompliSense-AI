@@ -29,7 +29,7 @@ from compliance.legal_text import legal_footer_text
 from compliance.manifest import build_manifest
 from compliance.readiness import score_manifest, top_gaps
 from saas.app.config import settings
-from saas.app.database import get_collection, serialize_document
+from saas.app.database import get_collection
 from saas.app.mail import MailMessage, get_mailer
 from saas.app.readiness import _load_pack, _ALLOWED_PACKS, require_admin
 from saas.app.report_email import (

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from agent.rules.loader import iter_rules, load_rulepack
+from agent.rules.loader import load_rulepack
 from compliance.domains import (
     DOMAINS,
     applicable_domains,

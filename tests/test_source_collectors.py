@@ -1,6 +1,5 @@
 """Cloud / repo / doc-store collectors (injected fake clients — no creds, no network)."""
 
-import io
 
 import pytest
 

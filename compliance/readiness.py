@@ -14,7 +14,6 @@ reusing the Phase-0 rulepacks and applicability gating. Principles:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Callable, Dict, List
 
 from compliance.manifest import Manifest, manifest_to_profile

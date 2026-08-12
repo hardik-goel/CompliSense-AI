@@ -6,7 +6,6 @@ from agent.audit.trail import hash_directory
 from agent.config import AgentConfig
 from agent.report.dashboard import render_dashboard
 from agent.report.exec_pdf import export_exec_pdf
-from agent.report.export import export_dashboard
 from agent.report.history import load_runs, compare_runs
 from agent.report.screenshot import export_dashboard_images
 from agent.report.trends import build_trends

@@ -18,7 +18,7 @@ default client uses the Anthropic SDK (claude-opus-4-8, adaptive thinking).
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict
 
 # llm(system, user) -> assistant text.
 LLM = Callable[[str, str], str]
