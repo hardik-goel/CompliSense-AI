@@ -1,7 +1,7 @@
 import yaml
 from pathlib import Path
 import json, hashlib
-from jsonschema import validate, Draft202012Validator
+from jsonschema import Draft202012Validator
 from typing import Dict, Any
 
 from agent.evaluators.file_presence import _is_empty_value

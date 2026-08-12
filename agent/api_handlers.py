@@ -2,13 +2,12 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pathlib import Path
-import tempfile, requests, os, shutil, json
+import tempfile, requests, shutil, json
 from typing import Optional
 from compliance.registry import DEFAULT_RULEPACK_ID
 from agent.rules.loader import load_rulepack, iter_rules
 from agent.scanner import run_scan
 from agent.report.render import render_pdf
-from agent.db.mongo import insert_report, get_mongo_client  # optional for direct insert
 import logging
 
 app = FastAPI(title="CompliSense Local Agent API")

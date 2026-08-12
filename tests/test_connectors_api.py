@@ -5,7 +5,6 @@ injected via get_connector, so no SDK/network is touched.
 """
 
 import asyncio
-import datetime as dt
 
 import pytest
 

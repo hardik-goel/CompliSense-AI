@@ -3,7 +3,6 @@
 import asyncio
 
 import saas.app.analytics as A
-import saas.app.readiness as R
 from saas.app.analytics import score_bucket, record_event
 from saas.app.readiness import score_endpoint, ScoreRequest
 

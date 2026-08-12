@@ -1,12 +1,8 @@
 # agent/agent_main.py
 import argparse
-import subprocess
 import threading
 import time
-import webbrowser
-from pathlib import Path
 import sys
-import os
 import uvicorn
 
 # Local imports
@@ -17,7 +13,7 @@ def start_uvicorn():
 
 def run_headless(args):
     # CLI-only run: POST to local API (self-contained)
-    import requests, json
+    import requests
     payload = {
         "model_root": args.model_root,
         "output_dir": args.output_dir,
@@ -35,7 +31,7 @@ def run_with_gui():
     # Minimal Tkinter UI to prompt paths, then call /run
     import tkinter as tk
     from tkinter import filedialog, messagebox
-    import requests, json
+    import requests
 
     root = tk.Tk()
     root.title("CompliSense Agent")

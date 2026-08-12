@@ -1,6 +1,5 @@
 """LLM classifier provider selection + OpenAI-compatible (OpenRouter) adapter."""
 
-import agent.collectors.classifier as C
 from agent.collectors.classifier import OpenAICompatibleClassifier, default_classifier
 
 

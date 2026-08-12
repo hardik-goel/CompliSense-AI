@@ -19,7 +19,7 @@ from compliance.domains import domain_rollup
 from compliance.manifest import build_manifest, manifest_to_profile
 from compliance.readiness import score_manifest
 from saas.app.auth import get_current_user
-from saas.app.projects import get_project_for_user, projects_collection
+from saas.app.projects import get_project_for_user
 from saas.app.readiness import _ALLOWED_PACKS, _load_pack
 
 router = APIRouter(prefix="/projects", tags=["readiness"])

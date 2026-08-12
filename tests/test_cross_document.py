@@ -1,7 +1,6 @@
 """Cross-document consistency checks (audit gap 4)."""
 
 import json
-from pathlib import Path
 
 from compliance.cross_document import run_consistency_checks
 from agent.scanner import run_scan

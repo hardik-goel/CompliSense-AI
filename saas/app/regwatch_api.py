@@ -24,7 +24,6 @@ from agent.rules.loader import load_rulepack
 from compliance.regwatch import (
     build_change_proposal,
     collect_watch_sources,
-    content_hash,
     detect_change,
     draft_change_proposal,
     load_watchlist,
